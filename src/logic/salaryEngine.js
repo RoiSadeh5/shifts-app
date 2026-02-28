@@ -287,6 +287,35 @@
     };
   }
 
+  // ================================================================
+  //  WHATSAPP SHARE TEXT
+  // ================================================================
+
+  const HEBREW_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני',
+                         'יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+
+  /**
+   * Generate a formatted Hebrew summary for WhatsApp sharing.
+   * @param {{ month: number, year: number, shifts: number, hours: number, gross: number, net: number }} data
+   * @returns {string} RTL-safe plain text message
+   */
+  function generateShareText(data) {
+    const monthName = HEBREW_MONTHS[data.month] + ' ' + data.year;
+    const fmt = n => '₪' + Math.round(n).toLocaleString();
+
+    return [
+      'סיכום שכר חודשי - אפליקציית שכ״ש 💰',
+      '─────────────────',
+      'חודש: ' + monthName,
+      'משמרות: ' + data.shifts,
+      'סה"כ שעות: ' + Math.round(data.hours),
+      'ברוטו: ' + fmt(data.gross),
+      'נטו משוער לבנק: ' + fmt(data.net),
+      '─────────────────',
+      'נוצר באמצעות שכ״ש - רועי שדה',
+    ].join('\n');
+  }
+
   // ===== Export =====
   exports.DEFAULTS = DEFAULTS;
   exports.DEDUCTION_CONSTANTS = DEDUCTION_CONSTANTS;
@@ -298,5 +327,6 @@
   exports.calcDeductions = calcDeductions;
   exports.calcIncomeTax = calcIncomeTax;
   exports.calcAnnualSummary = calcAnnualSummary;
+  exports.generateShareText = generateShareText;
 
 })(typeof module !== 'undefined' && module.exports ? module.exports : (window.SalaryEngine = {}));

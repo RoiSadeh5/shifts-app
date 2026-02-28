@@ -49,3 +49,7 @@ function clearAllData() {
     showToast('🗑️ כל הנתונים נמחקו');
   });
 }
+
+function initSettingsView() {
+  updateBackupDisplay();
+}

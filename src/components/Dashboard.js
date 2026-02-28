@@ -81,6 +81,7 @@ function render() {
   const hasGross = totalP > 0;
   document.getElementById('deductionsPanel').style.display = hasGross ? '' : 'none';
   document.getElementById('employerPanel').style.display = hasGross ? '' : 'none';
+  document.getElementById('shareBtn').style.display = hasGross ? '' : 'none';
 
   const bdList = document.getElementById('breakdownList');
   const bdSection = document.getElementById('breakdownSection');
@@ -172,6 +173,31 @@ function renderCalendar() {
 
   grid.innerHTML = html;
   details.innerHTML = '';
+}
+
+function shareWhatsApp() {
+  const monthShifts = getMonthShifts();
+  let totalH = 0, totalP = 0;
+  monthShifts.forEach(s => {
+    totalH += s.result?.totalHours || 0;
+    totalP += s.result?.totalPay || 0;
+  });
+
+  const ded = calcDeductions(totalP);
+  const tax = calcIncomeTax(totalP);
+  const incomeTaxAmount = dedSettings.incomeTax ? tax.finalTax : 0;
+  const netAfterAll = totalP - ded.employee.total - incomeTaxAmount;
+
+  const text = SalaryEngine.generateShareText({
+    month: currentMonth,
+    year: currentYear,
+    shifts: monthShifts.length,
+    hours: totalH,
+    gross: totalP,
+    net: netAfterAll,
+  });
+
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
 }
 
 function showDayDetail(day) {

@@ -139,4 +139,5 @@ function init() {
 
   updateMonthLabels();
   render();
+  updateBackupDisplay();
 }
