@@ -1,0 +1,302 @@
+/**
+ * Salary Calculation Engine – שכ״ש
+ * All pure functions: shift pay, deductions, income tax, annual summary.
+ * No DOM, no localStorage.
+ *
+ * Browser: <script src="src/logic/salaryEngine.js"></script> → window.SalaryEngine
+ * Node.js: const Engine = require('./src/logic/salaryEngine.js');
+ */
+(function (exports) {
+  'use strict';
+
+  // ===== Configurable Rates =====
+  const DEFAULTS = {
+    baseRate: 75,
+    weekendMultiplier: 1.5,
+    restMultiplier: 0.5,
+    vacationDayRate: 1750,
+    bonusQuarterly: 3500,
+  };
+
+  // ===== 2026 Israel Deduction Constants =====
+  const DEDUCTION_CONSTANTS = {
+    NI_LOWER_CEILING: 7703,
+    NI_UPPER_CEILING: 51910,
+    NI_LOWER_RATE: 0.0427,
+    NI_UPPER_RATE: 0.1217,
+    PENSION_EMPLOYEE: 0.06,
+    PENSION_EMPLOYER: 0.125,
+    STUDY_EMPLOYEE: 0.025,
+    STUDY_EMPLOYER: 0.075,
+    STUDY_CEILING: 15712,
+  };
+
+  // ================================================================
+  //  SHIFT PAY
+  // ================================================================
+
+  /**
+   * Hourly rate at a given moment.
+   * Weekend: Fri 16:00 → Sun 06:00 (150%)
+   * Rest:    00:00 → 06:00 daily (50% of applicable rate)
+   */
+  function getRateAt(date, rates) {
+    const r = { ...DEFAULTS, ...rates };
+    const day = date.getDay();
+    const hour = date.getHours() + date.getMinutes() / 60;
+
+    const isWeekend = (day === 5 && hour >= 16) || (day === 6) || (day === 0 && hour < 6);
+    const isRest = hour >= 0 && hour < 6;
+
+    let rate = isWeekend ? r.baseRate * r.weekendMultiplier : r.baseRate;
+    if (isRest) rate *= r.restMultiplier;
+
+    return { rate, isWeekend, isRest };
+  }
+
+  /**
+   * Sum pay minute-by-minute over a time range.
+   */
+  function calculatePayForRange(start, end, rates) {
+    const breakdown = { regular: 0, weekend: 0, rest: 0, weekendRest: 0 };
+    let totalPay = 0, minutes = 0;
+
+    for (let t = start.getTime(); t < end.getTime(); t += 60000) {
+      const d = new Date(t);
+      const { rate, isWeekend, isRest } = getRateAt(d, rates);
+      const ppm = rate / 60;
+      totalPay += ppm;
+      minutes++;
+
+      if (isRest && isWeekend) breakdown.weekendRest += ppm;
+      else if (isRest) breakdown.rest += ppm;
+      else if (isWeekend) breakdown.weekend += ppm;
+      else breakdown.regular += ppm;
+    }
+
+    const round = v => Math.round(v * 100) / 100;
+    return {
+      totalPay: round(totalPay),
+      totalMinutes: minutes,
+      totalHours: round(minutes / 60),
+      breakdown: {
+        regular: round(breakdown.regular),
+        weekend: round(breakdown.weekend),
+        rest: round(breakdown.rest),
+        weekendRest: round(breakdown.weekendRest),
+      },
+    };
+  }
+
+  /**
+   * Calculate pay for a single shift.
+   * @param {object} shift – { type, date, startTime?, endTime?, hasBonus? }
+   * @param {object} [rates] – optional rate overrides
+   */
+  function calculateShiftPay(shift, rates) {
+    const r = { ...DEFAULTS, ...rates };
+    const type = shift.type;
+
+    if (type === 'vacation') {
+      return { shiftType: 'vacation', totalPay: r.vacationDayRate, totalHours: 0, flatRate: true };
+    }
+
+    const parts = shift.date.split('-');
+    const year = parseInt(parts[0]), month = parseInt(parts[1]) - 1, day = parseInt(parts[2]);
+    let start, end;
+
+    if (type === 'plus') {
+      start = new Date(year, month, day, 6, 0, 0);
+      end = new Date(year, month, day + 1, 6, 0, 0);
+    } else if (type === 'training') {
+      start = new Date(year, month, day, 6, 0, 0);
+      end = new Date(year, month, day, 20, 0, 0);
+    } else if (type === 'minus') {
+      const [sh, sm] = shift.startTime.split(':').map(Number);
+      const [eh, em] = shift.endTime.split(':').map(Number);
+      start = new Date(year, month, day, sh, sm, 0);
+      end = new Date(year, month, day, eh, em, 0);
+      if (end <= start) end.setDate(end.getDate() + 1);
+    } else {
+      return { shiftType: type, error: true, totalPay: 0, totalHours: 0 };
+    }
+
+    const result = calculatePayForRange(start, end, rates);
+    const bonus = shift.hasBonus ? r.bonusQuarterly : 0;
+
+    return {
+      shiftType: type,
+      totalPay: Math.round((result.totalPay + bonus) * 100) / 100,
+      totalHours: result.totalHours,
+      breakdown: result.breakdown,
+      bonusApplied: bonus,
+    };
+  }
+
+  // ================================================================
+  //  2026 INCOME TAX & DEDUCTIONS
+  // ================================================================
+
+  /**
+   * Monthly deductions (2026 Israel).
+   * @param {number} grossMonthly
+   * @param {{ pension: boolean, study: boolean, ni: boolean }} toggles
+   */
+  function calcDeductions(grossMonthly, toggles) {
+    const C = DEDUCTION_CONSTANTS;
+    const t = { pension: true, study: true, ni: true, ...toggles };
+    const ded = { pension: 0, study: 0, ni: 0 };
+    const emp = { pension: 0, study: 0 };
+    let niTier1 = 0, niTier2 = 0;
+
+    if (t.pension) {
+      ded.pension = grossMonthly * C.PENSION_EMPLOYEE;
+      emp.pension = grossMonthly * C.PENSION_EMPLOYER;
+    }
+
+    if (t.study) {
+      const base = Math.min(grossMonthly, C.STUDY_CEILING);
+      ded.study = base * C.STUDY_EMPLOYEE;
+      emp.study = base * C.STUDY_EMPLOYER;
+    }
+
+    if (t.ni) {
+      if (grossMonthly <= C.NI_LOWER_CEILING) {
+        niTier1 = grossMonthly * C.NI_LOWER_RATE;
+      } else {
+        niTier1 = C.NI_LOWER_CEILING * C.NI_LOWER_RATE;
+        const upper = Math.min(grossMonthly, C.NI_UPPER_CEILING) - C.NI_LOWER_CEILING;
+        if (upper > 0) niTier2 = upper * C.NI_UPPER_RATE;
+      }
+      ded.ni = niTier1 + niTier2;
+    }
+
+    const totalEmployee = ded.pension + ded.study + ded.ni;
+    const totalEmployer = emp.pension + emp.study;
+    const round = v => Math.round(v * 100) / 100;
+
+    return {
+      employee: {
+        pension: round(ded.pension),
+        study: round(ded.study),
+        ni: round(ded.ni),
+        niTier1: round(niTier1),
+        niTier2: round(niTier2),
+        total: round(totalEmployee),
+      },
+      employer: {
+        pension: round(emp.pension),
+        study: round(emp.study),
+        total: round(totalEmployer),
+      },
+      net: round(grossMonthly - totalEmployee),
+    };
+  }
+
+  // ===== 2026 Income Tax (Mas Hachnasa) =====
+  const TAX_BRACKETS_MONTHLY = [
+    { ceiling:  7010, rate: 0.10 },
+    { ceiling: 10060, rate: 0.14 },
+    { ceiling: 16150, rate: 0.20 },
+    { ceiling: 22440, rate: 0.31 },
+    { ceiling: 46690, rate: 0.35 },
+    { ceiling: 60130, rate: 0.47 },
+    { ceiling: Infinity, rate: 0.50 },
+  ];
+
+  const CREDIT_POINT_VALUE = 242;
+
+  /**
+   * Progressive income tax on monthly gross.
+   * @param {number} monthlyGross - taxable monthly income
+   * @param {number} creditPoints - number of credit points (e.g. 2.25)
+   * @returns {{ grossTax, creditAmount, finalTax, tiers[] }}
+   */
+  function calcIncomeTax(monthlyGross, creditPoints) {
+    let remaining = monthlyGross;
+    let grossTax = 0;
+    let prev = 0;
+    const tiers = [];
+
+    for (const bracket of TAX_BRACKETS_MONTHLY) {
+      if (remaining <= 0) break;
+      const width = bracket.ceiling === Infinity ? remaining : Math.min(remaining, bracket.ceiling - prev);
+      const tax = width * bracket.rate;
+      tiers.push({
+        from: prev,
+        to: prev + width,
+        rate: bracket.rate,
+        taxable: Math.round(width * 100) / 100,
+        tax: Math.round(tax * 100) / 100,
+      });
+      grossTax += tax;
+      remaining -= width;
+      prev = bracket.ceiling;
+    }
+
+    const creditAmount = creditPoints * CREDIT_POINT_VALUE;
+    const finalTax = Math.max(0, grossTax - creditAmount);
+    const round = v => Math.round(v * 100) / 100;
+
+    return {
+      grossTax: round(grossTax),
+      creditAmount: round(creditAmount),
+      finalTax: round(finalTax),
+      effectiveRate: monthlyGross > 0 ? round(finalTax / monthlyGross * 100) : 0,
+      tiers,
+    };
+  }
+
+  /**
+   * Full annual Form 106 summary.
+   * Aggregates shift-based months + historical paychecks.
+   * @param {{ month, gross, incomeTax, ni, pension, study }[]} monthlyData - 12 entries
+   * @param {number} creditPoints
+   * @param {{ pension: boolean, study: boolean, ni: boolean }} toggles
+   * @returns {object} annual summary
+   */
+  function calcAnnualSummary(monthlyData, creditPoints, toggles) {
+    let totalGross = 0, totalIncomeTax = 0, totalNI = 0, totalPension = 0, totalStudy = 0;
+    let totalEmpPension = 0, totalEmpStudy = 0;
+
+    monthlyData.forEach(m => {
+      totalGross += m.gross || 0;
+      totalIncomeTax += m.incomeTax || 0;
+      totalNI += m.ni || 0;
+      totalPension += m.pension || 0;
+      totalStudy += m.study || 0;
+      totalEmpPension += m.empPension || 0;
+      totalEmpStudy += m.empStudy || 0;
+    });
+
+    const round = v => Math.round(v * 100) / 100;
+    const totalDeductions = totalIncomeTax + totalNI + totalPension + totalStudy;
+
+    return {
+      totalGross: round(totalGross),
+      totalIncomeTax: round(totalIncomeTax),
+      totalNI: round(totalNI),
+      totalPension: round(totalPension),
+      totalStudy: round(totalStudy),
+      totalDeductions: round(totalDeductions),
+      totalNet: round(totalGross - totalDeductions),
+      totalEmpPension: round(totalEmpPension),
+      totalEmpStudy: round(totalEmpStudy),
+      totalEmpContributions: round(totalEmpPension + totalEmpStudy),
+      months: monthlyData,
+    };
+  }
+
+  // ===== Export =====
+  exports.DEFAULTS = DEFAULTS;
+  exports.DEDUCTION_CONSTANTS = DEDUCTION_CONSTANTS;
+  exports.TAX_BRACKETS_MONTHLY = TAX_BRACKETS_MONTHLY;
+  exports.CREDIT_POINT_VALUE = CREDIT_POINT_VALUE;
+  exports.getRateAt = getRateAt;
+  exports.calculatePayForRange = calculatePayForRange;
+  exports.calculateShiftPay = calculateShiftPay;
+  exports.calcDeductions = calcDeductions;
+  exports.calcIncomeTax = calcIncomeTax;
+  exports.calcAnnualSummary = calcAnnualSummary;
+
+})(typeof module !== 'undefined' && module.exports ? module.exports : (window.SalaryEngine = {}));
