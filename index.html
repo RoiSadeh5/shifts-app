@@ -1528,16 +1528,20 @@
 
     // Pull-to-refresh: only when scroll at top, minimal interference with normal scroll
     (function() {
-      var PTR_THRESHOLD = 55;
+      var PTR_THRESHOLD = 60;
       var ptrStartY = 0;
+      var ptrCurrentY = 0;
       var ptrArmed = false;
       var ptrIndicator = document.getElementById('ptrIndicator');
 
       function getScrollTop() {
-        return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+        var s = window.scrollY;
+        if (typeof s !== 'number') s = document.documentElement.scrollTop || document.body.scrollTop || 0;
+        return s;
       }
 
       function runRefresh() {
+        console.log('Refresh Triggered');
         if (navigator.vibrate) navigator.vibrate(10);
         ptrIndicator.classList.add('visible');
         ptrIndicator.setAttribute('aria-hidden', 'false');
@@ -1564,25 +1568,22 @@
 
       document.body.addEventListener('touchstart', function(e) {
         if (e.touches.length !== 1) return;
-        var scrollTop = getScrollTop();
-        ptrArmed = scrollTop === 0;
+        ptrArmed = getScrollTop() <= 0;
         ptrStartY = e.touches[0].clientY;
+        ptrCurrentY = ptrStartY;
       }, { passive: true });
 
       document.body.addEventListener('touchmove', function(e) {
         if (!ptrArmed || e.touches.length !== 1) return;
-        // Don't preventDefault – allow normal scrolling; we only react on touchend
+        ptrCurrentY = e.touches[0].clientY;
+        if (getScrollTop() > 0) { ptrArmed = false; }
       }, { passive: true });
 
-      document.body.addEventListener('touchend', function(e) {
-        if (!ptrArmed || e.changedTouches.length !== 1) {
-          ptrArmed = false;
-          return;
-        }
-        var endY = e.changedTouches[0].clientY;
-        var pullDistance = endY - ptrStartY;
+      document.body.addEventListener('touchend', function() {
+        if (!ptrArmed) { ptrArmed = false; return; }
+        var pullDistance = ptrCurrentY - ptrStartY;
         ptrArmed = false;
-        if (getScrollTop() === 0 && pullDistance >= PTR_THRESHOLD) {
+        if (getScrollTop() <= 0 && pullDistance >= PTR_THRESHOLD) {
           runRefresh();
         }
       }, { passive: true });

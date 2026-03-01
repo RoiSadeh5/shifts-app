@@ -116,72 +116,70 @@ function render() {
 
   const hasGross = totalGross > 0;
   const hasAnyData = hasGross || hasActualSlip;
-  const simple = dedSettings.simpleMode;
+  const simple = !!dedSettings.simpleMode;
 
+  // Simple Mode: forcefully hide all advanced panels
   document.getElementById('deductionsPanel').style.display = (hasGross && !simple) ? '' : 'none';
   document.getElementById('employerPanel').style.display = (hasGross && !simple) ? '' : 'none';
   document.getElementById('shareBtn').style.display = hasAnyData ? '' : 'none';
+  document.getElementById('forecastCard').style.display = simple ? 'none' : '';
+  document.getElementById('comparisonPanel').style.display = simple ? 'none' : '';
+  document.getElementById('statsGrid').style.display = simple ? 'none' : '';
+  document.getElementById('leaveBalance').style.display = simple ? 'none' : '';
+  document.getElementById('breakdownSection').style.display = simple ? 'none' : '';
 
   // ===== Annual Forecast =====
-  const forecastCard = document.getElementById('forecastCard');
-  if (simple && forecastCard) forecastCard.style.display = 'none';
-  else renderAnnualForecast(totalGross > 0 ? totalGross : (hasActualSlip ? displayGross : 0));
+  if (!simple) renderAnnualForecast(totalGross > 0 ? totalGross : (hasActualSlip ? displayGross : 0));
 
   // ===== Payslip Comparison =====
-  const compPanel = document.getElementById('comparisonPanel');
-  if (simple && compPanel) compPanel.style.display = 'none';
-  else renderPayslipComparison(totalGross, incomeTaxAmount, ded, netAfterAll);
+  if (!simple) renderPayslipComparison(totalGross, incomeTaxAmount, ded, netAfterAll);
 
   // Type breakdown + meal allowance info + fixed additions
-  const bdList = document.getElementById('breakdownList');
-  const bdSection = document.getElementById('breakdownSection');
-  const hasBreakdown = Object.keys(typeTotals).length > 0 || fixedAdd.total > 0;
+  if (!simple) {
+    const bdList = document.getElementById('breakdownList');
+    const bdSection = document.getElementById('breakdownSection');
+    const hasBreakdown = Object.keys(typeTotals).length > 0 || fixedAdd.total > 0;
 
-  if (!hasBreakdown || simple) {
-    bdSection.classList.add('hidden');
-  } else {
-    bdSection.classList.remove('hidden');
-    let bdHtml = Object.entries(typeTotals).map(([type, data]) => `
-      <div class="bd-row">
-        <div class="bd-right">
-          <div class="bd-dot" style="background:${dotColors[type]}"></div>
-          <span class="bd-name">${typeNames[type]}</span>
-          <span class="bd-count">(${data.count})</span>
+    if (!hasBreakdown) {
+      bdSection.style.display = 'none';
+    } else {
+      bdSection.style.display = '';
+      let bdHtml = Object.entries(typeTotals).map(([type, data]) => `
+        <div class="bd-row">
+          <div class="bd-right">
+            <div class="bd-dot" style="background:${dotColors[type]}"></div>
+            <span class="bd-name">${typeNames[type]}</span>
+            <span class="bd-count">(${data.count})</span>
+          </div>
+          <span class="bd-pay" style="color:${dotColors[type]}">${fmtNIS(data.pay)}</span>
         </div>
-        <span class="bd-pay" style="color:${dotColors[type]}">${fmtNIS(data.pay)}</span>
-      </div>
-    `).join('');
+      `).join('');
 
-    if (totalMeal > 0) {
-      bdHtml += `<div class="bd-row" style="opacity:0.7">
-        <div class="bd-right">
-          <div class="bd-dot" style="background:var(--orange)"></div>
-          <span class="bd-name">אש״ל</span>
-          <span class="bd-count" style="font-size:10px">(כלול בשכר)</span>
-        </div>
-        <span class="bd-pay" style="color:var(--orange)">${fmtNIS(totalMeal)}</span>
-      </div>`;
+      if (totalMeal > 0) {
+        bdHtml += `<div class="bd-row" style="opacity:0.7">
+          <div class="bd-right">
+            <div class="bd-dot" style="background:var(--orange)"></div>
+            <span class="bd-name">אש״ל</span>
+            <span class="bd-count" style="font-size:10px">(כלול בשכר)</span>
+          </div>
+          <span class="bd-pay" style="color:var(--orange)">${fmtNIS(totalMeal)}</span>
+        </div>`;
+      }
+
+      if (fixedAdd.total > 0) {
+        bdHtml += `<div class="bd-row">
+          <div class="bd-right">
+            <div class="bd-dot" style="background:var(--green)"></div>
+            <span class="bd-name">תוספות קבועות</span>
+            <span class="bd-count" style="font-size:10px">(חודשי)</span>
+          </div>
+          <span class="bd-pay" style="color:var(--green)">${fmtNIS(fixedAdd.total)}</span>
+        </div>`;
+      }
+
+      bdList.innerHTML = bdHtml;
     }
-
-    if (fixedAdd.total > 0) {
-      bdHtml += `<div class="bd-row">
-        <div class="bd-right">
-          <div class="bd-dot" style="background:var(--green)"></div>
-          <span class="bd-name">תוספות קבועות</span>
-          <span class="bd-count" style="font-size:10px">(חודשי)</span>
-        </div>
-        <span class="bd-pay" style="color:var(--green)">${fmtNIS(fixedAdd.total)}</span>
-      </div>`;
-    }
-
-    bdList.innerHTML = bdHtml;
   }
-
-  // Hide stats & leave in simple mode
-  const statsGrid = document.getElementById('statsGrid');
-  const leaveEl = document.getElementById('leaveBalance');
-  if (statsGrid) statsGrid.style.display = simple ? 'none' : '';
-  if (leaveEl) leaveEl.style.display = simple ? 'none' : '';
 
   // Leave balance
   const leave = loadLeaveBalances();

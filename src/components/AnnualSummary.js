@@ -88,7 +88,6 @@ function renderAnnual() {
     const history = loadHistory();
     const yearHist = history[yearKey] || {};
 
-    // Year filter: ensure we pull from the year being viewed (annualYear)
     let latestMonthFound = -1;
     let taxValue = 0;
     let studyValue = 0;
@@ -96,9 +95,9 @@ function renderAnnual() {
     if (manualMonths.length === 0) {
       cumSection.style.display = 'none';
     } else {
-      // Latest data hunt: scan from month 11 backwards to 0; first month with gross > 0 wins
+      // Scan from month 11 backwards; first month with gross > 0 wins
       for (let i = 11; i >= 0; i--) {
-        const hist = yearHist[i] || {};
+        const hist = yearHist[String(i)] || yearHist[i] || {};
         const actualGross = hist.gross || 0;
         if (actualGross > 0) {
           latestMonthFound = i;
@@ -108,12 +107,26 @@ function renderAnnual() {
         }
       }
 
+      // Fallback: if cumulative fields are missing, sum monthly gross values
+      if (taxValue === 0 && manualMonths.length > 0) {
+        let runningGross = 0;
+        for (let i = 0; i <= (latestMonthFound >= 0 ? latestMonthFound : 11); i++) {
+          const hist = yearHist[String(i)] || yearHist[i] || {};
+          runningGross += hist.gross || 0;
+        }
+        taxValue = runningGross;
+      }
+      if (studyValue === 0 && manualMonths.length > 0) {
+        let runningGross = 0;
+        for (let i = 0; i <= (latestMonthFound >= 0 ? latestMonthFound : 11); i++) {
+          const hist = yearHist[String(i)] || yearHist[i] || {};
+          runningGross += hist.gross || 0;
+        }
+        studyValue = runningGross;
+      }
+
       console.log('Summary Debug:', {
-        annualYear,
-        yearKey,
-        latestMonthFound,
-        taxValue,
-        studyValue,
+        annualYear, yearKey, latestMonthFound, taxValue, studyValue,
         manualCount: manualMonths.length,
         yearHistKeys: Object.keys(yearHist),
       });
