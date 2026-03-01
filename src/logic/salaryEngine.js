@@ -315,23 +315,31 @@
    * @param {number} projectedMonthlyGross - projected gross per remaining month
    * @param {number} creditPoints
    * @param {boolean} use2025
+   * @param {{ ytdGross?: number, monthsWithData?: number }} [options] - optional YTD from latest payslip for baseline
    * @returns {{ estimatedAnnualGross, predictedAnnualTax, monthsWithData }}
    */
-  function predictAnnualTax(monthlyData, projectedMonthlyGross, creditPoints, use2025) {
+  function predictAnnualTax(monthlyData, projectedMonthlyGross, creditPoints, use2025, options) {
     const brackets = use2025 ? TAX_BRACKETS_ANNUAL_2025 : TAX_BRACKETS_ANNUAL;
     const creditValue = use2025 ? CREDIT_POINT_VALUE_2025 : CREDIT_POINT_VALUE;
 
     let totalYTD = 0;
     let monthsWithData = 0;
-    for (let m = 0; m < 12; m++) {
-      const gross = (monthlyData[m] && monthlyData[m].gross) ? monthlyData[m].gross : 0;
-      if (gross > 0) {
-        totalYTD += gross;
-        monthsWithData++;
+
+    if (options && options.ytdGross > 0 && options.monthsWithData != null) {
+      totalYTD = options.ytdGross;
+      monthsWithData = options.monthsWithData;
+    } else {
+      for (let m = 0; m < 12; m++) {
+        const gross = (monthlyData[m] && monthlyData[m].gross) ? monthlyData[m].gross : 0;
+        if (gross > 0) {
+          totalYTD += gross;
+          monthsWithData++;
+        }
       }
     }
+
     const remainingMonths = 12 - monthsWithData;
-    const estimatedAnnualGross = totalYTD + projectedMonthlyGross * remainingMonths;
+    const estimatedAnnualGross = totalYTD + projectedMonthlyGross * Math.max(0, remainingMonths);
 
     let remaining = estimatedAnnualGross;
     let grossTax = 0;

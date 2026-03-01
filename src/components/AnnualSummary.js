@@ -81,28 +81,37 @@ function renderAnnual() {
   document.getElementById('f106EmpStudy').textContent = `+${fmtNIS(summary.totalEmpStudy)}`;
   document.getElementById('f106EmpTotal').textContent = `+${fmtNIS(summary.totalEmpContributions)}`;
 
-  // Cumulative data from actual payslips
+  // Cumulative data from actual payslips – only show when we have payslip entries
   const cumSection = document.getElementById('f106CumulativeSection');
   if (cumSection) {
-    const avgGross = manualMonths.length > 0
-      ? manualMonths.reduce((s, m) => s + m.gross, 0) / manualMonths.length
-      : 0;
+    if (manualMonths.length === 0) {
+      cumSection.style.display = 'none';
+    } else {
+      const history = loadHistory();
+      const yearHist = history[String(annualYear)] || {};
 
-    let latestCumTax = 0, latestCumStudy = 0;
-    for (let i = 11; i >= 0; i--) {
-      if (monthlyData[i].cumulativeGrossTax > 0) { latestCumTax = monthlyData[i].cumulativeGrossTax; break; }
+      // Find latest month index with actual payslip data (gross from slip)
+      let latestMonthIdx = -1;
+      for (let i = 11; i >= 0; i--) {
+        const hist = yearHist[i] || {};
+        if (hist.gross > 0) {
+          latestMonthIdx = i;
+          break;
+        }
+      }
+
+      const latestHist = latestMonthIdx >= 0 ? (yearHist[latestMonthIdx] || {}) : {};
+      const latestCumTax = latestHist.cumulativeGrossTax || 0;
+      const latestCumStudy = latestHist.cumulativeGrossStudy || 0;
+
+      const avgGross = manualMonths.reduce((s, m) => s + m.gross, 0) / manualMonths.length;
+
+      cumSection.style.display = '';
+      document.getElementById('f106AvgGross').textContent = fmtNIS(avgGross);
+      document.getElementById('f106CumTax').textContent = latestCumTax > 0 ? fmtNIS(latestCumTax) : '—';
+      document.getElementById('f106CumStudy').textContent = latestCumStudy > 0 ? fmtNIS(latestCumStudy) : '—';
+      document.getElementById('f106ManualCount').textContent = manualMonths.length + ' תלושים';
     }
-    for (let i = 11; i >= 0; i--) {
-      if (monthlyData[i].cumulativeGrossStudy > 0) { latestCumStudy = monthlyData[i].cumulativeGrossStudy; break; }
-    }
-
-    const hasCumData = manualMonths.length > 0 || latestCumTax > 0 || latestCumStudy > 0;
-    cumSection.style.display = hasCumData ? '' : 'none';
-
-    document.getElementById('f106AvgGross').textContent = avgGross > 0 ? fmtNIS(avgGross) : '—';
-    document.getElementById('f106CumTax').textContent = latestCumTax > 0 ? fmtNIS(latestCumTax) : '—';
-    document.getElementById('f106CumStudy').textContent = latestCumStudy > 0 ? fmtNIS(latestCumStudy) : '—';
-    document.getElementById('f106ManualCount').textContent = manualMonths.length > 0 ? manualMonths.length + ' תלושים' : '—';
   }
 
   renderHistoryMonths(monthlyData);

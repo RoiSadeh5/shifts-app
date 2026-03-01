@@ -190,7 +190,24 @@ function renderAnnualForecast(currentMonthGross) {
     projectedMonthly = monthsWithGross.reduce((s, m) => s + m.gross, 0) / monthsWithGross.length;
   }
 
-  const pred = SalaryEngine.predictAnnualTax(monthlyData, projectedMonthly, creditPoints, dedSettings.taxYear2025);
+  // Use YTD from latest payslip when available for baseline
+  const history = loadHistory();
+  const yearHist = history[String(currentYear)] || {};
+  let latestMonthIdx = -1;
+  let ytdFromPayslip = 0;
+  for (let i = 11; i >= 0; i--) {
+    const hist = yearHist[i] || {};
+    if (hist.gross > 0 && hist.cumulativeGrossTax > 0) {
+      latestMonthIdx = i;
+      ytdFromPayslip = hist.cumulativeGrossTax;
+      break;
+    }
+  }
+  const options = (latestMonthIdx >= 0 && ytdFromPayslip > 0)
+    ? { ytdGross: ytdFromPayslip, monthsWithData: latestMonthIdx + 1 }
+    : undefined;
+
+  const pred = SalaryEngine.predictAnnualTax(monthlyData, projectedMonthly, creditPoints, dedSettings.taxYear2025, options);
 
   if (pred.estimatedAnnualGross > 0) {
     card.style.display = '';
