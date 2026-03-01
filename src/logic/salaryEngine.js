@@ -447,6 +447,27 @@
     return lines.join('\n');
   }
 
+  // ================================================================
+  //  MONTHLY PROJECTION
+  // ================================================================
+
+  /**
+   * Project end-of-month gross based on current earnings and day of month.
+   * @param {number} currentGross - gross earned so far this month
+   * @param {number} dayOfMonth - current day (1-31)
+   * @param {number} daysInMonth - total days in the month
+   * @returns {{ projectedGross: number, projectedNet: number } | null}
+   */
+  function getMonthlyProjection(currentGross, dayOfMonth, daysInMonth, creditPts, toggles) {
+    if (currentGross <= 0 || dayOfMonth <= 0) return null;
+    const projectedGross = Math.round((currentGross / dayOfMonth) * daysInMonth);
+    const ded = calcDeductions(projectedGross, toggles);
+    const tax = calcIncomeTax(projectedGross, creditPts, toggles && toggles.taxYear2025);
+    const taxAmt = (toggles && toggles.incomeTax) ? tax.finalTax : 0;
+    const projectedNet = Math.round(projectedGross - ded.employee.total - taxAmt);
+    return { projectedGross, projectedNet };
+  }
+
   // ===== Export =====
   exports.DEFAULTS = DEFAULTS;
   exports.DEDUCTION_CONSTANTS = DEDUCTION_CONSTANTS;
@@ -463,5 +484,6 @@
   exports.predictAnnualTax = predictAnnualTax;
   exports.calculateFixedMonthlyAdditions = calculateFixedMonthlyAdditions;
   exports.generateShareText = generateShareText;
+  exports.getMonthlyProjection = getMonthlyProjection;
 
 })(typeof module !== 'undefined' && module.exports ? module.exports : (window.SalaryEngine = {}));

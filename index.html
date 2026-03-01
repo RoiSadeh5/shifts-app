@@ -212,6 +212,19 @@
     .hero-card.gross-card .hero-value { font-size: 26px; color: var(--text); }
     .hero-card.gross-card .hero-sub { color: var(--text-dim); }
 
+    .hero-projection {
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 6px;
+      padding: 3px 8px;
+      border-radius: 8px;
+      background: rgba(99,102,241,0.12);
+      color: var(--accent-light);
+      position: relative;
+      z-index: 1;
+      display: inline-block;
+    }
+
     /* ===== STATS GRID ===== */
     .stats-grid {
       display: grid;
@@ -1174,12 +1187,14 @@
         <div class="hero-label">נטו לבנק</div>
         <div class="hero-value" id="heroNet">₪0</div>
         <div class="hero-sub" id="heroNetSub"></div>
+        <div class="hero-projection" id="heroNetProj" style="display:none"></div>
       </div>
       <div class="hero-card gross-card">
         <div class="hero-glow"></div>
         <div class="hero-label">סה"כ ברוטו</div>
         <div class="hero-value" id="heroGross">₪0</div>
         <div class="hero-sub" id="heroSub">0 משמרות · 0 שעות</div>
+        <div class="hero-projection" id="heroGrossProj" style="display:none"></div>
       </div>
     </div>
 

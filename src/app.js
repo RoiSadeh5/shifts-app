@@ -79,7 +79,7 @@ function showConfirm(title, message, onConfirm) {
 
 // ===== Greeting & Onboarding =====
 function updateGreeting() {
-  const name = loadUserName();
+  const name = (loadUserName() || '').trim();
   const titleEl = document.getElementById('pageTitle');
   if (!titleEl) return;
   if (name) {
@@ -197,8 +197,8 @@ function init() {
   recalcAll();
   updateBackupDisplay();
 
-  // Onboarding: show if no name saved
-  if (!savedName) {
+  // Onboarding: show if no name saved or empty
+  if (!savedName || savedName.trim() === '') {
     const overlay = document.getElementById('onboardingOverlay');
     if (overlay) {
       overlay.style.display = 'flex';

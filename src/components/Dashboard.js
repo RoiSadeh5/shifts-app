@@ -95,8 +95,10 @@ function render() {
 
   document.getElementById('dedPension').textContent = `-${fmtNIS(ded.employee.pension)}`;
   document.getElementById('dedStudy').textContent = `-${fmtNIS(ded.employee.study)}`;
-  document.getElementById('dedNI').textContent = `-${fmtNIS(ded.employee.nationalInsurance || ded.employee.ni)}`;
-  document.getElementById('dedHealth').textContent = `-${fmtNIS(ded.employee.healthInsurance || 0)}`;
+  const niVal = ded.employee.nationalInsurance != null ? ded.employee.nationalInsurance : ded.employee.ni;
+  const healthVal = ded.employee.healthInsurance != null ? ded.employee.healthInsurance : 0;
+  document.getElementById('dedNI').textContent = `-${fmtNIS(niVal)}`;
+  document.getElementById('dedHealth').textContent = `-${fmtNIS(healthVal)}`;
 
   document.getElementById('studyCap').style.display = totalGross > STUDY_CEILING ? '' : 'none';
 
@@ -104,8 +106,8 @@ function render() {
   const niDetail = document.getElementById('niTierDetail');
   if (ded.employee.ni > 0) {
     niTierRow.style.display = '';
-    document.getElementById('niTier1').textContent = `-${fmtNIS(ded.employee.nationalInsurance || ded.employee.niTier1 + ded.employee.niTier2)}`;
-    document.getElementById('niTier2').textContent = `-${fmtNIS(ded.employee.healthInsurance || 0)}`;
+    document.getElementById('niTier1').textContent = `-${fmtNIS(niVal)}`;
+    document.getElementById('niTier2').textContent = `-${fmtNIS(healthVal)}`;
   } else {
     niTierRow.style.display = 'none';
   }
@@ -122,14 +124,14 @@ function render() {
   document.getElementById('deductionsPanel').style.display = (hasGross && !simple) ? '' : 'none';
   document.getElementById('employerPanel').style.display = (hasGross && !simple) ? '' : 'none';
   document.getElementById('shareBtn').style.display = hasAnyData ? '' : 'none';
-  document.getElementById('forecastCard').style.display = simple ? 'none' : '';
+  document.getElementById('forecastCard').style.display = 'none';
   document.getElementById('comparisonPanel').style.display = simple ? 'none' : '';
   document.getElementById('statsGrid').style.display = simple ? 'none' : '';
   document.getElementById('leaveBalance').style.display = simple ? 'none' : '';
   document.getElementById('breakdownSection').style.display = simple ? 'none' : '';
 
-  // ===== Annual Forecast =====
-  if (!simple) renderAnnualForecast(totalGross > 0 ? totalGross : (hasActualSlip ? displayGross : 0));
+  // ===== Monthly Projection (visible in all modes) =====
+  renderMonthlyProjection(totalGross, monthShifts);
 
   // ===== Payslip Comparison =====
   if (!simple) renderPayslipComparison(totalGross, incomeTaxAmount, ded, netAfterAll);
@@ -215,6 +217,44 @@ function render() {
         </div>
       </div>`;
   }).join('');
+}
+
+// ===== Monthly Projection =====
+
+function renderMonthlyProjection(currentGross, monthShifts) {
+  const grossProjEl = document.getElementById('heroGrossProj');
+  const netProjEl = document.getElementById('heroNetProj');
+  if (!grossProjEl || !netProjEl) return;
+
+  const today = new Date();
+  const isCurrentMonth = currentMonth === today.getMonth() && currentYear === today.getFullYear();
+
+  if (!isCurrentMonth || currentGross <= 0 || monthShifts.length === 0) {
+    grossProjEl.style.display = 'none';
+    netProjEl.style.display = 'none';
+    return;
+  }
+
+  const dayOfMonth = today.getDate();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  if (dayOfMonth >= daysInMonth) {
+    grossProjEl.style.display = 'none';
+    netProjEl.style.display = 'none';
+    return;
+  }
+
+  const proj = SalaryEngine.getMonthlyProjection(currentGross, dayOfMonth, daysInMonth, creditPoints, dedSettings);
+  if (!proj) {
+    grossProjEl.style.display = 'none';
+    netProjEl.style.display = 'none';
+    return;
+  }
+
+  grossProjEl.textContent = `צפי לסוף חודש: ${fmtNIS(proj.projectedGross)}`;
+  grossProjEl.style.display = '';
+  netProjEl.textContent = `צפי נטו: ${fmtNIS(proj.projectedNet)}`;
+  netProjEl.style.display = '';
 }
 
 // ===== Annual Forecast =====
