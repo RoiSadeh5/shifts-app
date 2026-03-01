@@ -459,33 +459,32 @@
    * @param {number} creditPts
    * @param {object} toggles - dedSettings
    * @param {{ monthlyGrossHistory?: number[], baseRate?: number }} [opts]
-   *   monthlyGrossHistory: array of past monthly gross values (most recent first)
-   *   baseRate: hourly base rate for fallback cap
-   * @returns {{ projectedGross, projectedNet, precision } | null}
+   *   monthlyGrossHistory: array of past monthly gross values (filtered to reasonable range)
+   *   baseRate: hourly base rate for fallback context
+   * @returns {{ projectedGross, projectedNet, precision, method } | null}
    */
   function getMonthlyProjection(currentGross, dayOfMonth, daysInMonth, creditPts, toggles, opts) {
     if (currentGross <= 0 || dayOfMonth <= 0) return null;
 
-    const history = (opts && opts.monthlyGrossHistory) || [];
-    const recentMonths = history.filter(g => g > 0).slice(0, 6);
+    const historyValues = (opts && opts.monthlyGrossHistory) || [];
+    // Filter to sane monthly values (500–80,000 NIS) to avoid cumulative data contamination
+    const recentMonths = historyValues.filter(g => g >= 500 && g <= 80000).slice(0, 6);
     const remainingDays = daysInMonth - dayOfMonth;
 
     let projectedGross;
-    let usedHistory = false;
+    let method;
 
     if (recentMonths.length >= 1) {
-      // Step A: average daily gross from last 3-6 payslips (assume 30-day month)
       const avgMonthlyGross = recentMonths.reduce((s, g) => s + g, 0) / recentMonths.length;
       const avgDailyGross = avgMonthlyGross / 30;
-      // Step B+C: current actual + remaining days at historical avg
       projectedGross = currentGross + (remainingDays * avgDailyGross);
-      usedHistory = true;
+      method = 'history';
     } else {
-      // Fallback: linear extrapolation capped at a reasonable limit
+      // No usable history: cap at min(currentGross * 2.5, 22000)
       const linearProjection = (currentGross / dayOfMonth) * daysInMonth;
-      const baseRate = (opts && opts.baseRate) || 75;
-      const reasonableCap = Math.max(20000, baseRate * 28 * 10);
-      projectedGross = Math.min(linearProjection, reasonableCap);
+      const hardCap = Math.min(currentGross * 2.5, 22000);
+      projectedGross = Math.min(linearProjection, hardCap);
+      method = 'fallback';
     }
 
     projectedGross = Math.round(projectedGross);
@@ -495,11 +494,10 @@
     const taxAmt = (toggles && toggles.incomeTax) ? tax.finalTax : 0;
     const projectedNet = Math.round(projectedGross - ded.employee.total - taxAmt);
 
-    // Precision: how confident we are (% of month elapsed + history bonus)
     let precision = Math.round((dayOfMonth / daysInMonth) * 100);
-    if (usedHistory) precision = Math.min(99, precision + 10);
+    if (method === 'history') precision = Math.min(99, precision + 10);
 
-    return { projectedGross, projectedNet, precision };
+    return { projectedGross, projectedNet, precision, method };
   }
 
   // ===== Export =====

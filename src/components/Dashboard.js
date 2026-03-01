@@ -97,6 +97,11 @@ function render() {
   document.getElementById('dedStudy').textContent = `-${fmtNIS(ded.employee.study)}`;
   const niVal = ded.employee.nationalInsurance != null ? ded.employee.nationalInsurance : ded.employee.ni;
   const healthVal = ded.employee.healthInsurance != null ? ded.employee.healthInsurance : 0;
+  if (totalGross > 0 && healthVal === 0) {
+    console.warn('Health Insurance Debug: gross=' + totalGross + ', ni toggle=' + dedSettings.ni,
+      ', healthInsurance=' + ded.employee.healthInsurance,
+      ', full ded=', JSON.stringify(ded.employee));
+  }
   document.getElementById('dedNI').textContent = `-${fmtNIS(niVal)}`;
   document.getElementById('dedHealth').textContent = `-${fmtNIS(healthVal)}`;
 
@@ -244,18 +249,28 @@ function renderMonthlyProjection(currentGross, monthShifts) {
     return;
   }
 
-  // Gather last 6 months of actual gross from history for smart projection
-  const history = loadHistory();
+  // Scan up to 12 months back (crosses year boundary) for actual payslip gross
+  const allHistory = loadHistory();
   const monthlyGrossHistory = [];
-  let yr = currentYear;
-  let mo = currentMonth - 1;
-  for (let i = 0; i < 6; i++) {
-    if (mo < 0) { mo = 11; yr--; }
-    const yh = history[String(yr)];
-    const rec = yh && (yh[String(mo)] || yh[mo]);
-    if (rec && rec.gross > 0) monthlyGrossHistory.push(rec.gross);
-    mo--;
+  let scanYear = currentYear;
+  let scanMonth = currentMonth - 1;
+  for (let i = 0; i < 12; i++) {
+    if (scanMonth < 0) { scanMonth = 11; scanYear--; }
+    const yearData = allHistory[String(scanYear)];
+    if (yearData) {
+      const rec = yearData[String(scanMonth)] || yearData[scanMonth];
+      if (rec && rec.gross > 0) {
+        monthlyGrossHistory.push(rec.gross);
+      }
+    }
+    scanMonth--;
   }
+
+  console.log('Projection Debug:', {
+    currentGross, dayOfMonth, daysInMonth,
+    historyFound: monthlyGrossHistory.length,
+    historyValues: monthlyGrossHistory,
+  });
 
   const proj = SalaryEngine.getMonthlyProjection(
     currentGross, dayOfMonth, daysInMonth, creditPoints, dedSettings,
@@ -266,6 +281,8 @@ function renderMonthlyProjection(currentGross, monthShifts) {
     netProjEl.style.display = 'none';
     return;
   }
+
+  console.log('Projection Result:', proj);
 
   grossProjEl.textContent = `צפי לסוף חודש: ${fmtNIS(proj.projectedGross)} (דיוק: ${proj.precision}%)`;
   grossProjEl.style.display = '';

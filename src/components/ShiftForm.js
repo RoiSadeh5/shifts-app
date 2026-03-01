@@ -122,7 +122,7 @@ function addShift() {
     showResultPanel(lastResult);
     showToast(`✅ נשמר! ₪${lastResult.totalPay.toLocaleString()}`);
   } else {
-    const totalPay = added.reduce((s, sh) => s + sh.result.totalPay, 0);
+    var totalPay = added.reduce((s, sh) => s + sh.result.totalPay, 0);
     showResultPanel({
       totalPay, flatRate: selectedType === 'vacation' || selectedType === 'sick',
       totalHours: added.reduce((s, sh) => s + (sh.result.totalHours || 0), 0),
@@ -133,7 +133,7 @@ function addShift() {
     showToast(msg);
   }
 
-  render();
+  recalcAll();
   bonusOn = false;
   document.getElementById('bonusToggle').classList.remove('on');
 }
@@ -149,7 +149,7 @@ function deleteShift(id) {
     if (removed.type === 'sick') leave.sick++;
     saveLeaveBalances(leave);
   }
-  render();
+  recalcAll();
   renderCalendar();
 }
 
