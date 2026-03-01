@@ -244,14 +244,30 @@ function renderMonthlyProjection(currentGross, monthShifts) {
     return;
   }
 
-  const proj = SalaryEngine.getMonthlyProjection(currentGross, dayOfMonth, daysInMonth, creditPoints, dedSettings);
+  // Gather last 6 months of actual gross from history for smart projection
+  const history = loadHistory();
+  const monthlyGrossHistory = [];
+  let yr = currentYear;
+  let mo = currentMonth - 1;
+  for (let i = 0; i < 6; i++) {
+    if (mo < 0) { mo = 11; yr--; }
+    const yh = history[String(yr)];
+    const rec = yh && (yh[String(mo)] || yh[mo]);
+    if (rec && rec.gross > 0) monthlyGrossHistory.push(rec.gross);
+    mo--;
+  }
+
+  const proj = SalaryEngine.getMonthlyProjection(
+    currentGross, dayOfMonth, daysInMonth, creditPoints, dedSettings,
+    { monthlyGrossHistory, baseRate: userRates.baseRate }
+  );
   if (!proj) {
     grossProjEl.style.display = 'none';
     netProjEl.style.display = 'none';
     return;
   }
 
-  grossProjEl.textContent = `צפי לסוף חודש: ${fmtNIS(proj.projectedGross)}`;
+  grossProjEl.textContent = `צפי לסוף חודש: ${fmtNIS(proj.projectedGross)} (דיוק: ${proj.precision}%)`;
   grossProjEl.style.display = '';
   netProjEl.textContent = `צפי נטו: ${fmtNIS(proj.projectedNet)}`;
   netProjEl.style.display = '';
@@ -345,8 +361,8 @@ function renderPayslipComparison(appGross, appTax, appDed, appNet) {
   const rows = [
     { name: 'ברוטו', app: appGross, actual: slip.gross },
     { name: 'מס הכנסה', app: appTax, actual: slipTax, negative: true },
-    { name: 'ביטוח לאומי', app: appDed.employee.nationalInsurance || appDed.employee.ni, actual: slipNI, negative: true },
-    { name: 'ביטוח בריאות', app: appDed.employee.healthInsurance || 0, actual: slipHealth, negative: true },
+    { name: 'ביטוח לאומי', app: appDed.employee.nationalInsurance != null ? appDed.employee.nationalInsurance : appDed.employee.ni, actual: slipNI, negative: true },
+    { name: 'ביטוח בריאות', app: appDed.employee.healthInsurance != null ? appDed.employee.healthInsurance : 0, actual: slipHealth, negative: true },
     { name: 'פנסיה', app: appDed.employee.pension, actual: slipPension, negative: true },
     { name: 'קרן השתלמות', app: appDed.employee.study, actual: slipStudy, negative: true },
     { name: 'נטו', app: appNet, actual: actualNet },
@@ -522,7 +538,7 @@ function shareWhatsApp() {
     net: netAfterAll,
     mealAllowance: totalMeal,
     fixedAdditions: fixedAdd.total,
-    healthInsurance: ded.employee.healthInsurance || 0,
+    healthInsurance: ded.employee.healthInsurance != null ? ded.employee.healthInsurance : 0,
   });
 
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');

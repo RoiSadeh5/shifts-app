@@ -188,8 +188,9 @@ function init() {
   document.getElementById('rangeStart').value = todayStr;
   document.getElementById('rangeEnd').value = todayStr;
 
-  // Profile
-  const savedName = loadUserName();
+  // Profile (wrapped to prevent blocking init if localStorage is unavailable)
+  var savedName = null;
+  try { savedName = loadUserName(); } catch (e) {}
   const nameInput = document.getElementById('settingUserName');
   if (nameInput && savedName) nameInput.value = savedName;
 
