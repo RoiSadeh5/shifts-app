@@ -52,6 +52,8 @@ function buildAnnualMonthlyData(year) {
       empPension: hasHistory ? (hist.empPension || 0) : ded.employer.pension,
       empStudy: hasHistory ? (hist.empStudy || 0) : ded.employer.study,
       source: hasHistory ? 'manual' : (hasShifts ? 'auto' : 'empty'),
+      cumulativeGrossTax: hist.cumulativeGrossTax || 0,
+      cumulativeGrossStudy: hist.cumulativeGrossStudy || 0,
     });
   }
   return months;
@@ -62,6 +64,7 @@ function renderAnnual() {
   const monthlyData = buildAnnualMonthlyData(annualYear);
   const summary = SalaryEngine.calcAnnualSummary(monthlyData, creditPoints, dedSettings);
   const reportedMonths = monthlyData.filter(m => m.source !== 'empty').length;
+  const manualMonths = monthlyData.filter(m => m.source === 'manual');
 
   document.getElementById('f106Net').textContent = fmtNIS(summary.totalNet);
   document.getElementById('f106Sub').textContent = reportedMonths > 0
@@ -77,6 +80,30 @@ function renderAnnual() {
   document.getElementById('f106EmpPension').textContent = `+${fmtNIS(summary.totalEmpPension)}`;
   document.getElementById('f106EmpStudy').textContent = `+${fmtNIS(summary.totalEmpStudy)}`;
   document.getElementById('f106EmpTotal').textContent = `+${fmtNIS(summary.totalEmpContributions)}`;
+
+  // Cumulative data from actual payslips
+  const cumSection = document.getElementById('f106CumulativeSection');
+  if (cumSection) {
+    const avgGross = manualMonths.length > 0
+      ? manualMonths.reduce((s, m) => s + m.gross, 0) / manualMonths.length
+      : 0;
+
+    let latestCumTax = 0, latestCumStudy = 0;
+    for (let i = 11; i >= 0; i--) {
+      if (monthlyData[i].cumulativeGrossTax > 0) { latestCumTax = monthlyData[i].cumulativeGrossTax; break; }
+    }
+    for (let i = 11; i >= 0; i--) {
+      if (monthlyData[i].cumulativeGrossStudy > 0) { latestCumStudy = monthlyData[i].cumulativeGrossStudy; break; }
+    }
+
+    const hasCumData = manualMonths.length > 0 || latestCumTax > 0 || latestCumStudy > 0;
+    cumSection.style.display = hasCumData ? '' : 'none';
+
+    document.getElementById('f106AvgGross').textContent = avgGross > 0 ? fmtNIS(avgGross) : '—';
+    document.getElementById('f106CumTax').textContent = latestCumTax > 0 ? fmtNIS(latestCumTax) : '—';
+    document.getElementById('f106CumStudy').textContent = latestCumStudy > 0 ? fmtNIS(latestCumStudy) : '—';
+    document.getElementById('f106ManualCount').textContent = manualMonths.length > 0 ? manualMonths.length + ' תלושים' : '—';
+  }
 
   renderHistoryMonths(monthlyData);
 }

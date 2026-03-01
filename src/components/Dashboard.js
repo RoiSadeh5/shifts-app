@@ -87,6 +87,9 @@ function render() {
   document.getElementById('employerPanel').style.display = hasGross ? '' : 'none';
   document.getElementById('shareBtn').style.display = hasGross ? '' : 'none';
 
+  // ===== Payslip Comparison =====
+  renderPayslipComparison(totalGross, incomeTaxAmount, ded, netAfterAll);
+
   // Type breakdown + meal allowance info + fixed additions
   const bdList = document.getElementById('breakdownList');
   const bdSection = document.getElementById('breakdownSection');
@@ -166,6 +169,91 @@ function render() {
         </div>
       </div>`;
   }).join('');
+}
+
+// ===== Payslip Comparison =====
+
+function renderPayslipComparison(appGross, appTax, appDed, appNet) {
+  const panel = document.getElementById('comparisonPanel');
+  if (!panel) return;
+
+  const slip = loadPayslip(currentYear, currentMonth);
+  if (!slip || !slip.gross) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  panel.style.display = '';
+  const rows = [
+    { name: 'ברוטו', app: appGross, actual: slip.gross },
+    { name: 'מס הכנסה', app: appTax, actual: slip.incomeTax || 0, negative: true },
+    { name: 'ביטוח לאומי', app: appDed.employee.ni, actual: slip.ni || 0, negative: true },
+    { name: 'פנסיה', app: appDed.employee.pension, actual: slip.pension || 0, negative: true },
+    { name: 'קרן השתלמות', app: appDed.employee.study, actual: slip.study || 0, negative: true },
+    { name: 'נטו', app: appNet, actual: slip.actualNet || 0 },
+  ];
+
+  const body = document.getElementById('comparisonBody');
+  body.innerHTML = rows.map(r => {
+    const diff = (r.actual || 0) - r.app;
+    const diffAbs = Math.abs(diff);
+    const diffCls = diff > 0.5 ? 'green' : (diff < -0.5 ? 'red' : '');
+    const sign = r.negative ? '-' : '';
+    const diffSign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
+    return `<div class="cmp-row">
+      <span class="cmp-name">${r.name}</span>
+      <span class="cmp-val">${sign}${fmtNIS(r.app)}</span>
+      <span class="cmp-val">${sign}${fmtNIS(r.actual)}</span>
+      <span class="cmp-val ${diffCls}">${diffAbs < 0.5 ? '—' : diffSign + fmtNIS(diffAbs)}</span>
+    </div>`;
+  }).join('');
+}
+
+// ===== Payslip Entry Modal =====
+
+function openPayslipModal() {
+  const slip = loadPayslip(currentYear, currentMonth) || {};
+  const overlay = document.getElementById('payslipOverlay');
+
+  document.getElementById('psGross').value = slip.gross || '';
+  document.getElementById('psNet').value = slip.actualNet || '';
+  document.getElementById('psTax').value = slip.incomeTax || '';
+  document.getElementById('psNI').value = slip.ni || '';
+  document.getElementById('psPension').value = slip.pension || '';
+  document.getElementById('psStudy').value = slip.study || '';
+  document.getElementById('psCumTax').value = slip.cumulativeGrossTax || '';
+  document.getElementById('psCumStudy').value = slip.cumulativeGrossStudy || '';
+  document.getElementById('psMonthLabel').textContent = `${hebrewMonths[currentMonth]} ${currentYear}`;
+
+  overlay.style.display = 'flex';
+  requestAnimationFrame(() => overlay.classList.add('visible'));
+}
+
+function closePayslipModal() {
+  const overlay = document.getElementById('payslipOverlay');
+  overlay.classList.remove('visible');
+  setTimeout(() => { overlay.style.display = 'none'; }, 200);
+}
+
+function savePayslipModal() {
+  const g = parseFloat(document.getElementById('psGross').value);
+  if (isNaN(g) || g <= 0) { showToast('⚠️ הזן ברוטו בפועל'); return; }
+
+  const data = {
+    gross: g,
+    actualNet: parseFloat(document.getElementById('psNet').value) || 0,
+    incomeTax: parseFloat(document.getElementById('psTax').value) || 0,
+    ni: parseFloat(document.getElementById('psNI').value) || 0,
+    pension: parseFloat(document.getElementById('psPension').value) || 0,
+    study: parseFloat(document.getElementById('psStudy').value) || 0,
+    cumulativeGrossTax: parseFloat(document.getElementById('psCumTax').value) || 0,
+    cumulativeGrossStudy: parseFloat(document.getElementById('psCumStudy').value) || 0,
+  };
+
+  savePayslip(currentYear, currentMonth, data);
+  closePayslipModal();
+  render();
+  showToast('✅ תלוש נשמר');
 }
 
 // ===== Calendar =====

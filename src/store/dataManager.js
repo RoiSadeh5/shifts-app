@@ -27,6 +27,20 @@ function saveHistory(h) {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
 }
 
+function loadPayslip(year, month) {
+  const history = loadHistory();
+  const yearKey = String(year);
+  return (history[yearKey] && history[yearKey][month]) || null;
+}
+
+function savePayslip(year, month, data) {
+  const history = loadHistory();
+  const yearKey = String(year);
+  if (!history[yearKey]) history[yearKey] = {};
+  history[yearKey][month] = { ...(history[yearKey][month] || {}), ...data };
+  saveHistory(history);
+}
+
 function loadSettings() {
   try {
     const s = JSON.parse(localStorage.getItem(SETTINGS_KEY));

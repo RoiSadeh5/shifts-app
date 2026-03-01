@@ -52,6 +52,16 @@ function addShift() {
     datesToAdd = [dateVal];
   }
 
+  if (selectedType === 'vacation' || selectedType === 'sick') {
+    const leave = loadLeaveBalances();
+    const needed = datesToAdd.length;
+    const available = selectedType === 'vacation' ? leave.vacation : leave.sick;
+    if (available < needed) {
+      showToast('⚠️ אין מספיק ימי ' + (selectedType === 'vacation' ? 'חופש' : 'מחלה') + ' (נותרו ' + available + ')');
+      return;
+    }
+  }
+
   let startTime = null, endTime = null;
   if (selectedType === 'minus') {
     startTime = document.getElementById('startTime').value;

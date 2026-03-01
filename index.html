@@ -880,6 +880,106 @@
     .leave-item .leave-label { font-size: 10px; color: var(--text-dim); margin-top: 2px; font-weight: 500; display: block; }
     .leave-val.green { color: var(--green); }
     .leave-val.orange { color: var(--orange); }
+
+    /* Payslip comparison panel */
+    .comparison-panel {
+      background: var(--card);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .cmp-header-row {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr 1fr;
+      padding: 10px 14px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-dim);
+    }
+    .cmp-row {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr 1fr;
+      padding: 8px 14px;
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+      align-items: center;
+    }
+    .cmp-name { font-weight: 600; color: var(--text-secondary); }
+    .cmp-val { font-weight: 700; font-variant-numeric: tabular-nums; text-align: center; }
+    .cmp-val.green { color: var(--green); }
+    .cmp-val.red { color: var(--red); }
+
+    /* Payslip entry modal */
+    .ps-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .ps-overlay.visible { opacity: 1; }
+    .ps-box {
+      background: var(--card);
+      border: 1px solid var(--border-strong);
+      border-radius: 20px;
+      padding: 24px 20px 20px;
+      width: min(380px, 90vw);
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .ps-title { font-size: 17px; font-weight: 800; text-align: center; margin-bottom: 4px; }
+    .ps-subtitle { font-size: 12px; color: var(--text-dim); text-align: center; margin-bottom: 16px; }
+    .ps-field { margin-bottom: 10px; }
+    .ps-field label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px; font-weight: 600; }
+    .ps-field input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 15px;
+      font-family: 'Heebo', sans-serif;
+      color: var(--text);
+      outline: none;
+      direction: ltr;
+      text-align: right;
+    }
+    .ps-field input:focus { border-color: var(--accent); }
+    .ps-sep { font-size: 11px; color: var(--text-dim); font-weight: 700; margin: 14px 0 8px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .ps-btns { display: flex; gap: 10px; margin-top: 16px; }
+    .ps-btns button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+      font-family: 'Heebo', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .ps-cancel { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
+    .ps-save { background: linear-gradient(135deg, var(--accent), #4f46e5); color: #fff; border: none; }
+
+    .btn-payslip {
+      background: var(--accent-dim);
+      color: var(--accent-light);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-family: 'Heebo', sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-payslip:active { transform: scale(0.96); }
   </style>
 </head>
 <body>
@@ -894,6 +994,9 @@
       <button onclick="changeMonth(-1)">›</button>
       <span class="label" id="monthLabel"></span>
       <button onclick="changeMonth(1)">‹</button>
+    </div>
+    <div style="text-align:center;margin-bottom:14px;">
+      <button class="btn-payslip" onclick="openPayslipModal()">📋 הזנת תלוש בפועל</button>
     </div>
 
     <div class="dual-hero">
@@ -961,6 +1064,26 @@
       <div class="ded-body" id="empBody">
         <div class="ded-row"><span class="ded-name">פנסיה + פיצויים (12.5%)</span><span class="ded-val green" id="empPension">+₪0</span></div>
         <div class="ded-row"><span class="ded-name">קרן השתלמות (7.5%)</span><span class="ded-val green" id="empStudy">+₪0</span></div>
+      </div>
+    </div>
+
+    <!-- Payslip Comparison Panel -->
+    <div class="comparison-panel" id="comparisonPanel" style="display:none">
+      <div class="ded-header" onclick="document.getElementById('comparisonBody').parentElement.querySelector('.ded-body').classList.toggle('open')">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="ded-arrow" id="cmpArrow">▼</span>
+          <span class="ded-title" style="color:var(--accent-light)">השוואה לתלוש</span>
+        </div>
+        <span class="ded-total" style="color:var(--accent-light);font-size:12px">📋</span>
+      </div>
+      <div class="ded-body open">
+        <div class="cmp-header-row">
+          <span></span>
+          <span style="text-align:center">חישוב</span>
+          <span style="text-align:center">בפועל</span>
+          <span style="text-align:center">הפרש</span>
+        </div>
+        <div id="comparisonBody"></div>
       </div>
     </div>
 
@@ -1233,6 +1356,14 @@
         <div class="f106-row"><span class="f106-name">קרן השתלמות</span><span class="f106-amount green" id="f106EmpStudy">+₪0</span></div>
         <div class="f106-row total"><span class="f106-name">סה"כ הפרשות</span><span class="f106-amount green" id="f106EmpTotal">+₪0</span></div>
       </div>
+
+      <div class="f106-table" id="f106CumulativeSection" style="display:none">
+        <div class="f106-title">נתונים מצטברים (מתלושים)</div>
+        <div class="f106-row"><span class="f106-name">תלושים שהוזנו</span><span class="f106-amount" id="f106ManualCount">—</span></div>
+        <div class="f106-row"><span class="f106-name">ממוצע ברוטו חודשי</span><span class="f106-amount" id="f106AvgGross">—</span></div>
+        <div class="f106-row"><span class="f106-name">ברוטו מצטבר למס</span><span class="f106-amount" id="f106CumTax">—</span></div>
+        <div class="f106-row"><span class="f106-name">ברוטו מצטבר לקה"ש</span><span class="f106-amount" id="f106CumStudy">—</span></div>
+      </div>
     </div>
 
     <!-- Past Paychecks -->
@@ -1241,6 +1372,27 @@
         הזן נתוני תלושים מחודשים קודמים לחישוב שנתי מדויק
       </div>
       <div id="historyMonthsList"></div>
+    </div>
+  </div>
+
+  <!-- Payslip Entry Modal -->
+  <div class="ps-overlay" id="payslipOverlay" onclick="if(event.target===this)closePayslipModal()">
+    <div class="ps-box">
+      <div class="ps-title">הזנת תלוש בפועל</div>
+      <div class="ps-subtitle" id="psMonthLabel"></div>
+      <div class="ps-field"><label>ברוטו בפועל</label><input type="number" id="psGross" placeholder="0"></div>
+      <div class="ps-field"><label>נטו בפועל</label><input type="number" id="psNet" placeholder="0"></div>
+      <div class="ps-field"><label>מס הכנסה</label><input type="number" id="psTax" placeholder="0"></div>
+      <div class="ps-field"><label>ביטוח לאומי</label><input type="number" id="psNI" placeholder="0"></div>
+      <div class="ps-field"><label>פנסיה עובד</label><input type="number" id="psPension" placeholder="0"></div>
+      <div class="ps-field"><label>קרן השתלמות עובד</label><input type="number" id="psStudy" placeholder="0"></div>
+      <div class="ps-sep">נתונים מצטברים (מהתלוש)</div>
+      <div class="ps-field"><label>ברוטו מצטבר למס (שנתי)</label><input type="number" id="psCumTax" placeholder="0"></div>
+      <div class="ps-field"><label>ברוטו מצטבר לקה"ש (שנתי)</label><input type="number" id="psCumStudy" placeholder="0"></div>
+      <div class="ps-btns">
+        <button class="ps-cancel" onclick="closePayslipModal()">ביטול</button>
+        <button class="ps-save" onclick="savePayslipModal()">שמור תלוש</button>
+      </div>
     </div>
   </div>
 
