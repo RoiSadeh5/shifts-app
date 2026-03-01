@@ -52,9 +52,18 @@ function render() {
     const slipHealth = slip.health || slip.healthInsurance || 0;
     const slipPension = slip.pension || 0;
     const slipStudy = slip.study || 0;
-    displayNet = (slip.actualNet && slip.actualNet > 0)
-      ? slip.actualNet
-      : slip.gross - (slipTax + slipNI + slipHealth + slipPension + slipStudy);
+    const slipDedSum = slipTax + slipNI + slipHealth + slipPension + slipStudy;
+
+    if (slip.actualNet && slip.actualNet > 0) {
+      displayNet = slip.actualNet;
+    } else if (slipDedSum > 0) {
+      displayNet = slip.gross - slipDedSum;
+    } else {
+      const autoDed = calcDeductions(slip.gross);
+      const autoTax = calcIncomeTax(slip.gross);
+      const autoTaxAmt = dedSettings.incomeTax ? autoTax.finalTax : 0;
+      displayNet = slip.gross - autoDed.employee.total - autoTaxAmt;
+    }
     displayGross = slip.gross;
     netSubText = 'לפי תלוש בפועל';
   }
@@ -107,22 +116,28 @@ function render() {
 
   const hasGross = totalGross > 0;
   const hasAnyData = hasGross || hasActualSlip;
-  document.getElementById('deductionsPanel').style.display = hasGross ? '' : 'none';
-  document.getElementById('employerPanel').style.display = hasGross ? '' : 'none';
+  const simple = dedSettings.simpleMode;
+
+  document.getElementById('deductionsPanel').style.display = (hasGross && !simple) ? '' : 'none';
+  document.getElementById('employerPanel').style.display = (hasGross && !simple) ? '' : 'none';
   document.getElementById('shareBtn').style.display = hasAnyData ? '' : 'none';
 
   // ===== Annual Forecast =====
-  renderAnnualForecast(totalGross > 0 ? totalGross : (hasActualSlip ? displayGross : 0));
+  const forecastCard = document.getElementById('forecastCard');
+  if (simple && forecastCard) forecastCard.style.display = 'none';
+  else renderAnnualForecast(totalGross > 0 ? totalGross : (hasActualSlip ? displayGross : 0));
 
   // ===== Payslip Comparison =====
-  renderPayslipComparison(totalGross, incomeTaxAmount, ded, netAfterAll);
+  const compPanel = document.getElementById('comparisonPanel');
+  if (simple && compPanel) compPanel.style.display = 'none';
+  else renderPayslipComparison(totalGross, incomeTaxAmount, ded, netAfterAll);
 
   // Type breakdown + meal allowance info + fixed additions
   const bdList = document.getElementById('breakdownList');
   const bdSection = document.getElementById('breakdownSection');
   const hasBreakdown = Object.keys(typeTotals).length > 0 || fixedAdd.total > 0;
 
-  if (!hasBreakdown) {
+  if (!hasBreakdown || simple) {
     bdSection.classList.add('hidden');
   } else {
     bdSection.classList.remove('hidden');
@@ -161,6 +176,12 @@ function render() {
 
     bdList.innerHTML = bdHtml;
   }
+
+  // Hide stats & leave in simple mode
+  const statsGrid = document.getElementById('statsGrid');
+  const leaveEl = document.getElementById('leaveBalance');
+  if (statsGrid) statsGrid.style.display = simple ? 'none' : '';
+  if (leaveEl) leaveEl.style.display = simple ? 'none' : '';
 
   // Leave balance
   const leave = loadLeaveBalances();
@@ -270,9 +291,18 @@ function renderPayslipComparison(appGross, appTax, appDed, appNet) {
   const slipHealth = slip.health || slip.healthInsurance || 0;
   const slipPension = slip.pension || 0;
   const slipStudy = slip.study || 0;
-  const actualNet = (slip.actualNet && slip.actualNet > 0)
-    ? slip.actualNet
-    : slip.gross - (slipTax + slipNI + slipHealth + slipPension + slipStudy);
+  const slipDedSum = slipTax + slipNI + slipHealth + slipPension + slipStudy;
+  let actualNet;
+  if (slip.actualNet && slip.actualNet > 0) {
+    actualNet = slip.actualNet;
+  } else if (slipDedSum > 0) {
+    actualNet = slip.gross - slipDedSum;
+  } else {
+    const autoDed = calcDeductions(slip.gross);
+    const autoTax = calcIncomeTax(slip.gross);
+    const autoTaxAmt = dedSettings.incomeTax ? autoTax.finalTax : 0;
+    actualNet = slip.gross - autoDed.employee.total - autoTaxAmt;
+  }
 
   const rows = [
     { name: 'ברוטו', app: appGross, actual: slip.gross },
@@ -346,14 +376,34 @@ function savePayslipModal() {
   const g = parseFloat(document.getElementById('psGross').value);
   if (isNaN(g) || g <= 0) { showToast('⚠️ הזן ברוטו בפועל'); return; }
 
+  const enteredNet = parseFloat(document.getElementById('psNet').value) || 0;
+  const enteredTax = parseFloat(document.getElementById('psTax').value) || 0;
+  const enteredNI = parseFloat(document.getElementById('psNI').value) || 0;
+  const enteredHealth = parseFloat(document.getElementById('psHealth').value) || 0;
+  const enteredPension = parseFloat(document.getElementById('psPension').value) || 0;
+  const enteredStudy = parseFloat(document.getElementById('psStudy').value) || 0;
+
+  let finalNet = enteredNet;
+  if (finalNet <= 0) {
+    const sumDeductions = enteredTax + enteredNI + enteredHealth + enteredPension + enteredStudy;
+    if (sumDeductions > 0) {
+      finalNet = g - sumDeductions;
+    } else {
+      const autoDed = calcDeductions(g);
+      const autoTax = calcIncomeTax(g);
+      const autoTaxAmt = dedSettings.incomeTax ? autoTax.finalTax : 0;
+      finalNet = g - autoDed.employee.total - autoTaxAmt;
+    }
+  }
+
   const data = {
     gross: g,
-    actualNet: parseFloat(document.getElementById('psNet').value) || 0,
-    incomeTax: parseFloat(document.getElementById('psTax').value) || 0,
-    ni: parseFloat(document.getElementById('psNI').value) || 0,
-    health: parseFloat(document.getElementById('psHealth').value) || 0,
-    pension: parseFloat(document.getElementById('psPension').value) || 0,
-    study: parseFloat(document.getElementById('psStudy').value) || 0,
+    actualNet: Math.round(finalNet * 100) / 100,
+    incomeTax: enteredTax,
+    ni: enteredNI,
+    health: enteredHealth,
+    pension: enteredPension,
+    study: enteredStudy,
     cumulativeGrossTax: parseFloat(document.getElementById('psCumTax').value) || 0,
     cumulativeGrossStudy: parseFloat(document.getElementById('psCumStudy').value) || 0,
   };
