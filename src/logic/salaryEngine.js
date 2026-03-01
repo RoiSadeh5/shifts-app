@@ -166,9 +166,9 @@
     }
 
     if (t.study) {
-      const base = Math.min(grossMonthly, C.STUDY_CEILING);
-      ded.study = base * C.STUDY_EMPLOYEE;
-      emp.study = base * C.STUDY_EMPLOYER;
+      const studyBase = t.studyFullSalary ? grossMonthly : Math.min(grossMonthly, C.STUDY_CEILING);
+      ded.study = studyBase * C.STUDY_EMPLOYEE;
+      emp.study = studyBase * C.STUDY_EMPLOYER;
     }
 
     if (t.ni) {

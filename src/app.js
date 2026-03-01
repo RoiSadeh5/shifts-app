@@ -9,7 +9,7 @@ var SalaryEngine = window.SalaryEngine;
 
 var userRates = { ...SalaryEngine.DEFAULTS };
 var creditPoints = 2.25;
-var dedSettings = { pension: true, study: true, ni: true, incomeTax: true };
+var dedSettings = { pension: true, study: true, ni: true, incomeTax: true, studyFullSalary: false };
 var STUDY_CEILING = SalaryEngine.DEDUCTION_CONSTANTS.STUDY_CEILING;
 
 function calculateShiftPay(shift) {
@@ -127,6 +127,7 @@ function init() {
   document.getElementById('toggleStudy').classList.toggle('on', dedSettings.study);
   document.getElementById('toggleNI').classList.toggle('on', dedSettings.ni);
   document.getElementById('toggleIncomeTax').classList.toggle('on', dedSettings.incomeTax);
+  document.getElementById('toggleStudyFullSalary').classList.toggle('on', dedSettings.studyFullSalary);
 
   const leave = loadLeaveBalances();
   document.getElementById('settingVacBal').value = leave.vacation;
