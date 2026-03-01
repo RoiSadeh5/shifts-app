@@ -65,17 +65,19 @@ function render() {
 
   document.getElementById('dedPension').textContent = `-${fmtNIS(ded.employee.pension)}`;
   document.getElementById('dedStudy').textContent = `-${fmtNIS(ded.employee.study)}`;
-  document.getElementById('dedNI').textContent = `-${fmtNIS(ded.employee.ni)}`;
+  document.getElementById('dedNI').textContent = `-${fmtNIS(ded.employee.nationalInsurance || ded.employee.ni)}`;
+  document.getElementById('dedHealth').textContent = `-${fmtNIS(ded.employee.healthInsurance || 0)}`;
 
   document.getElementById('studyCap').style.display = totalGross > STUDY_CEILING ? '' : 'none';
 
+  const niTierRow = document.getElementById('niTierRow');
   const niDetail = document.getElementById('niTierDetail');
   if (ded.employee.ni > 0) {
-    niDetail.style.display = '';
-    document.getElementById('niTier1').textContent = `-${fmtNIS(ded.employee.niTier1)}`;
-    document.getElementById('niTier2').textContent = ded.employee.niTier2 > 0 ? `-${fmtNIS(ded.employee.niTier2)}` : '₪0';
+    niTierRow.style.display = '';
+    document.getElementById('niTier1').textContent = `-${fmtNIS(ded.employee.nationalInsurance || ded.employee.niTier1 + ded.employee.niTier2)}`;
+    document.getElementById('niTier2').textContent = `-${fmtNIS(ded.employee.healthInsurance || 0)}`;
   } else {
-    niDetail.style.display = 'none';
+    niTierRow.style.display = 'none';
   }
 
   document.getElementById('empTotal').textContent = `+${fmtNIS(ded.employer.total)}`;
@@ -86,6 +88,9 @@ function render() {
   document.getElementById('deductionsPanel').style.display = hasGross ? '' : 'none';
   document.getElementById('employerPanel').style.display = hasGross ? '' : 'none';
   document.getElementById('shareBtn').style.display = hasGross ? '' : 'none';
+
+  // ===== Annual Forecast =====
+  renderAnnualForecast(totalGross);
 
   // ===== Payslip Comparison =====
   renderPayslipComparison(totalGross, incomeTaxAmount, ded, netAfterAll);
@@ -171,6 +176,31 @@ function render() {
   }).join('');
 }
 
+// ===== Annual Forecast =====
+
+function renderAnnualForecast(currentMonthGross) {
+  const card = document.getElementById('forecastCard');
+  if (!card) return;
+
+  const monthlyData = typeof buildAnnualMonthlyData === 'function' ? buildAnnualMonthlyData(currentYear) : [];
+  const monthsWithGross = monthlyData.filter(m => m.gross > 0);
+
+  let projectedMonthly = currentMonthGross;
+  if (projectedMonthly <= 0 && monthsWithGross.length > 0) {
+    projectedMonthly = monthsWithGross.reduce((s, m) => s + m.gross, 0) / monthsWithGross.length;
+  }
+
+  const pred = SalaryEngine.predictAnnualTax(monthlyData, projectedMonthly, creditPoints, dedSettings.taxYear2025);
+
+  if (pred.estimatedAnnualGross > 0) {
+    card.style.display = '';
+    document.getElementById('forecastGross').textContent = fmtNIS(pred.estimatedAnnualGross);
+    document.getElementById('forecastTax').textContent = '-' + fmtNIS(pred.predictedAnnualTax);
+  } else {
+    card.style.display = 'none';
+  }
+}
+
 // ===== Payslip Comparison =====
 
 function renderPayslipComparison(appGross, appTax, appDed, appNet) {
@@ -187,7 +217,8 @@ function renderPayslipComparison(appGross, appTax, appDed, appNet) {
   const rows = [
     { name: 'ברוטו', app: appGross, actual: slip.gross },
     { name: 'מס הכנסה', app: appTax, actual: slip.incomeTax || 0, negative: true },
-    { name: 'ביטוח לאומי', app: appDed.employee.ni, actual: slip.ni || 0, negative: true },
+    { name: 'ביטוח לאומי', app: appDed.employee.nationalInsurance || appDed.employee.ni, actual: slip.ni || slip.nationalInsurance || 0, negative: true },
+    { name: 'ביטוח בריאות', app: appDed.employee.healthInsurance || 0, actual: slip.health || slip.healthInsurance || 0, negative: true },
     { name: 'פנסיה', app: appDed.employee.pension, actual: slip.pension || 0, negative: true },
     { name: 'קרן השתלמות', app: appDed.employee.study, actual: slip.study || 0, negative: true },
     { name: 'נטו', app: appNet, actual: slip.actualNet || 0 },
@@ -218,7 +249,8 @@ function openPayslipModal() {
   document.getElementById('psGross').value = slip.gross || '';
   document.getElementById('psNet').value = slip.actualNet || '';
   document.getElementById('psTax').value = slip.incomeTax || '';
-  document.getElementById('psNI').value = slip.ni || '';
+  document.getElementById('psNI').value = slip.ni || slip.nationalInsurance || '';
+  document.getElementById('psHealth').value = slip.health || slip.healthInsurance || '';
   document.getElementById('psPension').value = slip.pension || '';
   document.getElementById('psStudy').value = slip.study || '';
   document.getElementById('psCumTax').value = slip.cumulativeGrossTax || '';
@@ -241,7 +273,8 @@ function recalcPayslipFromGross() {
   const ded = calcDeductions(g);
   const tax = calcIncomeTax(g);
   document.getElementById('psTax').value = dedSettings.incomeTax ? Math.round(tax.finalTax * 100) / 100 : 0;
-  document.getElementById('psNI').value = Math.round(ded.employee.ni * 100) / 100;
+  document.getElementById('psNI').value = Math.round((ded.employee.nationalInsurance || ded.employee.ni) * 100) / 100;
+  document.getElementById('psHealth').value = Math.round((ded.employee.healthInsurance || 0) * 100) / 100;
   document.getElementById('psPension').value = Math.round(ded.employee.pension * 100) / 100;
   document.getElementById('psStudy').value = Math.round(ded.employee.study * 100) / 100;
   const net = g - (dedSettings.incomeTax ? tax.finalTax : 0) - ded.employee.total;
@@ -258,6 +291,7 @@ function savePayslipModal() {
     actualNet: parseFloat(document.getElementById('psNet').value) || 0,
     incomeTax: parseFloat(document.getElementById('psTax').value) || 0,
     ni: parseFloat(document.getElementById('psNI').value) || 0,
+    health: parseFloat(document.getElementById('psHealth').value) || 0,
     pension: parseFloat(document.getElementById('psPension').value) || 0,
     study: parseFloat(document.getElementById('psStudy').value) || 0,
     cumulativeGrossTax: parseFloat(document.getElementById('psCumTax').value) || 0,
@@ -339,6 +373,7 @@ function shareWhatsApp() {
     net: netAfterAll,
     mealAllowance: totalMeal,
     fixedAdditions: fixedAdd.total,
+    healthInsurance: ded.employee.healthInsurance || 0,
   });
 
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');

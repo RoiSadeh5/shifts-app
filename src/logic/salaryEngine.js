@@ -22,8 +22,10 @@
   const DEDUCTION_CONSTANTS = {
     NI_LOWER_CEILING: 7703,
     NI_UPPER_CEILING: 51910,
-    NI_LOWER_RATE: 0.0427,
-    NI_UPPER_RATE: 0.1217,
+    NI_LOWER_RATE: 0.004,      // NI: 0.4%
+    NI_UPPER_RATE: 0.07,       // NI: 7%
+    HEALTH_LOWER_RATE: 0.031,  // Health: 3.1%
+    HEALTH_UPPER_RATE: 0.05,   // Health: 5%
     PENSION_EMPLOYEE: 0.06,
     PENSION_EMPLOYER: 0.125,
     STUDY_EMPLOYEE: 0.025,
@@ -35,8 +37,10 @@
   const DEDUCTION_CONSTANTS_2025 = {
     NI_LOWER_CEILING: 7522,
     NI_UPPER_CEILING: 50695,
-    NI_LOWER_RATE: 0.0427,
-    NI_UPPER_RATE: 0.1216,
+    NI_LOWER_RATE: 0.004,
+    NI_UPPER_RATE: 0.07,
+    HEALTH_LOWER_RATE: 0.031,
+    HEALTH_UPPER_RATE: 0.05,
     PENSION_EMPLOYEE: 0.06,
     PENSION_EMPLOYER: 0.125,
     STUDY_EMPLOYEE: 0.025,
@@ -169,9 +173,9 @@
   function calcDeductions(grossMonthly, toggles) {
     const C = (toggles && toggles.taxYear2025) ? DEDUCTION_CONSTANTS_2025 : DEDUCTION_CONSTANTS;
     const t = { pension: true, study: true, ni: true, ...toggles };
-    const ded = { pension: 0, study: 0, ni: 0 };
+    const ded = { pension: 0, study: 0, ni: 0, nationalInsurance: 0, healthInsurance: 0 };
     const emp = { pension: 0, study: 0 };
-    let niTier1 = 0, niTier2 = 0;
+    let niTier1 = 0, niTier2 = 0, healthTier1 = 0, healthTier2 = 0;
 
     if (t.pension) {
       ded.pension = grossMonthly * C.PENSION_EMPLOYEE;
@@ -187,12 +191,19 @@
     if (t.ni) {
       if (grossMonthly <= C.NI_LOWER_CEILING) {
         niTier1 = grossMonthly * C.NI_LOWER_RATE;
+        healthTier1 = grossMonthly * (C.HEALTH_LOWER_RATE || 0.031);
       } else {
         niTier1 = C.NI_LOWER_CEILING * C.NI_LOWER_RATE;
+        healthTier1 = C.NI_LOWER_CEILING * (C.HEALTH_LOWER_RATE || 0.031);
         const upper = Math.min(grossMonthly, C.NI_UPPER_CEILING) - C.NI_LOWER_CEILING;
-        if (upper > 0) niTier2 = upper * C.NI_UPPER_RATE;
+        if (upper > 0) {
+          niTier2 = upper * C.NI_UPPER_RATE;
+          healthTier2 = upper * (C.HEALTH_UPPER_RATE || 0.05);
+        }
       }
-      ded.ni = niTier1 + niTier2;
+      ded.nationalInsurance = niTier1 + niTier2;
+      ded.healthInsurance = healthTier1 + healthTier2;
+      ded.ni = ded.nationalInsurance + ded.healthInsurance;
     }
 
     const totalEmployee = ded.pension + ded.study + ded.ni;
@@ -204,6 +215,8 @@
         pension: round(ded.pension),
         study: round(ded.study),
         ni: round(ded.ni),
+        nationalInsurance: round(ded.nationalInsurance),
+        healthInsurance: round(ded.healthInsurance),
         niTier1: round(niTier1),
         niTier2: round(niTier2),
         total: round(totalEmployee),
@@ -241,6 +254,16 @@
 
   const CREDIT_POINT_VALUE = 242;
   const CREDIT_POINT_VALUE_2025 = 242;
+
+  // Annual brackets (monthly * 12) for tax prediction
+  const TAX_BRACKETS_ANNUAL = TAX_BRACKETS_MONTHLY.map(b => ({
+    ceiling: b.ceiling === Infinity ? Infinity : b.ceiling * 12,
+    rate: b.rate,
+  }));
+  const TAX_BRACKETS_ANNUAL_2025 = TAX_BRACKETS_MONTHLY_2025.map(b => ({
+    ceiling: b.ceiling === Infinity ? Infinity : b.ceiling * 12,
+    rate: b.rate,
+  }));
 
   /**
    * Progressive income tax on monthly gross.
@@ -283,6 +306,52 @@
       finalTax: round(finalTax),
       effectiveRate: monthlyGross > 0 ? round(finalTax / monthlyGross * 100) : 0,
       tiers,
+    };
+  }
+
+  /**
+   * Predict annual tax based on YTD actual gross + projected for remaining months.
+   * @param {{ month: number, gross: number }[]} monthlyData - array of 12 months with gross (0 = no data)
+   * @param {number} projectedMonthlyGross - projected gross per remaining month
+   * @param {number} creditPoints
+   * @param {boolean} use2025
+   * @returns {{ estimatedAnnualGross, predictedAnnualTax, monthsWithData }}
+   */
+  function predictAnnualTax(monthlyData, projectedMonthlyGross, creditPoints, use2025) {
+    const brackets = use2025 ? TAX_BRACKETS_ANNUAL_2025 : TAX_BRACKETS_ANNUAL;
+    const creditValue = use2025 ? CREDIT_POINT_VALUE_2025 : CREDIT_POINT_VALUE;
+
+    let totalYTD = 0;
+    let monthsWithData = 0;
+    for (let m = 0; m < 12; m++) {
+      const gross = (monthlyData[m] && monthlyData[m].gross) ? monthlyData[m].gross : 0;
+      if (gross > 0) {
+        totalYTD += gross;
+        monthsWithData++;
+      }
+    }
+    const remainingMonths = 12 - monthsWithData;
+    const estimatedAnnualGross = totalYTD + projectedMonthlyGross * remainingMonths;
+
+    let remaining = estimatedAnnualGross;
+    let grossTax = 0;
+    let prev = 0;
+    for (const bracket of brackets) {
+      if (remaining <= 0) break;
+      const width = bracket.ceiling === Infinity ? remaining : Math.min(remaining, bracket.ceiling - prev);
+      grossTax += width * bracket.rate;
+      remaining -= width;
+      prev = bracket.ceiling;
+    }
+
+    const annualCredit = creditPoints * 12 * creditValue;
+    const predictedAnnualTax = Math.max(0, grossTax - annualCredit);
+    const round = v => Math.round(v * 100) / 100;
+
+    return {
+      estimatedAnnualGross: round(estimatedAnnualGross),
+      predictedAnnualTax: round(predictedAnnualTax),
+      monthsWithData,
     };
   }
 
@@ -364,6 +433,7 @@
     if (data.mealAllowance > 0) lines.push('אש״ל: ' + fmt(data.mealAllowance));
     if (data.fixedAdditions > 0) lines.push('תוספות קבועות: ' + fmt(data.fixedAdditions));
     lines.push('ברוטו: ' + fmt(data.gross));
+    if (data.healthInsurance > 0) lines.push('ביטוח בריאות: ' + fmt(data.healthInsurance));
     lines.push('נטו משוער: ' + fmt(data.net));
     lines.push('נוצר באהבה על ידי Roi Sadeh');
     return lines.join('\n');
@@ -382,6 +452,7 @@
   exports.calcDeductions = calcDeductions;
   exports.calcIncomeTax = calcIncomeTax;
   exports.calcAnnualSummary = calcAnnualSummary;
+  exports.predictAnnualTax = predictAnnualTax;
   exports.calculateFixedMonthlyAdditions = calculateFixedMonthlyAdditions;
   exports.generateShareText = generateShareText;
 

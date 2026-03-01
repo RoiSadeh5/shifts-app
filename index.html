@@ -988,6 +988,20 @@
       transition: all 0.15s;
     }
     .btn-payslip:active { transform: scale(0.96); }
+
+    /* Annual Forecast Card */
+    .forecast-card {
+      background: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(99,102,241,0.14) 100%);
+      border: 1px solid rgba(99,102,241,0.25);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .forecast-title { font-size: 14px; font-weight: 800; color: var(--accent-light); margin-bottom: 10px; }
+    .forecast-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .forecast-row:last-child { margin-bottom: 0; }
+    .forecast-label { font-size: 12px; color: var(--text-secondary); }
+    .forecast-val { font-size: 15px; font-weight: 800; direction: ltr; }
   </style>
 </head>
 <body>
@@ -1047,14 +1061,12 @@
           <span class="ded-name">קרן השתלמות (2.5%) <span id="studyCap" style="font-size:10px;color:var(--orange);display:none;">תקרה!</span></span>
           <span class="ded-val red" id="dedStudy">-₪0</span>
         </div>
-        <div class="ded-row" style="flex-direction:column;align-items:stretch;gap:4px">
-          <div style="display:flex;justify-content:space-between">
-            <span class="ded-name">ביטוח לאומי + בריאות</span>
-            <span class="ded-val red" id="dedNI">-₪0</span>
-          </div>
-          <div id="niTierDetail" style="font-size:11px;color:var(--text-dim);display:none;padding-top:2px;">
-            <div style="display:flex;justify-content:space-between"><span>שכבה ראשונה (4.27% עד 7,703)</span><span id="niTier1">₪0</span></div>
-            <div style="display:flex;justify-content:space-between"><span>שכבה שנייה (12.17% מעל)</span><span id="niTier2">₪0</span></div>
+        <div class="ded-row"><span class="ded-name">ביטוח לאומי</span><span class="ded-val red" id="dedNI">-₪0</span></div>
+        <div class="ded-row"><span class="ded-name">ביטוח בריאות</span><span class="ded-val red" id="dedHealth">-₪0</span></div>
+        <div class="ded-row" id="niTierRow" style="flex-direction:column;align-items:stretch;gap:4px;display:none">
+          <div id="niTierDetail" style="font-size:11px;color:var(--text-dim);padding-top:2px;">
+            <div style="display:flex;justify-content:space-between"><span>לאומי: 0.4% עד תקרה · 7% מעל</span><span id="niTier1">₪0</span></div>
+            <div style="display:flex;justify-content:space-between"><span>בריאות: 3.1% עד תקרה · 5% מעל</span><span id="niTier2">₪0</span></div>
           </div>
         </div>
       </div>
@@ -1072,6 +1084,19 @@
       <div class="ded-body" id="empBody">
         <div class="ded-row"><span class="ded-name">פנסיה + פיצויים (12.5%)</span><span class="ded-val green" id="empPension">+₪0</span></div>
         <div class="ded-row"><span class="ded-name">קרן השתלמות (7.5%)</span><span class="ded-val green" id="empStudy">+₪0</span></div>
+      </div>
+    </div>
+
+    <!-- Annual Forecast Card -->
+    <div class="forecast-card" id="forecastCard" style="display:none">
+      <div class="forecast-title">תחזית שנתית</div>
+      <div class="forecast-row">
+        <span class="forecast-label">ברוטו שנתי משוער</span>
+        <span class="forecast-val" id="forecastGross">₪0</span>
+      </div>
+      <div class="forecast-row">
+        <span class="forecast-label">מס שנתי חוזה</span>
+        <span class="forecast-val red" id="forecastTax">-₪0</span>
       </div>
     </div>
 
@@ -1299,7 +1324,7 @@
       <div class="setting-toggle">
         <div class="st-right">
           <span class="st-label">ביטוח לאומי + בריאות</span>
-          <span class="st-desc">4.27% עד 7,703 ₪ · 12.17% מעל</span>
+          <span class="st-desc">לאומי 0.4%+7% · בריאות 3.1%+5%</span>
         </div>
         <div class="toggle on" id="toggleNI" onclick="toggleDedSetting('ni')"></div>
       </div>
@@ -1399,6 +1424,7 @@
       <div class="ps-field"><label>נטו בפועל</label><input type="number" id="psNet" placeholder="0" inputmode="decimal" step="0.01" min="0"></div>
       <div class="ps-field"><label>מס הכנסה</label><input type="number" id="psTax" placeholder="0" inputmode="decimal" step="0.01" min="0"></div>
       <div class="ps-field"><label>ביטוח לאומי</label><input type="number" id="psNI" placeholder="0" inputmode="decimal" step="0.01" min="0"></div>
+      <div class="ps-field"><label>ביטוח בריאות</label><input type="number" id="psHealth" placeholder="0" inputmode="decimal" step="0.01" min="0"></div>
       <div class="ps-field"><label>פנסיה עובד</label><input type="number" id="psPension" placeholder="0" inputmode="decimal" step="0.01" min="0"></div>
       <div class="ps-field"><label>קרן השתלמות עובד</label><input type="number" id="psStudy" placeholder="0" inputmode="decimal" step="0.01" min="0"></div>
       <div class="ps-sep">נתונים מצטברים (מהתלוש)</div>
