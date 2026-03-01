@@ -84,32 +84,46 @@ function renderAnnual() {
   // Cumulative data from actual payslips – only show when we have payslip entries
   const cumSection = document.getElementById('f106CumulativeSection');
   if (cumSection) {
+    const yearKey = String(annualYear);
+    const history = loadHistory();
+    const yearHist = history[yearKey] || {};
+
+    // Year filter: ensure we pull from the year being viewed (annualYear)
+    let latestMonthFound = -1;
+    let taxValue = 0;
+    let studyValue = 0;
+
     if (manualMonths.length === 0) {
       cumSection.style.display = 'none';
     } else {
-      const history = loadHistory();
-      const yearHist = history[String(annualYear)] || {};
-
-      // Find latest month index with actual payslip data (gross from slip)
-      let latestMonthIdx = -1;
+      // Latest data hunt: scan from month 11 backwards to 0; first month with gross > 0 wins
       for (let i = 11; i >= 0; i--) {
         const hist = yearHist[i] || {};
-        if (hist.gross > 0) {
-          latestMonthIdx = i;
+        const actualGross = hist.gross || 0;
+        if (actualGross > 0) {
+          latestMonthFound = i;
+          taxValue = hist.cumulativeGrossTax || 0;
+          studyValue = hist.cumulativeGrossStudy || 0;
           break;
         }
       }
 
-      const latestHist = latestMonthIdx >= 0 ? (yearHist[latestMonthIdx] || {}) : {};
-      const latestCumTax = latestHist.cumulativeGrossTax || 0;
-      const latestCumStudy = latestHist.cumulativeGrossStudy || 0;
+      console.log('Summary Debug:', {
+        annualYear,
+        yearKey,
+        latestMonthFound,
+        taxValue,
+        studyValue,
+        manualCount: manualMonths.length,
+        yearHistKeys: Object.keys(yearHist),
+      });
 
       const avgGross = manualMonths.reduce((s, m) => s + m.gross, 0) / manualMonths.length;
 
-      cumSection.style.display = '';
+      cumSection.style.display = 'block';
       document.getElementById('f106AvgGross').textContent = fmtNIS(avgGross);
-      document.getElementById('f106CumTax').textContent = latestCumTax > 0 ? fmtNIS(latestCumTax) : '—';
-      document.getElementById('f106CumStudy').textContent = latestCumStudy > 0 ? fmtNIS(latestCumStudy) : '—';
+      document.getElementById('f106CumTax').textContent = taxValue > 0 ? fmtNIS(taxValue) : '—';
+      document.getElementById('f106CumStudy').textContent = studyValue > 0 ? fmtNIS(studyValue) : '—';
       document.getElementById('f106ManualCount').textContent = manualMonths.length + ' תלושים';
     }
   }

@@ -318,6 +318,7 @@ function savePayslipModal() {
   savePayslip(currentYear, currentMonth, data);
   closePayslipModal();
   render();
+  if (typeof renderAnnual === 'function') renderAnnual();
   showToast('✅ תלוש נשמר');
 }
 
