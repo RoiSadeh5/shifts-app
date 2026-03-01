@@ -1002,9 +1002,47 @@
     .forecast-row:last-child { margin-bottom: 0; }
     .forecast-label { font-size: 12px; color: var(--text-secondary); }
     .forecast-val { font-size: 15px; font-weight: 800; direction: ltr; }
+
+    /* Pull-to-refresh indicator */
+    .ptr-indicator {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translate(-50%, -100%);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0 0 16px 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: transform 0.25s ease;
+    }
+    .ptr-indicator.visible { transform: translate(-50%, 0); }
+    .ptr-spinner {
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: ptr-spin 0.7s linear infinite;
+    }
+    @keyframes ptr-spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
+
+  <!-- Pull-to-refresh indicator (hidden by default) -->
+  <div class="ptr-indicator" id="ptrIndicator" aria-hidden="true">
+    <div class="ptr-spinner"></div>
+    <span>מרענן...</span>
+  </div>
 
   <div class="header">
     <h1 id="pageTitle">שכ״ש</h1>
@@ -1480,6 +1518,68 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js');
     }
+
+    // Pull-to-refresh: only when scroll at top, minimal interference with normal scroll
+    (function() {
+      var PTR_THRESHOLD = 55;
+      var ptrStartY = 0;
+      var ptrArmed = false;
+      var ptrIndicator = document.getElementById('ptrIndicator');
+
+      function getScrollTop() {
+        return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      }
+
+      function runRefresh() {
+        if (navigator.vibrate) navigator.vibrate(10);
+        ptrIndicator.classList.add('visible');
+        ptrIndicator.setAttribute('aria-hidden', 'false');
+
+        if (typeof loadHistory === 'function' && typeof saveHistory === 'function') {
+          try { saveHistory(loadHistory()); } catch (err) {}
+        }
+        if (typeof loadSettings === 'function') loadSettings();
+
+        if (document.getElementById('pageDashboard').classList.contains('active')) {
+          if (typeof recalcAll === 'function') recalcAll();
+          if (typeof renderCalendar === 'function') renderCalendar();
+        } else if (document.getElementById('pageAnnual').classList.contains('active')) {
+          if (typeof renderAnnual === 'function') renderAnnual();
+        } else if (document.getElementById('pageCalendar').classList.contains('active')) {
+          if (typeof renderCalendar === 'function') renderCalendar();
+        }
+
+        setTimeout(function() {
+          ptrIndicator.classList.remove('visible');
+          ptrIndicator.setAttribute('aria-hidden', 'true');
+        }, 400);
+      }
+
+      document.body.addEventListener('touchstart', function(e) {
+        if (e.touches.length !== 1) return;
+        var scrollTop = getScrollTop();
+        ptrArmed = scrollTop === 0;
+        ptrStartY = e.touches[0].clientY;
+      }, { passive: true });
+
+      document.body.addEventListener('touchmove', function(e) {
+        if (!ptrArmed || e.touches.length !== 1) return;
+        // Don't preventDefault – allow normal scrolling; we only react on touchend
+      }, { passive: true });
+
+      document.body.addEventListener('touchend', function(e) {
+        if (!ptrArmed || e.changedTouches.length !== 1) {
+          ptrArmed = false;
+          return;
+        }
+        var endY = e.changedTouches[0].clientY;
+        var pullDistance = endY - ptrStartY;
+        ptrArmed = false;
+        if (getScrollTop() === 0 && pullDistance >= PTR_THRESHOLD) {
+          runRefresh();
+        }
+      }, { passive: true });
+    })();
   </script>
 </body>
 </html>
