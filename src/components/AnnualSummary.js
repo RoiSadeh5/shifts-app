@@ -124,11 +124,11 @@ function renderHistoryMonths(monthlyData) {
         </div>
         <div class="hm-body" id="hmBody${idx}">
           <div class="hm-fields">
-            <div class="hm-field"><label>ברוטו חודשי</label><input type="number" value="${m.source === 'manual' ? m.gross : ''}" placeholder="${m.source === 'auto' ? Math.round(m.gross) : '0'}" onchange="saveHistoryField(${idx},'gross',this.value)"></div>
-            <div class="hm-field"><label>מס הכנסה ששולם</label><input type="number" value="${m.source === 'manual' ? m.incomeTax : ''}" placeholder="${m.source === 'auto' ? Math.round(m.incomeTax) : '0'}" onchange="saveHistoryField(${idx},'incomeTax',this.value)"></div>
-            <div class="hm-field"><label>ביטוח לאומי ששולם</label><input type="number" value="${m.source === 'manual' ? m.ni : ''}" placeholder="${m.source === 'auto' ? Math.round(m.ni) : '0'}" onchange="saveHistoryField(${idx},'ni',this.value)"></div>
-            <div class="hm-field"><label>פנסיה (עובד)</label><input type="number" value="${m.source === 'manual' ? m.pension : ''}" placeholder="${m.source === 'auto' ? Math.round(m.pension) : '0'}" onchange="saveHistoryField(${idx},'pension',this.value)"></div>
-            <div class="hm-field"><label>קרן השתלמות (עובד)</label><input type="number" value="${m.source === 'manual' ? m.study : ''}" placeholder="${m.source === 'auto' ? Math.round(m.study) : '0'}" onchange="saveHistoryField(${idx},'study',this.value)"></div>
+            <div class="hm-field"><label>ברוטו חודשי</label><input type="number" inputmode="decimal" step="0.01" value="${m.source === 'manual' ? m.gross : ''}" placeholder="${m.source === 'auto' ? Math.round(m.gross) : '0'}" onchange="saveHistoryField(${idx},'gross',this.value)"></div>
+            <div class="hm-field"><label>מס הכנסה ששולם</label><input type="number" inputmode="decimal" step="0.01" value="${m.source === 'manual' ? m.incomeTax : ''}" placeholder="${m.source === 'auto' ? Math.round(m.incomeTax) : '0'}" onchange="saveHistoryField(${idx},'incomeTax',this.value)"></div>
+            <div class="hm-field"><label>ביטוח לאומי ששולם</label><input type="number" inputmode="decimal" step="0.01" value="${m.source === 'manual' ? m.ni : ''}" placeholder="${m.source === 'auto' ? Math.round(m.ni) : '0'}" onchange="saveHistoryField(${idx},'ni',this.value)"></div>
+            <div class="hm-field"><label>פנסיה (עובד)</label><input type="number" inputmode="decimal" step="0.01" value="${m.source === 'manual' ? m.pension : ''}" placeholder="${m.source === 'auto' ? Math.round(m.pension) : '0'}" onchange="saveHistoryField(${idx},'pension',this.value)"></div>
+            <div class="hm-field"><label>קרן השתלמות (עובד)</label><input type="number" inputmode="decimal" step="0.01" value="${m.source === 'manual' ? m.study : ''}" placeholder="${m.source === 'auto' ? Math.round(m.study) : '0'}" onchange="saveHistoryField(${idx},'study',this.value)"></div>
           </div>
         </div>
       </div>`;

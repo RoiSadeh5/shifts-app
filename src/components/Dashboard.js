@@ -235,6 +235,20 @@ function closePayslipModal() {
   setTimeout(() => { overlay.style.display = 'none'; }, 200);
 }
 
+function recalcPayslipFromGross() {
+  const g = parseFloat(document.getElementById('psGross').value);
+  if (isNaN(g) || g <= 0) { showToast('⚠️ הזן ברוטו תחילה'); return; }
+  const ded = calcDeductions(g);
+  const tax = calcIncomeTax(g);
+  document.getElementById('psTax').value = dedSettings.incomeTax ? Math.round(tax.finalTax * 100) / 100 : 0;
+  document.getElementById('psNI').value = Math.round(ded.employee.ni * 100) / 100;
+  document.getElementById('psPension').value = Math.round(ded.employee.pension * 100) / 100;
+  document.getElementById('psStudy').value = Math.round(ded.employee.study * 100) / 100;
+  const net = g - (dedSettings.incomeTax ? tax.finalTax : 0) - ded.employee.total;
+  document.getElementById('psNet').value = Math.round(net * 100) / 100;
+  showToast('✅ חושב לפי ברוטו – ניתן לערוך ידנית');
+}
+
 function savePayslipModal() {
   const g = parseFloat(document.getElementById('psGross').value);
   if (isNaN(g) || g <= 0) { showToast('⚠️ הזן ברוטו בפועל'); return; }

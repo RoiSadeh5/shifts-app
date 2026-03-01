@@ -953,6 +953,14 @@
       text-align: right;
     }
     .ps-field input:focus { border-color: var(--accent); }
+
+    /* Numeric inputs: mobile keyboard + tap target */
+    input[type="number"],
+    .input-numeric {
+      font-size: 1.2rem !important;
+      min-height: 48px;
+      min-width: 80px;
+    }
     .ps-sep { font-size: 11px; color: var(--text-dim); font-weight: 700; margin: 14px 0 8px; padding-top: 10px; border-top: 1px solid var(--border); }
     .ps-btns { display: flex; gap: 10px; margin-top: 16px; }
     .ps-btns button {
@@ -1227,32 +1235,39 @@
     <div class="setting-group">
       <div class="setting-item">
         <span class="si-label">תעריף שעתי בסיסי</span>
-        <div><input type="number" id="settingBase" value="75" onchange="saveSettings()"> ₪</div>
+        <div><input type="number" id="settingBase" value="75" inputmode="decimal" step="0.01" min="0" onchange="saveSettings()"> ₪</div>
       </div>
       <div class="setting-item">
         <span class="si-label">מכפיל סוף שבוע</span>
-        <div><input type="number" id="settingWeekend" value="1.5" step="0.1" onchange="saveSettings()"> ×</div>
+        <div><input type="number" id="settingWeekend" value="1.5" inputmode="decimal" step="0.01" min="0" onchange="saveSettings()"> ×</div>
       </div>
       <div class="setting-item">
         <span class="si-label">תעריף חופש/מחלה</span>
-        <div><input type="number" id="settingVacation" value="1750" onchange="saveSettings()"> ₪</div>
+        <div><input type="number" id="settingVacation" value="1750" inputmode="decimal" step="0.01" min="0" onchange="saveSettings()"> ₪</div>
       </div>
       <div class="setting-item">
         <span class="si-label">בונוס רבעוני</span>
-        <div><input type="number" id="settingBonus" value="3500" onchange="saveSettings()"> ₪</div>
+        <div><input type="number" id="settingBonus" value="3500" inputmode="decimal" step="0.01" min="0" onchange="saveSettings()"> ₪</div>
       </div>
     </div>
 
-    <div class="section-label" style="margin-bottom:14px;">מס הכנסה (2026)</div>
+    <div class="section-label" style="margin-bottom:14px;">מס הכנסה</div>
     <div class="setting-group">
       <div class="setting-item">
         <span class="si-label">נקודות זיכוי</span>
-        <div><input type="number" id="settingCreditPts" value="2.25" step="0.25" min="0" onchange="saveSettings()"></div>
+        <div><input type="number" id="settingCreditPts" value="2.25" inputmode="decimal" step="0.25" min="0" onchange="saveSettings()"></div>
+      </div>
+      <div class="setting-toggle">
+        <div class="st-right">
+          <span class="st-label">חישוב לפי שנת 2025</span>
+          <span class="st-desc">נתוני מס + ביטוח לאומי 2025 (כבוי = 2026)</span>
+        </div>
+        <div class="toggle" id="toggleTaxYear2025" onclick="toggleDedSetting('taxYear2025')"></div>
       </div>
       <div class="setting-toggle">
         <div class="st-right">
           <span class="st-label">מס הכנסה</span>
-          <span class="st-desc">מדרגות 2026 · 242 ₪ לנקודת זיכוי</span>
+          <span class="st-desc">מדרגות · 242 ₪ לנקודת זיכוי</span>
         </div>
         <div class="toggle on" id="toggleIncomeTax" onclick="toggleDedSetting('incomeTax')"></div>
       </div>
@@ -1294,11 +1309,11 @@
     <div class="setting-group">
       <div class="setting-item">
         <span class="si-label">ימי חופש</span>
-        <div><input type="number" id="settingVacBal" value="0" min="0" step="1" onchange="saveLeaveSettings()"></div>
+        <div><input type="number" id="settingVacBal" value="0" min="0" step="1" inputmode="numeric" onchange="saveLeaveSettings()"></div>
       </div>
       <div class="setting-item">
         <span class="si-label">ימי מחלה</span>
-        <div><input type="number" id="settingSickBal" value="0" min="0" step="1" onchange="saveLeaveSettings()"></div>
+        <div><input type="number" id="settingSickBal" value="0" min="0" step="1" inputmode="numeric" onchange="saveLeaveSettings()"></div>
       </div>
     </div>
 
@@ -1380,18 +1395,21 @@
     <div class="ps-box">
       <div class="ps-title">הזנת תלוש בפועל</div>
       <div class="ps-subtitle" id="psMonthLabel"></div>
-      <div class="ps-field"><label>ברוטו בפועל</label><input type="number" id="psGross" placeholder="0"></div>
-      <div class="ps-field"><label>נטו בפועל</label><input type="number" id="psNet" placeholder="0"></div>
-      <div class="ps-field"><label>מס הכנסה</label><input type="number" id="psTax" placeholder="0"></div>
-      <div class="ps-field"><label>ביטוח לאומי</label><input type="number" id="psNI" placeholder="0"></div>
-      <div class="ps-field"><label>פנסיה עובד</label><input type="number" id="psPension" placeholder="0"></div>
-      <div class="ps-field"><label>קרן השתלמות עובד</label><input type="number" id="psStudy" placeholder="0"></div>
+      <div class="ps-field"><label>ברוטו בפועל</label><input type="number" id="psGross" placeholder="0" inputmode="decimal" step="0.01" min="0"></div>
+      <div class="ps-field"><label>נטו בפועל</label><input type="number" id="psNet" placeholder="0" inputmode="decimal" step="0.01" min="0"></div>
+      <div class="ps-field"><label>מס הכנסה</label><input type="number" id="psTax" placeholder="0" inputmode="decimal" step="0.01" min="0"></div>
+      <div class="ps-field"><label>ביטוח לאומי</label><input type="number" id="psNI" placeholder="0" inputmode="decimal" step="0.01" min="0"></div>
+      <div class="ps-field"><label>פנסיה עובד</label><input type="number" id="psPension" placeholder="0" inputmode="decimal" step="0.01" min="0"></div>
+      <div class="ps-field"><label>קרן השתלמות עובד</label><input type="number" id="psStudy" placeholder="0" inputmode="decimal" step="0.01" min="0"></div>
       <div class="ps-sep">נתונים מצטברים (מהתלוש)</div>
-      <div class="ps-field"><label>ברוטו מצטבר למס (שנתי)</label><input type="number" id="psCumTax" placeholder="0"></div>
-      <div class="ps-field"><label>ברוטו מצטבר לקה"ש (שנתי)</label><input type="number" id="psCumStudy" placeholder="0"></div>
-      <div class="ps-btns">
-        <button class="ps-cancel" onclick="closePayslipModal()">ביטול</button>
-        <button class="ps-save" onclick="savePayslipModal()">שמור תלוש</button>
+      <div class="ps-field"><label>ברוטו מצטבר למס (שנתי)</label><input type="number" id="psCumTax" placeholder="0" inputmode="decimal" step="0.01" min="0"></div>
+      <div class="ps-field"><label>ברוטו מצטבר לקה"ש (שנתי)</label><input type="number" id="psCumStudy" placeholder="0" inputmode="decimal" step="0.01" min="0"></div>
+      <div class="ps-btns" style="flex-direction:column;">
+        <button class="ps-recalc" style="background:var(--card-alt);color:var(--text-secondary);border:1px solid var(--border);margin-bottom:6px;" onclick="recalcPayslipFromGross()">חשב לפי ברוטו (הצעה)</button>
+        <div style="display:flex;gap:10px;">
+          <button class="ps-cancel" onclick="closePayslipModal()">ביטול</button>
+          <button class="ps-save" onclick="savePayslipModal()">שמור תלוש</button>
+        </div>
       </div>
     </div>
   </div>

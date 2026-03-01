@@ -31,6 +31,19 @@
     STUDY_CEILING: 15712,
   };
 
+  // ===== 2025 Israel Deduction Constants =====
+  const DEDUCTION_CONSTANTS_2025 = {
+    NI_LOWER_CEILING: 7522,
+    NI_UPPER_CEILING: 50695,
+    NI_LOWER_RATE: 0.0427,
+    NI_UPPER_RATE: 0.1216,
+    PENSION_EMPLOYEE: 0.06,
+    PENSION_EMPLOYER: 0.125,
+    STUDY_EMPLOYEE: 0.025,
+    STUDY_EMPLOYER: 0.075,
+    STUDY_CEILING: 15712,
+  };
+
   // ===== Meal Allowance & Fixed Monthly Additions =====
   const MEAL_ALLOWANCE_PER_6H = 30;
 
@@ -154,7 +167,7 @@
    * @param {{ pension: boolean, study: boolean, ni: boolean }} toggles
    */
   function calcDeductions(grossMonthly, toggles) {
-    const C = DEDUCTION_CONSTANTS;
+    const C = (toggles && toggles.taxYear2025) ? DEDUCTION_CONSTANTS_2025 : DEDUCTION_CONSTANTS;
     const t = { pension: true, study: true, ni: true, ...toggles };
     const ded = { pension: 0, study: 0, ni: 0 };
     const emp = { pension: 0, study: 0 };
@@ -215,21 +228,36 @@
     { ceiling: Infinity, rate: 0.50 },
   ];
 
+  // ===== 2025 Income Tax (same structure, slightly lower ceilings) =====
+  const TAX_BRACKETS_MONTHLY_2025 = [
+    { ceiling:  6860, rate: 0.10 },
+    { ceiling:  9850, rate: 0.14 },
+    { ceiling: 15820, rate: 0.20 },
+    { ceiling: 21990, rate: 0.31 },
+    { ceiling: 45780, rate: 0.35 },
+    { ceiling: 58920, rate: 0.47 },
+    { ceiling: Infinity, rate: 0.50 },
+  ];
+
   const CREDIT_POINT_VALUE = 242;
+  const CREDIT_POINT_VALUE_2025 = 242;
 
   /**
    * Progressive income tax on monthly gross.
    * @param {number} monthlyGross - taxable monthly income
    * @param {number} creditPoints - number of credit points (e.g. 2.25)
+   * @param {boolean} [use2025] - use 2025 tax brackets and credit point
    * @returns {{ grossTax, creditAmount, finalTax, tiers[] }}
    */
-  function calcIncomeTax(monthlyGross, creditPoints) {
+  function calcIncomeTax(monthlyGross, creditPoints, use2025) {
+    const brackets = use2025 ? TAX_BRACKETS_MONTHLY_2025 : TAX_BRACKETS_MONTHLY;
+    const creditValue = use2025 ? CREDIT_POINT_VALUE_2025 : CREDIT_POINT_VALUE;
     let remaining = monthlyGross;
     let grossTax = 0;
     let prev = 0;
     const tiers = [];
 
-    for (const bracket of TAX_BRACKETS_MONTHLY) {
+    for (const bracket of brackets) {
       if (remaining <= 0) break;
       const width = bracket.ceiling === Infinity ? remaining : Math.min(remaining, bracket.ceiling - prev);
       const tax = width * bracket.rate;
@@ -245,7 +273,7 @@
       prev = bracket.ceiling;
     }
 
-    const creditAmount = creditPoints * CREDIT_POINT_VALUE;
+    const creditAmount = creditPoints * creditValue;
     const finalTax = Math.max(0, grossTax - creditAmount);
     const round = v => Math.round(v * 100) / 100;
 
