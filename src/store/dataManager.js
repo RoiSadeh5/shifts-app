@@ -8,6 +8,7 @@ var SETTINGS_KEY = 'shifter_settings';
 var HISTORY_KEY = 'shifter_history';
 var BACKUP_TS_KEY = 'shifter_last_backup';
 var LEAVE_KEY = 'shifter_leave';
+var USERNAME_KEY = 'shifter_username';
 
 function loadShifts() {
   try { return JSON.parse(localStorage.getItem(SHIFTS_KEY)) || []; }
@@ -74,6 +75,7 @@ function exportData() {
     settings: JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'),
     history: loadHistory(),
     leave: loadLeaveBalances(),
+    userName: loadUserName(),
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -124,6 +126,13 @@ function importData(e) {
           saveLeaveBalances(data.leave);
           document.getElementById('settingVacBal').value = data.leave.vacation || 0;
           document.getElementById('settingSickBal').value = data.leave.sick || 0;
+        }
+
+        if (data.userName) {
+          saveUserName(data.userName);
+          var nameInput = document.getElementById('settingUserName');
+          if (nameInput) nameInput.value = data.userName;
+          updateGreeting();
         }
 
         if (data.settings && typeof data.settings === 'object') {
@@ -190,4 +199,12 @@ function loadLeaveBalances() {
 
 function saveLeaveBalances(balances) {
   localStorage.setItem(LEAVE_KEY, JSON.stringify(balances));
+}
+
+function loadUserName() {
+  return localStorage.getItem(USERNAME_KEY) || null;
+}
+
+function saveUserName(name) {
+  localStorage.setItem(USERNAME_KEY, (name || '').trim());
 }

@@ -77,14 +77,56 @@ function showConfirm(title, message, onConfirm) {
   };
 }
 
+// ===== Greeting & Onboarding =====
+function updateGreeting() {
+  const name = loadUserName();
+  const titleEl = document.getElementById('pageTitle');
+  if (!titleEl) return;
+  if (name) {
+    titleEl.textContent = '';
+    titleEl.innerHTML = `שלום, ${name} 👋`;
+    titleEl.classList.add('greeting-animated');
+  } else {
+    titleEl.textContent = 'שכ״ש';
+    titleEl.classList.remove('greeting-animated');
+  }
+}
+
+function completeOnboarding() {
+  const input = document.getElementById('onboardingName');
+  const name = (input.value || '').trim();
+  if (!name) { input.focus(); return; }
+  saveUserName(name);
+  const nameInput = document.getElementById('settingUserName');
+  if (nameInput) nameInput.value = name;
+  const overlay = document.getElementById('onboardingOverlay');
+  overlay.classList.remove('visible');
+  setTimeout(() => overlay.style.display = 'none', 350);
+  updateGreeting();
+}
+
+function saveUserNameSetting() {
+  const input = document.getElementById('settingUserName');
+  const name = (input.value || '').trim();
+  saveUserName(name);
+  updateGreeting();
+  showToast('השם עודכן');
+}
+
 // ===== Tab Navigation =====
 function switchTab(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page' + name).classList.add('active');
   document.getElementById('tab' + name).classList.add('active');
-  const titles = { Dashboard: 'שכ״ש', Add: 'הוספת משמרת', Calendar: 'לוח שנה', Annual: 'סיכום שנתי', Settings: 'הגדרות' };
-  document.getElementById('pageTitle').textContent = titles[name];
+  if (name === 'Dashboard') {
+    updateGreeting();
+  } else {
+    const titles = { Add: 'הוספת משמרת', Calendar: 'לוח שנה', Annual: 'סיכום שנתי', Settings: 'הגדרות' };
+    const titleEl = document.getElementById('pageTitle');
+    titleEl.classList.remove('greeting-animated');
+    titleEl.textContent = titles[name];
+  }
   if (name === 'Calendar') renderCalendar();
   if (name === 'Dashboard') render();
   if (name === 'Annual') renderAnnual();
@@ -146,7 +188,29 @@ function init() {
   document.getElementById('rangeStart').value = todayStr;
   document.getElementById('rangeEnd').value = todayStr;
 
+  // Profile
+  const savedName = loadUserName();
+  const nameInput = document.getElementById('settingUserName');
+  if (nameInput && savedName) nameInput.value = savedName;
+
   updateMonthLabels();
   recalcAll();
   updateBackupDisplay();
+
+  // Onboarding: show if no name saved
+  if (!savedName) {
+    const overlay = document.getElementById('onboardingOverlay');
+    if (overlay) {
+      overlay.style.display = 'flex';
+      requestAnimationFrame(() => overlay.classList.add('visible'));
+      const nameField = document.getElementById('onboardingName');
+      if (nameField) {
+        nameField.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') completeOnboarding();
+        });
+      }
+    }
+  } else {
+    updateGreeting();
+  }
 }

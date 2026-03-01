@@ -1003,6 +1003,104 @@
     .forecast-label { font-size: 12px; color: var(--text-secondary); }
     .forecast-val { font-size: 15px; font-weight: 800; direction: ltr; }
 
+    /* Greeting fade-in */
+    @keyframes greetFadeIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .greeting-animated {
+      animation: greetFadeIn 0.6s ease-out both;
+    }
+
+    /* Onboarding overlay */
+    .onboarding-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(15,23,42,0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      pointer-events: none;
+    }
+    .onboarding-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .onboarding-card {
+      background: var(--card);
+      border: 1px solid var(--border-strong);
+      border-radius: 24px;
+      padding: 36px 28px 30px;
+      width: min(340px, 88vw);
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      transform: scale(0.92);
+      transition: transform 0.35s ease;
+    }
+    .onboarding-overlay.visible .onboarding-card {
+      transform: scale(1);
+    }
+    .onboarding-emoji {
+      font-size: 48px;
+      margin-bottom: 14px;
+    }
+    .onboarding-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .onboarding-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 22px;
+    }
+    .onboarding-input {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 18px;
+      font-family: 'Heebo', sans-serif;
+      font-weight: 600;
+      background: var(--bg);
+      color: var(--text);
+      border: 2px solid var(--border-strong);
+      border-radius: 14px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 18px;
+    }
+    .onboarding-input:focus {
+      border-color: var(--accent);
+    }
+    .onboarding-input::placeholder {
+      color: var(--text-dim);
+      font-weight: 400;
+    }
+    .onboarding-btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: 'Heebo', sans-serif;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent) 0%, #818cf8 100%);
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+    }
+    .onboarding-btn:active {
+      transform: scale(0.97);
+    }
+
     /* Pull-to-refresh indicator */
     .ptr-indicator {
       position: fixed;
@@ -1042,6 +1140,17 @@
   <div class="ptr-indicator" id="ptrIndicator" aria-hidden="true">
     <div class="ptr-spinner"></div>
     <span>מרענן...</span>
+  </div>
+
+  <!-- Onboarding modal (first-time only) -->
+  <div class="onboarding-overlay" id="onboardingOverlay">
+    <div class="onboarding-card">
+      <div class="onboarding-emoji">👋</div>
+      <div class="onboarding-title">ברוכים הבאים לשכ״ש!</div>
+      <div class="onboarding-subtitle">איך לקרוא לך?</div>
+      <input class="onboarding-input" id="onboardingName" type="text" inputmode="text" placeholder="השם שלך" autocomplete="given-name" autofocus>
+      <button class="onboarding-btn" onclick="completeOnboarding()">יאללה, בוא נתחיל</button>
+    </div>
   </div>
 
   <div class="header">
@@ -1294,6 +1403,14 @@
 
   <!-- ==================== SETTINGS ==================== -->
   <div class="page" id="pageSettings">
+    <div class="section-label" style="margin-bottom:14px;">פרופיל</div>
+    <div class="setting-group">
+      <div class="setting-item">
+        <span class="si-label">שם</span>
+        <div><input type="text" id="settingUserName" value="" inputmode="text" placeholder="הזן את שמך" onchange="saveUserNameSetting()" style="font-size:1rem;min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);color:var(--text);font-family:'Heebo',sans-serif;"></div>
+      </div>
+    </div>
+
     <div class="section-label" style="margin-bottom:14px;">תעריפים</div>
     <div class="setting-group">
       <div class="setting-item">
