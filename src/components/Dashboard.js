@@ -37,10 +37,31 @@ function render() {
   const totalAllDeductions = ded.employee.total + incomeTaxAmount;
   const netAfterAll = totalGross - totalAllDeductions;
 
-  document.getElementById('heroNet').textContent = fmtNIS(netAfterAll);
-  document.getElementById('heroNetSub').textContent =
-    totalGross > 0 ? `${Math.round(netAfterAll / totalGross * 100)}% מהברוטו` : '';
-  document.getElementById('heroGross').textContent = fmtNIS(totalGross);
+  // Show actual payslip net when no shifts exist for this month
+  const slip = loadPayslip(currentYear, currentMonth);
+  const hasActualSlip = slip && slip.gross > 0;
+  let displayNet = netAfterAll;
+  let displayGross = totalGross;
+  let netSubText = '';
+
+  if (totalGross > 0) {
+    netSubText = `${Math.round(netAfterAll / totalGross * 100)}% מהברוטו`;
+  } else if (hasActualSlip) {
+    const slipTax = slip.incomeTax || 0;
+    const slipNI = slip.ni || slip.nationalInsurance || 0;
+    const slipHealth = slip.health || slip.healthInsurance || 0;
+    const slipPension = slip.pension || 0;
+    const slipStudy = slip.study || 0;
+    displayNet = (slip.actualNet && slip.actualNet > 0)
+      ? slip.actualNet
+      : slip.gross - (slipTax + slipNI + slipHealth + slipPension + slipStudy);
+    displayGross = slip.gross;
+    netSubText = 'לפי תלוש בפועל';
+  }
+
+  document.getElementById('heroNet').textContent = fmtNIS(displayNet);
+  document.getElementById('heroNetSub').textContent = netSubText;
+  document.getElementById('heroGross').textContent = fmtNIS(displayGross);
   document.getElementById('heroSub').textContent = `${monthShifts.length} משמרות · ${Math.round(totalH)} שעות`;
 
   document.getElementById('statHours').textContent = Math.round(totalH * 10) / 10;
@@ -85,12 +106,13 @@ function render() {
   document.getElementById('empStudy').textContent = `+${fmtNIS(ded.employer.study)}`;
 
   const hasGross = totalGross > 0;
+  const hasAnyData = hasGross || hasActualSlip;
   document.getElementById('deductionsPanel').style.display = hasGross ? '' : 'none';
   document.getElementById('employerPanel').style.display = hasGross ? '' : 'none';
-  document.getElementById('shareBtn').style.display = hasGross ? '' : 'none';
+  document.getElementById('shareBtn').style.display = hasAnyData ? '' : 'none';
 
   // ===== Annual Forecast =====
-  renderAnnualForecast(totalGross);
+  renderAnnualForecast(totalGross > 0 ? totalGross : (hasActualSlip ? displayGross : 0));
 
   // ===== Payslip Comparison =====
   renderPayslipComparison(totalGross, incomeTaxAmount, ded, netAfterAll);
@@ -212,7 +234,17 @@ function renderAnnualForecast(currentMonthGross) {
   if (pred.estimatedAnnualGross > 0) {
     card.style.display = '';
     document.getElementById('forecastGross').textContent = fmtNIS(pred.estimatedAnnualGross);
-    document.getElementById('forecastTax').textContent = '-' + fmtNIS(pred.predictedAnnualTax);
+    const taxEl = document.getElementById('forecastTax');
+    const taxLabelEl = document.getElementById('forecastTaxLabel');
+    if (pred.predictedAnnualTax > 0) {
+      taxEl.textContent = fmtNIS(pred.predictedAnnualTax);
+      taxEl.className = 'forecast-val red';
+      if (taxLabelEl) taxLabelEl.textContent = 'מס שנתי חזוי';
+    } else {
+      taxEl.textContent = fmtNIS(0);
+      taxEl.className = 'forecast-val green';
+      if (taxLabelEl) taxLabelEl.textContent = 'החזר משוער';
+    }
   } else {
     card.style.display = 'none';
   }
@@ -231,14 +263,25 @@ function renderPayslipComparison(appGross, appTax, appDed, appNet) {
   }
 
   panel.style.display = '';
+
+  // Derive actual net from deductions if not explicitly entered
+  const slipTax = slip.incomeTax || 0;
+  const slipNI = slip.ni || slip.nationalInsurance || 0;
+  const slipHealth = slip.health || slip.healthInsurance || 0;
+  const slipPension = slip.pension || 0;
+  const slipStudy = slip.study || 0;
+  const actualNet = (slip.actualNet && slip.actualNet > 0)
+    ? slip.actualNet
+    : slip.gross - (slipTax + slipNI + slipHealth + slipPension + slipStudy);
+
   const rows = [
     { name: 'ברוטו', app: appGross, actual: slip.gross },
-    { name: 'מס הכנסה', app: appTax, actual: slip.incomeTax || 0, negative: true },
-    { name: 'ביטוח לאומי', app: appDed.employee.nationalInsurance || appDed.employee.ni, actual: slip.ni || slip.nationalInsurance || 0, negative: true },
-    { name: 'ביטוח בריאות', app: appDed.employee.healthInsurance || 0, actual: slip.health || slip.healthInsurance || 0, negative: true },
-    { name: 'פנסיה', app: appDed.employee.pension, actual: slip.pension || 0, negative: true },
-    { name: 'קרן השתלמות', app: appDed.employee.study, actual: slip.study || 0, negative: true },
-    { name: 'נטו', app: appNet, actual: slip.actualNet || 0 },
+    { name: 'מס הכנסה', app: appTax, actual: slipTax, negative: true },
+    { name: 'ביטוח לאומי', app: appDed.employee.nationalInsurance || appDed.employee.ni, actual: slipNI, negative: true },
+    { name: 'ביטוח בריאות', app: appDed.employee.healthInsurance || 0, actual: slipHealth, negative: true },
+    { name: 'פנסיה', app: appDed.employee.pension, actual: slipPension, negative: true },
+    { name: 'קרן השתלמות', app: appDed.employee.study, actual: slipStudy, negative: true },
+    { name: 'נטו', app: appNet, actual: actualNet },
   ];
 
   const body = document.getElementById('comparisonBody');

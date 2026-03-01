@@ -40,6 +40,13 @@ function toggleEmployer() {
   arrow.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : '';
 }
 
+function toggleComparison() {
+  const body = document.getElementById('cmpBody');
+  const arrow = document.getElementById('cmpArrow');
+  body.classList.toggle('open');
+  arrow.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : '';
+}
+
 function saveLeaveSettings() {
   const vacation = parseInt(document.getElementById('settingVacBal').value) || 0;
   const sick = parseInt(document.getElementById('settingSickBal').value) || 0;

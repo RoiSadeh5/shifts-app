@@ -141,7 +141,7 @@
     /* ===== HERO CARDS (Premium Bank Style) ===== */
     .dual-hero {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1.3fr 1fr;
       gap: 12px;
       margin-bottom: 14px;
     }
@@ -193,7 +193,7 @@
       left: -30px;
     }
     .hero-card.net-card .hero-label { color: rgba(16,185,129,0.7); }
-    .hero-card.net-card .hero-value { font-size: 32px; color: #10b981; }
+    .hero-card.net-card .hero-value { font-size: 36px; color: #10b981; }
     .hero-card.net-card .hero-sub { color: rgba(16,185,129,0.5); }
 
     .hero-card.gross-card {
@@ -1133,21 +1133,21 @@
         <span class="forecast-val" id="forecastGross">₪0</span>
       </div>
       <div class="forecast-row">
-        <span class="forecast-label">מס שנתי חוזה</span>
-        <span class="forecast-val red" id="forecastTax">-₪0</span>
+        <span class="forecast-label" id="forecastTaxLabel">מס שנתי חזוי</span>
+        <span class="forecast-val red" id="forecastTax">₪0</span>
       </div>
     </div>
 
     <!-- Payslip Comparison Panel -->
     <div class="comparison-panel" id="comparisonPanel" style="display:none">
-      <div class="ded-header" onclick="document.getElementById('comparisonBody').parentElement.querySelector('.ded-body').classList.toggle('open')">
+      <div class="ded-header" onclick="toggleComparison()">
         <div style="display:flex;align-items:center;gap:6px;">
           <span class="ded-arrow" id="cmpArrow">▼</span>
           <span class="ded-title" style="color:var(--accent-light)">השוואה לתלוש</span>
         </div>
         <span class="ded-total" style="color:var(--accent-light);font-size:12px">📋</span>
       </div>
-      <div class="ded-body open">
+      <div class="ded-body" id="cmpBody">
         <div class="cmp-header-row">
           <span></span>
           <span style="text-align:center">חישוב</span>
