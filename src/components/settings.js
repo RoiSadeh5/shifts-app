@@ -1,5 +1,5 @@
 /**
- * Settings Component – rate inputs, deduction toggles, data management.
+ * Settings Component – rate inputs, deduction toggles, leave balances, data management.
  * Depends on globals from app.js and dataManager.js.
  */
 
@@ -38,6 +38,13 @@ function toggleEmployer() {
   const arrow = document.getElementById('empArrow');
   body.classList.toggle('open');
   arrow.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : '';
+}
+
+function saveLeaveSettings() {
+  const vacation = parseInt(document.getElementById('settingVacBal').value) || 0;
+  const sick = parseInt(document.getElementById('settingSickBal').value) || 0;
+  saveLeaveBalances({ vacation: Math.max(0, vacation), sick: Math.max(0, sick) });
+  render();
 }
 
 function clearAllData() {

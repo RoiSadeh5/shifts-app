@@ -98,15 +98,25 @@ function addShift() {
 
   saveShifts(existingShifts);
 
+  const leaveAdded = added.filter(s => s.type === 'vacation' || s.type === 'sick');
+  if (leaveAdded.length > 0) {
+    const leave = loadLeaveBalances();
+    leaveAdded.forEach(s => {
+      if (s.type === 'vacation' && leave.vacation > 0) leave.vacation--;
+      if (s.type === 'sick' && leave.sick > 0) leave.sick--;
+    });
+    saveLeaveBalances(leave);
+  }
+
   if (added.length === 1) {
     showResultPanel(lastResult);
     showToast(`✅ נשמר! ₪${lastResult.totalPay.toLocaleString()}`);
   } else {
     const totalPay = added.reduce((s, sh) => s + sh.result.totalPay, 0);
     showResultPanel({
-      totalPay, flatRate: selectedType === 'vacation',
+      totalPay, flatRate: selectedType === 'vacation' || selectedType === 'sick',
       totalHours: added.reduce((s, sh) => s + (sh.result.totalHours || 0), 0),
-      breakdown: null, bonusApplied: 0,
+      breakdown: null, bonusApplied: 0, mealAllowance: 0,
     });
     let msg = `✅ נוספו ${added.length} משמרות · ₪${Math.round(totalPay).toLocaleString()}`;
     if (skipped.length > 0) msg += ` (${skipped.length} דולגו)`;
@@ -120,7 +130,15 @@ function addShift() {
 
 function deleteShift(id) {
   if (!confirm('למחוק משמרת?')) return;
-  saveShifts(loadShifts().filter(s => s.id !== id));
+  const shifts = loadShifts();
+  const removed = shifts.find(s => s.id === id);
+  saveShifts(shifts.filter(s => s.id !== id));
+  if (removed && (removed.type === 'vacation' || removed.type === 'sick')) {
+    const leave = loadLeaveBalances();
+    if (removed.type === 'vacation') leave.vacation++;
+    if (removed.type === 'sick') leave.sick++;
+    saveLeaveBalances(leave);
+  }
   render();
   renderCalendar();
 }
@@ -136,7 +154,8 @@ function showResultPanel(r) {
       <div class="rp-item"><div class="rp-label">סוף שבוע</div><div class="rp-val">₪${r.breakdown.weekend}</div></div>
       <div class="rp-item"><div class="rp-label">לילה (מנוחה)</div><div class="rp-val">₪${r.breakdown.rest}</div></div>
       <div class="rp-item"><div class="rp-label">סופ"ש + לילה</div><div class="rp-val">₪${r.breakdown.weekendRest}</div></div>
-      ${r.bonusApplied ? `<div class="rp-item" style="grid-column:1/-1"><div class="rp-label">בונוס רבעוני</div><div class="rp-val" style="color:var(--green)">+₪${r.bonusApplied.toLocaleString()}</div></div>` : ''}`;
+      ${r.bonusApplied ? `<div class="rp-item" style="grid-column:1/-1"><div class="rp-label">בונוס רבעוני</div><div class="rp-val" style="color:var(--green)">+₪${r.bonusApplied.toLocaleString()}</div></div>` : ''}
+      ${r.mealAllowance ? `<div class="rp-item" style="grid-column:1/-1"><div class="rp-label">אש״ל</div><div class="rp-val" style="color:var(--orange)">+₪${r.mealAllowance}</div></div>` : ''}`;
   } else { grid.innerHTML = ''; }
   panel.classList.add('show');
 }

@@ -15,28 +15,32 @@ function getMonthShifts() {
 
 function render() {
   const monthShifts = getMonthShifts();
-  let totalH = 0, totalP = 0;
+  let totalH = 0, totalP = 0, totalMeal = 0;
   const typeTotals = {};
 
   monthShifts.forEach(s => {
     totalH += s.result?.totalHours || 0;
     totalP += s.result?.totalPay || 0;
+    totalMeal += s.result?.mealAllowance || 0;
     const t = s.type;
     if (!typeTotals[t]) typeTotals[t] = { count: 0, pay: 0 };
     typeTotals[t].count++;
     typeTotals[t].pay += s.result?.totalPay || 0;
   });
 
-  const ded = calcDeductions(totalP);
-  const tax = calcIncomeTax(totalP);
+  const fixedAdd = monthShifts.length > 0 ? SalaryEngine.calculateFixedMonthlyAdditions() : { total: 0 };
+  const totalGross = totalP + fixedAdd.total;
+
+  const ded = calcDeductions(totalGross);
+  const tax = calcIncomeTax(totalGross);
   const incomeTaxAmount = dedSettings.incomeTax ? tax.finalTax : 0;
   const totalAllDeductions = ded.employee.total + incomeTaxAmount;
-  const netAfterAll = totalP - totalAllDeductions;
+  const netAfterAll = totalGross - totalAllDeductions;
 
   document.getElementById('heroNet').textContent = fmtNIS(netAfterAll);
   document.getElementById('heroNetSub').textContent =
-    totalP > 0 ? `${Math.round(netAfterAll / totalP * 100)}% מהברוטו` : '';
-  document.getElementById('heroGross').textContent = fmtNIS(totalP);
+    totalGross > 0 ? `${Math.round(netAfterAll / totalGross * 100)}% מהברוטו` : '';
+  document.getElementById('heroGross').textContent = fmtNIS(totalGross);
   document.getElementById('heroSub').textContent = `${monthShifts.length} משמרות · ${Math.round(totalH)} שעות`;
 
   document.getElementById('statHours').textContent = Math.round(totalH * 10) / 10;
@@ -63,7 +67,7 @@ function render() {
   document.getElementById('dedStudy').textContent = `-${fmtNIS(ded.employee.study)}`;
   document.getElementById('dedNI').textContent = `-${fmtNIS(ded.employee.ni)}`;
 
-  document.getElementById('studyCap').style.display = totalP > STUDY_CEILING ? '' : 'none';
+  document.getElementById('studyCap').style.display = totalGross > STUDY_CEILING ? '' : 'none';
 
   const niDetail = document.getElementById('niTierDetail');
   if (ded.employee.ni > 0) {
@@ -78,18 +82,21 @@ function render() {
   document.getElementById('empPension').textContent = `+${fmtNIS(ded.employer.pension)}`;
   document.getElementById('empStudy').textContent = `+${fmtNIS(ded.employer.study)}`;
 
-  const hasGross = totalP > 0;
+  const hasGross = totalGross > 0;
   document.getElementById('deductionsPanel').style.display = hasGross ? '' : 'none';
   document.getElementById('employerPanel').style.display = hasGross ? '' : 'none';
   document.getElementById('shareBtn').style.display = hasGross ? '' : 'none';
 
+  // Type breakdown + meal allowance info + fixed additions
   const bdList = document.getElementById('breakdownList');
   const bdSection = document.getElementById('breakdownSection');
-  if (Object.keys(typeTotals).length === 0) {
+  const hasBreakdown = Object.keys(typeTotals).length > 0 || fixedAdd.total > 0;
+
+  if (!hasBreakdown) {
     bdSection.classList.add('hidden');
   } else {
     bdSection.classList.remove('hidden');
-    bdList.innerHTML = Object.entries(typeTotals).map(([type, data]) => `
+    let bdHtml = Object.entries(typeTotals).map(([type, data]) => `
       <div class="bd-row">
         <div class="bd-right">
           <div class="bd-dot" style="background:${dotColors[type]}"></div>
@@ -99,7 +106,36 @@ function render() {
         <span class="bd-pay" style="color:${dotColors[type]}">${fmtNIS(data.pay)}</span>
       </div>
     `).join('');
+
+    if (totalMeal > 0) {
+      bdHtml += `<div class="bd-row" style="opacity:0.7">
+        <div class="bd-right">
+          <div class="bd-dot" style="background:var(--orange)"></div>
+          <span class="bd-name">אש״ל</span>
+          <span class="bd-count" style="font-size:10px">(כלול בשכר)</span>
+        </div>
+        <span class="bd-pay" style="color:var(--orange)">${fmtNIS(totalMeal)}</span>
+      </div>`;
+    }
+
+    if (fixedAdd.total > 0) {
+      bdHtml += `<div class="bd-row">
+        <div class="bd-right">
+          <div class="bd-dot" style="background:var(--green)"></div>
+          <span class="bd-name">תוספות קבועות</span>
+          <span class="bd-count" style="font-size:10px">(חודשי)</span>
+        </div>
+        <span class="bd-pay" style="color:var(--green)">${fmtNIS(fixedAdd.total)}</span>
+      </div>`;
+    }
+
+    bdList.innerHTML = bdHtml;
   }
+
+  // Leave balance
+  const leave = loadLeaveBalances();
+  document.getElementById('vacBalance').textContent = leave.vacation;
+  document.getElementById('sickBalance').textContent = leave.sick;
 
   const listEl = document.getElementById('recentShifts');
   if (monthShifts.length === 0) {
@@ -177,24 +213,30 @@ function renderCalendar() {
 
 function shareWhatsApp() {
   const monthShifts = getMonthShifts();
-  let totalH = 0, totalP = 0;
+  let totalH = 0, totalP = 0, totalMeal = 0;
   monthShifts.forEach(s => {
     totalH += s.result?.totalHours || 0;
     totalP += s.result?.totalPay || 0;
+    totalMeal += s.result?.mealAllowance || 0;
   });
 
-  const ded = calcDeductions(totalP);
-  const tax = calcIncomeTax(totalP);
+  const fixedAdd = monthShifts.length > 0 ? SalaryEngine.calculateFixedMonthlyAdditions() : { total: 0 };
+  const totalGross = totalP + fixedAdd.total;
+
+  const ded = calcDeductions(totalGross);
+  const tax = calcIncomeTax(totalGross);
   const incomeTaxAmount = dedSettings.incomeTax ? tax.finalTax : 0;
-  const netAfterAll = totalP - ded.employee.total - incomeTaxAmount;
+  const netAfterAll = totalGross - ded.employee.total - incomeTaxAmount;
 
   const text = SalaryEngine.generateShareText({
     month: currentMonth,
     year: currentYear,
     shifts: monthShifts.length,
     hours: totalH,
-    gross: totalP,
+    gross: totalGross,
     net: netAfterAll,
+    mealAllowance: totalMeal,
+    fixedAdditions: fixedAdd.total,
   });
 
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');

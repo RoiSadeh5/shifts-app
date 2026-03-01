@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0f172a">
-  <title>שכ״ש – חישוב משמרות</title>
+  <title>שכ״ש</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -859,6 +859,27 @@
       color: #fff;
       border: none;
     }
+
+    .badge-sick { background: var(--red-dim); color: var(--red); }
+    .dot-sick { background: var(--red); }
+
+    .leave-balance {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .leave-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 8px;
+      text-align: center;
+    }
+    .leave-item .leave-val { font-size: 20px; font-weight: 800; }
+    .leave-item .leave-label { font-size: 10px; color: var(--text-dim); margin-top: 2px; font-weight: 500; display: block; }
+    .leave-val.green { color: var(--green); }
+    .leave-val.orange { color: var(--orange); }
   </style>
 </head>
 <body>
@@ -958,6 +979,17 @@
       </div>
     </div>
 
+    <div class="leave-balance" id="leaveBalance">
+      <div class="leave-item">
+        <span class="leave-val green" id="vacBalance">0</span>
+        <span class="leave-label">ימי חופש נותרו</span>
+      </div>
+      <div class="leave-item">
+        <span class="leave-val orange" id="sickBalance">0</span>
+        <span class="leave-label">ימי מחלה נותרו</span>
+      </div>
+    </div>
+
     <div class="breakdown-section" id="breakdownSection">
       <div class="section-label">פירוט לפי סוג</div>
       <div id="breakdownList"></div>
@@ -984,10 +1016,15 @@
       </div>
       <div class="type-btn" data-type="vacation" onclick="selectType('vacation')">
         <div class="t-icon">🏖️</div>
-        <div class="t-name">חופש / מחלה</div>
+        <div class="t-name">חופש</div>
         <div class="t-desc">1,750 ₪</div>
       </div>
-      <div class="type-btn" data-type="minus" onclick="selectType('minus')">
+      <div class="type-btn" data-type="sick" onclick="selectType('sick')">
+        <div class="t-icon">🏥</div>
+        <div class="t-name">מחלה</div>
+        <div class="t-desc">1,750 ₪</div>
+      </div>
+      <div class="type-btn" data-type="minus" onclick="selectType('minus')" style="grid-column:1/-1">
         <div class="t-icon">🕐</div>
         <div class="t-name">ידני</div>
         <div class="t-desc">בחר שעות</div>
@@ -1123,6 +1160,18 @@
       </div>
     </div>
 
+    <div class="section-label" style="margin-bottom:14px;">יתרות חופש ומחלה</div>
+    <div class="setting-group">
+      <div class="setting-item">
+        <span class="si-label">ימי חופש</span>
+        <div><input type="number" id="settingVacBal" value="0" min="0" step="1" onchange="saveLeaveSettings()"></div>
+      </div>
+      <div class="setting-item">
+        <span class="si-label">ימי מחלה</span>
+        <div><input type="number" id="settingSickBal" value="0" min="0" step="1" onchange="saveLeaveSettings()"></div>
+      </div>
+    </div>
+
     <div class="section-label" style="margin-bottom:14px;">גיבוי ושחזור</div>
     <div class="backup-info" id="lastBackupInfo">לא בוצע גיבוי עדיין</div>
     <button class="btn-secondary" onclick="exportData()">📤 ייצוא גיבוי</button>
@@ -1130,10 +1179,7 @@
     <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
     <button class="btn-danger" onclick="clearAllData()" style="margin-top:10px;">🗑️ מחק את כל הנתונים</button>
 
-    <div style="text-align:center;margin-top:30px;color:var(--text-dim);font-size:12px;">
-      שכ״ש v5.0 · מס הכנסה + ניכויים 2026 · נבנה עם ❤️
-    </div>
-    <div style="text-align:center;margin-top:12px;color:var(--text-dim);font-size:11px;line-height:1.6;padding:0 10px;">
+    <div style="text-align:center;margin-top:30px;padding-bottom:20px;color:var(--text-dim);font-size:11px;line-height:1.6;">
       כל הזכויות שמורות ל-Roi Sadeh - מוענק באהבה לכל עובדי השכ״ש
     </div>
   </div>

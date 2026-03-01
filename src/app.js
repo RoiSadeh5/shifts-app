@@ -37,10 +37,10 @@ var hebrewMonths = ['ינואר','פברואר','מרץ','אפריל','מאי','
                     'יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 var dayNames = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
 var dayNamesFull = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
-var typeNames = { plus: 'פלוס', training: 'אימון', vacation: 'חופש/מחלה', minus: 'ידני' };
-var badgeCls = { plus: 'badge-plus', training: 'badge-training', vacation: 'badge-vacation', minus: 'badge-minus' };
-var dotCls = { plus: 'dot-plus', training: 'dot-training', vacation: 'dot-vacation', minus: 'dot-minus' };
-var dotColors = { plus: 'var(--accent-light)', training: 'var(--orange)', vacation: 'var(--green)', minus: 'var(--blue)' };
+var typeNames = { plus: 'פלוס', training: 'אימון', vacation: 'חופש', sick: 'מחלה', minus: 'ידני' };
+var badgeCls = { plus: 'badge-plus', training: 'badge-training', vacation: 'badge-vacation', sick: 'badge-sick', minus: 'badge-minus' };
+var dotCls = { plus: 'dot-plus', training: 'dot-training', vacation: 'dot-vacation', sick: 'dot-sick', minus: 'dot-minus' };
+var dotColors = { plus: 'var(--accent-light)', training: 'var(--orange)', vacation: 'var(--green)', sick: 'var(--red)', minus: 'var(--blue)' };
 
 // ===== Utilities =====
 function fmtNIS(n) { return `₪${Math.round(n).toLocaleString()}`; }
@@ -128,6 +128,10 @@ function init() {
   document.getElementById('toggleNI').classList.toggle('on', dedSettings.ni);
   document.getElementById('toggleIncomeTax').classList.toggle('on', dedSettings.incomeTax);
 
+  const leave = loadLeaveBalances();
+  document.getElementById('settingVacBal').value = leave.vacation;
+  document.getElementById('settingSickBal').value = leave.sick;
+
   const today = new Date();
   const y = today.getFullYear();
   const m = String(today.getMonth() + 1).padStart(2, '0');
@@ -138,6 +142,6 @@ function init() {
   document.getElementById('rangeEnd').value = todayStr;
 
   updateMonthLabels();
-  render();
+  recalcAll();
   updateBackupDisplay();
 }

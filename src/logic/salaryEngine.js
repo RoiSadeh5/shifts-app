@@ -31,6 +31,15 @@
     STUDY_CEILING: 15712,
   };
 
+  // ===== Meal Allowance & Fixed Monthly Additions =====
+  const MEAL_ALLOWANCE_PER_6H = 30;
+
+  const FIXED_MONTHLY_ADDITIONS = {
+    clothing: 148.08,
+    convalescence: 313,
+    telephone: 48.60,
+  };
+
   // ================================================================
   //  SHIFT PAY
   // ================================================================
@@ -97,8 +106,8 @@
     const r = { ...DEFAULTS, ...rates };
     const type = shift.type;
 
-    if (type === 'vacation') {
-      return { shiftType: 'vacation', totalPay: r.vacationDayRate, totalHours: 0, flatRate: true };
+    if (type === 'vacation' || type === 'sick') {
+      return { shiftType: type, totalPay: r.vacationDayRate, totalHours: 0, flatRate: true, mealAllowance: 0 };
     }
 
     const parts = shift.date.split('-');
@@ -118,18 +127,20 @@
       end = new Date(year, month, day, eh, em, 0);
       if (end <= start) end.setDate(end.getDate() + 1);
     } else {
-      return { shiftType: type, error: true, totalPay: 0, totalHours: 0 };
+      return { shiftType: type, error: true, totalPay: 0, totalHours: 0, mealAllowance: 0 };
     }
 
     const result = calculatePayForRange(start, end, rates);
     const bonus = shift.hasBonus ? r.bonusQuarterly : 0;
+    const mealAllowance = Math.floor(result.totalHours / 6) * MEAL_ALLOWANCE_PER_6H;
 
     return {
       shiftType: type,
-      totalPay: Math.round((result.totalPay + bonus) * 100) / 100,
+      totalPay: Math.round((result.totalPay + bonus + mealAllowance) * 100) / 100,
       totalHours: result.totalHours,
       breakdown: result.breakdown,
       bonusApplied: bonus,
+      mealAllowance: mealAllowance,
     };
   }
 
@@ -249,7 +260,6 @@
 
   /**
    * Full annual Form 106 summary.
-   * Aggregates shift-based months + historical paychecks.
    * @param {{ month, gross, incomeTax, ni, pension, study }[]} monthlyData - 12 entries
    * @param {number} creditPoints
    * @param {{ pension: boolean, study: boolean, ni: boolean }} toggles
@@ -288,6 +298,21 @@
   }
 
   // ================================================================
+  //  FIXED MONTHLY ADDITIONS
+  // ================================================================
+
+  function calculateFixedMonthlyAdditions() {
+    const a = FIXED_MONTHLY_ADDITIONS;
+    const round = v => Math.round(v * 100) / 100;
+    return {
+      clothing: a.clothing,
+      convalescence: a.convalescence,
+      telephone: a.telephone,
+      total: round(a.clothing + a.convalescence + a.telephone),
+    };
+  }
+
+  // ================================================================
   //  WHATSAPP SHARE TEXT
   // ================================================================
 
@@ -296,24 +321,24 @@
 
   /**
    * Generate a formatted Hebrew summary for WhatsApp sharing.
-   * @param {{ month: number, year: number, shifts: number, hours: number, gross: number, net: number }} data
+   * @param {{ month, year, shifts, hours, gross, net, mealAllowance?, fixedAdditions? }} data
    * @returns {string} RTL-safe plain text message
    */
   function generateShareText(data) {
     const monthName = HEBREW_MONTHS[data.month] + ' ' + data.year;
     const fmt = n => '₪' + Math.round(n).toLocaleString();
 
-    return [
+    const lines = [
       'סיכום שכר חודשי - אפליקציית שכ״ש 💰',
-      '─────────────────',
       'חודש: ' + monthName,
-      'משמרות: ' + data.shifts,
-      'סה"כ שעות: ' + Math.round(data.hours),
-      'ברוטו: ' + fmt(data.gross),
-      'נטו משוער לבנק: ' + fmt(data.net),
-      '─────────────────',
-      'נוצר באמצעות שכ״ש - רועי שדה',
-    ].join('\n');
+      'סה״כ שעות: ' + Math.round(data.hours),
+    ];
+    if (data.mealAllowance > 0) lines.push('אש״ל: ' + fmt(data.mealAllowance));
+    if (data.fixedAdditions > 0) lines.push('תוספות קבועות: ' + fmt(data.fixedAdditions));
+    lines.push('ברוטו: ' + fmt(data.gross));
+    lines.push('נטו משוער: ' + fmt(data.net));
+    lines.push('נוצר באהבה על ידי Roi Sadeh');
+    return lines.join('\n');
   }
 
   // ===== Export =====
@@ -321,12 +346,15 @@
   exports.DEDUCTION_CONSTANTS = DEDUCTION_CONSTANTS;
   exports.TAX_BRACKETS_MONTHLY = TAX_BRACKETS_MONTHLY;
   exports.CREDIT_POINT_VALUE = CREDIT_POINT_VALUE;
+  exports.MEAL_ALLOWANCE_PER_6H = MEAL_ALLOWANCE_PER_6H;
+  exports.FIXED_MONTHLY_ADDITIONS = FIXED_MONTHLY_ADDITIONS;
   exports.getRateAt = getRateAt;
   exports.calculatePayForRange = calculatePayForRange;
   exports.calculateShiftPay = calculateShiftPay;
   exports.calcDeductions = calcDeductions;
   exports.calcIncomeTax = calcIncomeTax;
   exports.calcAnnualSummary = calcAnnualSummary;
+  exports.calculateFixedMonthlyAdditions = calculateFixedMonthlyAdditions;
   exports.generateShareText = generateShareText;
 
 })(typeof module !== 'undefined' && module.exports ? module.exports : (window.SalaryEngine = {}));

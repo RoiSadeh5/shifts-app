@@ -22,6 +22,7 @@ function getShiftGrossForMonth(year, month) {
   });
   let gross = 0;
   shifts.forEach(s => { gross += s.result?.totalPay || 0; });
+  if (shifts.length > 0) gross += SalaryEngine.calculateFixedMonthlyAdditions().total;
   return gross;
 }
 

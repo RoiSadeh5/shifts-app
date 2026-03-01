@@ -1,5 +1,5 @@
 /**
- * Data Manager – localStorage persistence for shifts, settings, and history.
+ * Data Manager – localStorage persistence for shifts, settings, history, and leave.
  * All functions operate on globals from app.js (userRates, creditPoints, dedSettings).
  */
 
@@ -7,6 +7,7 @@ var SHIFTS_KEY = 'shifter_shifts';
 var SETTINGS_KEY = 'shifter_settings';
 var HISTORY_KEY = 'shifter_history';
 var BACKUP_TS_KEY = 'shifter_last_backup';
+var LEAVE_KEY = 'shifter_leave';
 
 function loadShifts() {
   try { return JSON.parse(localStorage.getItem(SHIFTS_KEY)) || []; }
@@ -58,6 +59,7 @@ function exportData() {
     shifts: loadShifts(),
     settings: JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'),
     history: loadHistory(),
+    leave: loadLeaveBalances(),
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -102,6 +104,12 @@ function importData(e) {
             Object.assign(existingH[y], data.history[y]);
           });
           saveHistory(existingH);
+        }
+
+        if (data.leave) {
+          saveLeaveBalances(data.leave);
+          document.getElementById('settingVacBal').value = data.leave.vacation || 0;
+          document.getElementById('settingSickBal').value = data.leave.sick || 0;
         }
 
         if (data.settings && typeof data.settings === 'object') {
@@ -153,4 +161,13 @@ function updateBackupDisplay() {
     el.textContent = 'לא בוצע גיבוי עדיין';
     el.style.color = 'var(--orange)';
   }
+}
+
+function loadLeaveBalances() {
+  try { return JSON.parse(localStorage.getItem(LEAVE_KEY)) || { vacation: 0, sick: 0 }; }
+  catch { return { vacation: 0, sick: 0 }; }
+}
+
+function saveLeaveBalances(balances) {
+  localStorage.setItem(LEAVE_KEY, JSON.stringify(balances));
 }
