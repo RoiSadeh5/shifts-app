@@ -52,7 +52,7 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-function showConfirm(title, message, onConfirm) {
+function showConfirm(title, message, onConfirm, okLabel) {
   const overlay = document.createElement('div');
   overlay.className = 'confirm-overlay';
   overlay.innerHTML = `
@@ -61,7 +61,7 @@ function showConfirm(title, message, onConfirm) {
       <div class="confirm-msg">${message}</div>
       <div class="confirm-btns">
         <button class="confirm-cancel">ביטול</button>
-        <button class="confirm-ok">מחק הכל</button>
+        <button class="confirm-ok">${okLabel || 'מחק הכל'}</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);

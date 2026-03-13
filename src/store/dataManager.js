@@ -158,7 +158,7 @@ function importData(e) {
         recalcAll();
         renderCalendar();
         showToast('📥 יובאו ' + shiftsAdded + ' משמרות + הגדרות');
-      });
+      }, 'שחזר');
     } catch { showToast('⚠️ קובץ לא תקין'); }
   };
   reader.readAsText(file);
