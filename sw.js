@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sachash-v6';
+const CACHE_NAME = 'sachash-v7';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const STATIC_ASSETS = [
   './src/store.js',
   './src/utils.js',
   './src/components/Charts.js',
+  './src/components/Savings.js',
   './src/components/Calendar.js',
   './src/components/Templates.js',
   './src/components/PdfExport.js',
