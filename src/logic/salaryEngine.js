@@ -22,15 +22,16 @@
   const DEDUCTION_CONSTANTS = {
     NI_LOWER_CEILING: 7703,
     NI_UPPER_CEILING: 51910,
-    NI_LOWER_RATE: 0.004,      // NI: 0.4%
-    NI_UPPER_RATE: 0.07,       // NI: 7%
-    HEALTH_LOWER_RATE: 0.031,  // Health: 3.1%
-    HEALTH_UPPER_RATE: 0.05,   // Health: 5%
+    NI_LOWER_RATE: 0.004,      // Bituach Leumi: 0.4%
+    NI_UPPER_RATE: 0.07,       // Bituach Leumi: 7%
+    HEALTH_LOWER_CEILING: 7703,
+    HEALTH_UPPER_CEILING: 51910,
+    HEALTH_LOWER_RATE: 0.031,  // Health Tax: 3.1%
+    HEALTH_UPPER_RATE: 0.05,   // Health Tax: 5%
     PENSION_EMPLOYEE: 0.06,
     PENSION_EMPLOYER: 0.125,
     STUDY_EMPLOYEE: 0.025,
     STUDY_EMPLOYER: 0.075,
-    STUDY_CEILING: 15712,
   };
 
   // ===== 2025 Israel Deduction Constants =====
@@ -39,13 +40,14 @@
     NI_UPPER_CEILING: 50695,
     NI_LOWER_RATE: 0.004,
     NI_UPPER_RATE: 0.07,
+    HEALTH_LOWER_CEILING: 7522,
+    HEALTH_UPPER_CEILING: 50695,
     HEALTH_LOWER_RATE: 0.031,
     HEALTH_UPPER_RATE: 0.05,
     PENSION_EMPLOYEE: 0.06,
     PENSION_EMPLOYER: 0.125,
     STUDY_EMPLOYEE: 0.025,
     STUDY_EMPLOYER: 0.075,
-    STUDY_CEILING: 15712,
   };
 
   // ===== Meal Allowance & Fixed Monthly Additions =====
@@ -166,7 +168,47 @@
   // ================================================================
 
   /**
+   * Bituach Leumi (National Insurance) – dedicated calculation.
+   * @param {number} grossMonthly
+   * @param {object} C - deduction constants
+   * @returns {{ tier1: number, tier2: number, total: number }}
+   */
+  function calcBituachLeumi(grossMonthly, C) {
+    let tier1 = 0, tier2 = 0;
+    if (grossMonthly <= C.NI_LOWER_CEILING) {
+      tier1 = grossMonthly * C.NI_LOWER_RATE;
+    } else {
+      tier1 = C.NI_LOWER_CEILING * C.NI_LOWER_RATE;
+      const upper = Math.min(grossMonthly, C.NI_UPPER_CEILING) - C.NI_LOWER_CEILING;
+      if (upper > 0) tier2 = upper * C.NI_UPPER_RATE;
+    }
+    return { tier1, tier2, total: tier1 + tier2 };
+  }
+
+  /**
+   * Health Tax (Briut) – dedicated calculation, separate from Bituach Leumi.
+   * @param {number} grossMonthly
+   * @param {object} C - deduction constants
+   * @returns {{ tier1: number, tier2: number, total: number }}
+   */
+  function calcHealthTax(grossMonthly, C) {
+    const lowerCeiling = C.HEALTH_LOWER_CEILING != null ? C.HEALTH_LOWER_CEILING : C.NI_LOWER_CEILING;
+    const upperCeiling = C.HEALTH_UPPER_CEILING != null ? C.HEALTH_UPPER_CEILING : C.NI_UPPER_CEILING;
+    let tier1 = 0, tier2 = 0;
+    if (grossMonthly <= lowerCeiling) {
+      tier1 = grossMonthly * C.HEALTH_LOWER_RATE;
+    } else {
+      tier1 = lowerCeiling * C.HEALTH_LOWER_RATE;
+      const upper = Math.min(grossMonthly, upperCeiling) - lowerCeiling;
+      if (upper > 0) tier2 = upper * C.HEALTH_UPPER_RATE;
+    }
+    return { tier1, tier2, total: tier1 + tier2 };
+  }
+
+  /**
    * Monthly deductions (2026 Israel).
+   * Pension and Keren Hishtalmut: no ceiling/cap.
+   * Bituach Leumi and Health Tax: separate calculations.
    * @param {number} grossMonthly
    * @param {{ pension: boolean, study: boolean, ni: boolean }} toggles
    */
@@ -175,7 +217,6 @@
     const t = { pension: true, study: true, ni: true, ...toggles };
     const ded = { pension: 0, study: 0, ni: 0, nationalInsurance: 0, healthInsurance: 0 };
     const emp = { pension: 0, study: 0 };
-    let niTier1 = 0, niTier2 = 0, healthTier1 = 0, healthTier2 = 0;
 
     if (t.pension) {
       ded.pension = grossMonthly * C.PENSION_EMPLOYEE;
@@ -183,26 +224,17 @@
     }
 
     if (t.study) {
-      const studyBase = t.studyFullSalary ? grossMonthly : Math.min(grossMonthly, C.STUDY_CEILING);
-      ded.study = studyBase * C.STUDY_EMPLOYEE;
-      emp.study = studyBase * C.STUDY_EMPLOYER;
+      ded.study = grossMonthly * C.STUDY_EMPLOYEE;
+      emp.study = grossMonthly * C.STUDY_EMPLOYER;
     }
 
+    let bituachLeumi = { tier1: 0, tier2: 0, total: 0 };
+    let healthTax = { tier1: 0, tier2: 0, total: 0 };
     if (t.ni) {
-      if (grossMonthly <= C.NI_LOWER_CEILING) {
-        niTier1 = grossMonthly * C.NI_LOWER_RATE;
-        healthTier1 = grossMonthly * (C.HEALTH_LOWER_RATE || 0.031);
-      } else {
-        niTier1 = C.NI_LOWER_CEILING * C.NI_LOWER_RATE;
-        healthTier1 = C.NI_LOWER_CEILING * (C.HEALTH_LOWER_RATE || 0.031);
-        const upper = Math.min(grossMonthly, C.NI_UPPER_CEILING) - C.NI_LOWER_CEILING;
-        if (upper > 0) {
-          niTier2 = upper * C.NI_UPPER_RATE;
-          healthTier2 = upper * (C.HEALTH_UPPER_RATE || 0.05);
-        }
-      }
-      ded.nationalInsurance = niTier1 + niTier2;
-      ded.healthInsurance = healthTier1 + healthTier2;
+      bituachLeumi = calcBituachLeumi(grossMonthly, C);
+      healthTax = calcHealthTax(grossMonthly, C);
+      ded.nationalInsurance = bituachLeumi.total;
+      ded.healthInsurance = healthTax.total;
       ded.ni = ded.nationalInsurance + ded.healthInsurance;
     }
 
@@ -217,8 +249,10 @@
         ni: round(ded.ni),
         nationalInsurance: round(ded.nationalInsurance),
         healthInsurance: round(ded.healthInsurance),
-        niTier1: round(niTier1),
-        niTier2: round(niTier2),
+        niTier1: round(bituachLeumi.tier1),
+        niTier2: round(bituachLeumi.tier2),
+        healthTier1: round(healthTax.tier1),
+        healthTier2: round(healthTax.tier2),
         total: round(totalEmployee),
       },
       employer: {

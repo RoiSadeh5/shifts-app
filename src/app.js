@@ -9,10 +9,9 @@ var SalaryEngine = window.SalaryEngine;
 
 var userRates = { ...SalaryEngine.DEFAULTS };
 var creditPoints = 2.25;
-var dedSettings = { pension: true, study: true, ni: true, incomeTax: true, studyFullSalary: false, taxYear2025: false, simpleMode: false };
+var dedSettings = { pension: true, study: true, ni: true, incomeTax: true, taxYear2025: false, simpleMode: false };
 var showCharts = false;
 var notificationsEnabled = false;
-var STUDY_CEILING = SalaryEngine.DEDUCTION_CONSTANTS.STUDY_CEILING;
 
 function calculateShiftPay(shift) {
   return SalaryEngine.calculateShiftPay(shift, userRates);
@@ -281,6 +280,7 @@ function recalcAll() {
 
 // ===== Initialization =====
 async function init() {
+  haptic(true);
   loadSettings();
   if (typeof initDataStore === 'function') {
     await initDataStore();
@@ -295,7 +295,6 @@ async function init() {
   document.getElementById('toggleStudy').classList.toggle('on', dedSettings.study);
   document.getElementById('toggleNI').classList.toggle('on', dedSettings.ni);
   document.getElementById('toggleIncomeTax').classList.toggle('on', dedSettings.incomeTax);
-  document.getElementById('toggleStudyFullSalary').classList.toggle('on', dedSettings.studyFullSalary);
   const t2025 = document.getElementById('toggleTaxYear2025');
   if (t2025) t2025.classList.toggle('on', dedSettings.taxYear2025);
   const tSimple = document.getElementById('toggleSimpleMode');

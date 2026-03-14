@@ -90,11 +90,11 @@ assert('Employer Pension', d1.employer.pension, 1250);
 assert('Employer Study', d1.employer.study, 750);
 
 // =============================
-// TEST 7: Deductions study ceiling
+// TEST 7: Deductions – no cap on Keren Hishtalmut
 // =============================
-console.log('\n--- Test 7: Deductions study cap (Gross=20000) ---');
+console.log('\n--- Test 7: Deductions (Gross=20000, no study cap) ---');
 const d2 = Calc.calcDeductions(20000, { pension: true, study: true, ni: true });
-assert('Study Emp (capped)', d2.employee.study, 15712 * 0.025, 0.1);
+assert('Study Emp (full gross, no cap)', d2.employee.study, 20000 * 0.025, 0.1);
 
 // =============================
 // TEST 8: Plus with bonus – base+meal+3500

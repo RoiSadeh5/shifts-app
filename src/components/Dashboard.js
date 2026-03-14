@@ -116,8 +116,6 @@ function render() {
   document.getElementById('dedNI').textContent = `-${fmtNIS(niVal)}`;
   document.getElementById('dedHealth').textContent = `-${fmtNIS(healthVal)}`;
 
-  document.getElementById('studyCap').style.display = totalGross > STUDY_CEILING ? '' : 'none';
-
   const niTierRow = document.getElementById('niTierRow');
   const niDetail = document.getElementById('niTierDetail');
   if (ded.employee.ni > 0) {

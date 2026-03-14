@@ -260,8 +260,6 @@ function importData(e) {
           document.getElementById('toggleIncomeTax').classList.toggle('on', dedSettings.incomeTax);
           const t2025 = document.getElementById('toggleTaxYear2025');
           if (t2025) t2025.classList.toggle('on', dedSettings.taxYear2025);
-          const tStudy = document.getElementById('toggleStudyFullSalary');
-          if (tStudy) tStudy.classList.toggle('on', dedSettings.studyFullSalary);
           const tSimple = document.getElementById('toggleSimpleMode');
           if (tSimple) tSimple.classList.toggle('on', dedSettings.simpleMode);
         }
