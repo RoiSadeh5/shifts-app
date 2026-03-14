@@ -68,10 +68,21 @@ function render() {
     netSubText = 'לפי תלוש בפועל';
   }
 
-  document.getElementById('heroNet').textContent = fmtNIS(displayNet);
+  var heroNetEl = document.getElementById('heroNet');
+  var heroGrossEl = document.getElementById('heroGross');
+  if (typeof countUp === 'function') {
+    if (heroNetEl) countUp(heroNetEl, displayNet, { formatter: fmtNIS });
+    if (heroGrossEl) countUp(heroGrossEl, displayGross, { formatter: fmtNIS });
+  } else {
+    if (heroNetEl) heroNetEl.textContent = fmtNIS(displayNet);
+    if (heroGrossEl) heroGrossEl.textContent = fmtNIS(displayGross);
+  }
   document.getElementById('heroNetSub').textContent = netSubText;
-  document.getElementById('heroGross').textContent = fmtNIS(displayGross);
   document.getElementById('heroSub').textContent = `${monthShifts.length} משמרות · ${Math.round(totalH)} שעות`;
+  var payDateEl = document.getElementById('heroPaymentDate');
+  if (payDateEl && typeof formatPaymentDateLabel === 'function') {
+    payDateEl.textContent = formatPaymentDateLabel(currentMonth, currentYear);
+  }
 
   document.getElementById('statHours').textContent = Math.round(totalH * 10) / 10;
   document.getElementById('statShifts').textContent = monthShifts.length;
@@ -128,12 +139,26 @@ function render() {
   // Simple Mode: forcefully hide all advanced panels
   document.getElementById('deductionsPanel').style.display = (hasGross && !simple) ? '' : 'none';
   document.getElementById('employerPanel').style.display = (hasGross && !simple) ? '' : 'none';
-  document.getElementById('shareBtn').style.display = hasAnyData ? '' : 'none';
+  var shareEl = document.getElementById('shareButtons');
+  if (shareEl) {
+    shareEl.style.display = hasAnyData ? 'grid' : 'none';
+  }
   document.getElementById('forecastCard').style.display = 'none';
   document.getElementById('comparisonPanel').style.display = simple ? 'none' : '';
   document.getElementById('statsGrid').style.display = simple ? 'none' : '';
   document.getElementById('leaveBalance').style.display = simple ? 'none' : '';
   document.getElementById('breakdownSection').style.display = simple ? 'none' : '';
+
+  var chartsEl = document.getElementById('chartsContainer');
+  if (chartsEl) {
+    if (showCharts && !simple) {
+      chartsEl.style.display = '';
+      if (typeof initCharts === 'function') setTimeout(initCharts, 50);
+    } else {
+      chartsEl.style.display = 'none';
+      if (typeof destroyCharts === 'function') destroyCharts();
+    }
+  }
 
   // ===== Monthly Projection (visible in all modes) =====
   renderMonthlyProjection(totalGross, monthShifts);
@@ -225,6 +250,9 @@ function render() {
         </div>
       </div>`;
   }).join('');
+  if (typeof staggerEntrance === 'function') {
+    staggerEntrance(listEl, '.shift-item');
+  }
 }
 
 // ===== Monthly Projection =====
@@ -489,48 +517,7 @@ function savePayslipModal() {
   showToast('✅ תלוש נשמר');
 }
 
-// ===== Calendar =====
-
-function renderCalendar() {
-  const grid = document.getElementById('calGrid');
-  const details = document.getElementById('calDetails');
-  const monthShifts = getMonthShifts();
-
-  const shiftsByDay = {};
-  monthShifts.forEach(s => {
-    const day = parseInt(s.date.split('-')[2]);
-    if (!shiftsByDay[day]) shiftsByDay[day] = [];
-    shiftsByDay[day].push(s);
-  });
-
-  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const today = new Date();
-
-  let html = dayNames.map(d => `<div class="cal-header">${d}</div>`).join('');
-
-  for (let i = 0; i < firstDay; i++) html += '<div class="cal-day empty"></div>';
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const shifts = shiftsByDay[d] || [];
-    const isToday = d === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
-    const cls = [
-      'cal-day',
-      shifts.length ? 'has-shift' : '',
-      isToday ? 'today' : ''
-    ].filter(Boolean).join(' ');
-
-    const dots = shifts.map(s => `<div class="cal-dot ${dotCls[s.type]}"></div>`).join('');
-
-    html += `<div class="${cls}" onclick="showDayDetail(${d})">
-      <span>${d}</span>
-      ${dots ? `<div class="cal-dots">${dots}</div>` : ''}
-    </div>`;
-  }
-
-  grid.innerHTML = html;
-  details.innerHTML = '';
-}
+// ===== shareWhatsApp =====
 
 function shareWhatsApp() {
   const monthShifts = getMonthShifts();
@@ -562,27 +549,4 @@ function shareWhatsApp() {
   });
 
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
-}
-
-function showDayDetail(day) {
-  const details = document.getElementById('calDetails');
-  const monthShifts = getMonthShifts();
-  const dayShifts = monthShifts.filter(s => parseInt(s.date.split('-')[2]) === day);
-
-  if (dayShifts.length === 0) {
-    details.innerHTML = `<div class="cal-day-detail">
-      <div class="cdd-date">${day} ${hebrewMonths[currentMonth]}</div>
-      <div style="color:var(--text-dim);font-size:13px;">אין משמרות</div>
-    </div>`;
-    return;
-  }
-
-  details.innerHTML = dayShifts.map(s => `
-    <div class="cal-day-detail">
-      <div class="cdd-date">${day} ${hebrewMonths[currentMonth]} – <span class="type-badge ${badgeCls[s.type]}">${typeNames[s.type]}</span></div>
-      <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:22px;font-weight:700;color:var(--green)">${fmtNIS(s.result.totalPay)}</span>
-        <span style="color:var(--text-dim);font-size:13px;">${s.result.flatRate ? 'קבוע' : s.result.totalHours + ' שעות'}</span>
-      </div>
-    </div>`).join('');
 }

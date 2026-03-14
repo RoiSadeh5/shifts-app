@@ -1,7 +1,20 @@
-const CACHE_NAME = 'sachash-v3';
+const CACHE_NAME = 'sachash-v5';
 const STATIC_ASSETS = [
   './',
   './index.html',
+  './css/variables.css',
+  './css/base.css',
+  './css/components.css',
+  './css/pages.css',
+  './css/animations.css',
+  './src/store/db.js',
+  './src/utils/animate.js',
+  './src/utils/notifications.js',
+  './src/components/Charts.js',
+  './src/components/Calendar.js',
+  './src/components/Templates.js',
+  './src/components/PdfExport.js',
+  './src/components/ShareImage.js',
   './src/logic/salaryEngine.js',
   './src/app.js',
   './src/store/dataManager.js',

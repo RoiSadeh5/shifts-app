@@ -1,0 +1,24 @@
+/* שכ״ש – Design tokens */
+:root {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --card-alt: #1a2332;
+  --accent: #6366f1;
+  --accent-light: #818cf8;
+  --green: #10b981;
+  --green-dim: rgba(16,185,129,0.12);
+  --orange: #f59e0b;
+  --orange-dim: rgba(245,158,11,0.12);
+  --red: #ef4444;
+  --red-dim: rgba(239,68,68,0.10);
+  --blue: #38bdf8;
+  --blue-dim: rgba(56,189,248,0.12);
+  --accent-dim: rgba(99,102,241,0.12);
+  --text: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-dim: #64748b;
+  --border: rgba(148,163,184,0.1);
+  --border-strong: rgba(148,163,184,0.15);
+  --radius: 16px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}

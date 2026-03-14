@@ -2,6 +2,15 @@
 
 Hebrew (RTL) PWA for tracking work shifts and calculating gross/net salary.
 
+## App Store (iOS)
+
+The app is wrapped with **Capacitor** for native iOS distribution. See [APP_STORE.md](APP_STORE.md) for the full submission guide.
+
+```bash
+npm run cap:sync   # Build + sync to iOS
+npm run ios       # Open in Xcode
+```
+
 ## File Structure
 
 | Path | Purpose |

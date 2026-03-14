@@ -1,0 +1,51 @@
+/* Animations: keyframes, transitions, collapse/expand */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes staggerIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.shift-item.stagger-in {
+  animation: staggerIn 0.35s ease-out backwards;
+}
+
+@keyframes pageOut {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0.6; transform: translateX(6px); }
+}
+@keyframes pageIn {
+  from { opacity: 0.6; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.page.page-out { animation: pageOut 0.15s ease-out forwards; display: block !important; }
+.page.page-in { animation: pageIn 0.15s ease-out forwards; display: block !important; }
+
+@keyframes greetFadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.greeting-animated {
+  animation: greetFadeIn 0.6s ease-out both;
+}
+
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
+.ptr-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: ptr-spin 0.7s linear infinite;
+}
+
+/* Reduced motion (accessibility) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

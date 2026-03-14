@@ -10,6 +10,8 @@ var SalaryEngine = window.SalaryEngine;
 var userRates = { ...SalaryEngine.DEFAULTS };
 var creditPoints = 2.25;
 var dedSettings = { pension: true, study: true, ni: true, incomeTax: true, studyFullSalary: false, taxYear2025: false, simpleMode: false };
+var showCharts = false;
+var notificationsEnabled = false;
 var STUDY_CEILING = SalaryEngine.DEDUCTION_CONSTANTS.STUDY_CEILING;
 
 function calculateShiftPay(shift) {
@@ -124,21 +126,34 @@ function saveUserNameSetting() {
 
 // ===== Tab Navigation =====
 function switchTab(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page' + name).classList.add('active');
-  document.getElementById('tab' + name).classList.add('active');
-  if (name === 'Dashboard') {
-    updateGreeting();
-  } else {
-    const titles = { Add: 'הוספת משמרת', Calendar: 'לוח שנה', Annual: 'סיכום שנתי', Settings: 'הגדרות' };
-    const titleEl = document.getElementById('pageTitle');
-    titleEl.classList.remove('greeting-animated');
-    titleEl.textContent = titles[name];
+  haptic(true);
+  var activePage = document.querySelector('.page.active');
+  var targetPage = document.getElementById('page' + name);
+  var targetTab = document.getElementById('tab' + name);
+  if (!targetPage || !targetTab) return;
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  targetTab.classList.add('active');
+  function doRender() {
+    if (name === 'Dashboard') { updateGreeting(); render(); }
+    else if (name === 'Calendar') renderCalendar();
+    else if (name === 'Annual') renderAnnual();
+    else if (name === 'Add' && typeof renderTemplates === 'function') renderTemplates();
   }
-  if (name === 'Calendar') renderCalendar();
-  if (name === 'Dashboard') render();
-  if (name === 'Annual') renderAnnual();
+  if (typeof transitionPage === 'function' && activePage && activePage !== targetPage) {
+    transitionPage(activePage, targetPage, doRender);
+  } else {
+    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+    targetPage.classList.add('active');
+    doRender();
+  }
+  if (name !== 'Dashboard') {
+    var titles = { Add: 'הוספת משמרת', Calendar: 'לוח שנה', Annual: 'סיכום שנתי', Settings: 'הגדרות' };
+    var titleEl = document.getElementById('pageTitle');
+    if (titleEl) {
+      titleEl.classList.remove('greeting-animated');
+      titleEl.textContent = titles[name] || 'שכ״ש';
+    }
+  }
 }
 
 // ===== Month Navigation =====
@@ -189,10 +204,41 @@ function initServiceWorker() {
 
 // ===== Install hint (Add to Home Screen) =====
 var INSTALL_HINT_KEY = 'shifter_hide_install_hint';
+var deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  maybeShowInstallHint();
+});
+
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
 function dismissInstallHint() {
   try { localStorage.setItem(INSTALL_HINT_KEY, '1'); } catch (e) {}
   document.getElementById('installHint')?.classList.remove('visible');
 }
+
+function triggerAddToHomeScreen() {
+  haptic(true);
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(function(choice) {
+      if (choice.outcome === 'accepted') {
+        showToast('נוסף למסך הבית ✓');
+        dismissInstallHint();
+      }
+      deferredInstallPrompt = null;
+    });
+  } else if (isIOS()) {
+    showToast('הקש על כפתור השיתוף בתחתית ← הוסף למסך הבית');
+  } else {
+    showToast('בתפריט הדפדפן: הוסף למסך הבית או התקן');
+  }
+}
+
 function maybeShowInstallHint() {
   const el = document.getElementById('installHint');
   if (!el) return;
@@ -204,6 +250,7 @@ function maybeShowInstallHint() {
   if (isStandalone) return;
   el.classList.add('visible');
 }
+
 function initInstallHint() {
   setTimeout(function() {
     if (!document.getElementById('onboardingOverlay')?.classList?.contains('visible')) {
@@ -233,8 +280,11 @@ function recalcAll() {
 }
 
 // ===== Initialization =====
-function init() {
+async function init() {
   loadSettings();
+  if (typeof initDataStore === 'function') {
+    await initDataStore();
+  }
   document.getElementById('settingBase').value = userRates.baseRate;
   document.getElementById('settingWeekend').value = userRates.weekendMultiplier;
   document.getElementById('settingVacation').value = userRates.vacationDayRate;
@@ -250,6 +300,10 @@ function init() {
   if (t2025) t2025.classList.toggle('on', dedSettings.taxYear2025);
   const tSimple = document.getElementById('toggleSimpleMode');
   if (tSimple) tSimple.classList.toggle('on', dedSettings.simpleMode);
+  const tCharts = document.getElementById('toggleCharts');
+  if (tCharts) tCharts.classList.toggle('on', showCharts);
+  const tNotif = document.getElementById('toggleNotifications');
+  if (tNotif) tNotif.classList.toggle('on', notificationsEnabled);
 
   const leave = loadLeaveBalances();
   document.getElementById('settingVacBal').value = leave.vacation;
@@ -276,6 +330,12 @@ function init() {
   initOfflineIndicator();
   initServiceWorker();
   initInstallHint();
+  if (notificationsEnabled && typeof schedulePeriodicCheck === 'function') schedulePeriodicCheck();
+
+  // Hide Add to Home button in Settings when already installed
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator.standalone === true);
+  var btnAdd = document.getElementById('btnAddToHome');
+  if (btnAdd && isStandalone) btnAdd.style.display = 'none';
 
   // Onboarding: show if no name saved or empty
   if (!savedName || savedName.trim() === '') {

@@ -1,0 +1,12 @@
+{
+  "appId": "com.roisadeh.sachash",
+  "appName": "שכ״ש",
+  "webDir": "www",
+  "backgroundColor": "#0f172a",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 500,
+      "backgroundColor": "#0f172a"
+    }
+  }
+}

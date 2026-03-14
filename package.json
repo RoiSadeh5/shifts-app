@@ -5,9 +5,23 @@
   "scripts": {
     "start": "python3 -m http.server 8000",
     "dev": "python3 -m http.server 8000",
-    "test": "node test-regression.js"
+    "test": "node test-regression.js",
+    "build": "node scripts/copy-to-www.js",
+    "cap:sync": "npm run build && npx cap sync",
+    "ios": "npx cap open ios"
   },
-  "keywords": ["pwa", "shifts", "salary", "hebrew"],
+  "keywords": [
+    "pwa",
+    "shifts",
+    "salary",
+    "hebrew"
+  ],
   "author": "Roi Sadeh",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
+    "@capacitor/ios": "^8.2.0",
+    "@capacitor/splash-screen": "^8.0.1"
+  }
 }

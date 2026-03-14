@@ -26,6 +26,28 @@ function toggleDedSetting(key) {
   saveDedSettings();
 }
 
+function toggleNotifications() {
+  notificationsEnabled = !notificationsEnabled;
+  var el = document.getElementById('toggleNotifications');
+  if (el) el.classList.toggle('on', notificationsEnabled);
+  var existing = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+  existing.notificationsEnabled = notificationsEnabled;
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(existing));
+  if (notificationsEnabled && typeof requestNotificationPermission === 'function') {
+    requestNotificationPermission(function() {});
+  }
+}
+
+function toggleCharts() {
+  showCharts = !showCharts;
+  var el = document.getElementById('toggleCharts');
+  if (el) el.classList.toggle('on', showCharts);
+  var existing = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+  existing.showCharts = showCharts;
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(existing));
+  render();
+}
+
 function toggleDeductions() {
   const body = document.getElementById('dedBody');
   const arrow = document.getElementById('dedArrow');
@@ -56,10 +78,11 @@ function saveLeaveSettings() {
 
 function clearAllData() {
   showConfirm('מחיקת כל הנתונים', 'בטוח שברצונך למחוק את כל המשמרות והתלושים? לא ניתן לשחזר.', () => {
-    localStorage.removeItem(SHIFTS_KEY);
-    localStorage.removeItem(HISTORY_KEY);
+    saveShifts([]);
+    saveHistory({});
     render();
     renderCalendar();
+    if (typeof initCharts === 'function' && showCharts) initCharts();
     showToast('🗑️ כל הנתונים נמחקו');
   });
 }

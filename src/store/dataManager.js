@@ -1,5 +1,6 @@
 /**
- * Data Manager – localStorage persistence for shifts, settings, history, and leave.
+ * Data Manager – IndexedDB (with localStorage fallback) for shifts & history.
+ * Settings, leave, username remain in localStorage.
  * All functions operate on globals from app.js (userRates, creditPoints, dedSettings).
  */
 
@@ -10,22 +11,103 @@ var BACKUP_TS_KEY = 'shifter_last_backup';
 var LEAVE_KEY = 'shifter_leave';
 var USERNAME_KEY = 'shifter_username';
 
+var _cache = { shifts: [], history: {}, ready: false };
+
+function initDataStore() {
+  return new Promise(function(resolve) {
+    if (typeof window === 'undefined' || !window.dbReady) {
+      _loadFromLocalStorage();
+      _cache.ready = true;
+      resolve();
+      return;
+    }
+    window.dbReady.then(function() {
+      if (!window.db) {
+        _loadFromLocalStorage();
+        _cache.ready = true;
+        resolve();
+        return;
+      }
+      window.db.getShifts().then(function(arr) {
+        var hasIdbShifts = arr && arr.length > 0;
+        var lsShifts = [];
+        try { lsShifts = JSON.parse(localStorage.getItem(SHIFTS_KEY)) || []; } catch (e) {}
+        if (!hasIdbShifts && lsShifts.length > 0) {
+          _cache.shifts = lsShifts;
+          window.db.saveShifts(lsShifts).catch(function() {});
+        } else {
+          _cache.shifts = arr || [];
+        }
+        return window.db.getHistory();
+      }).then(function(h) {
+        var hasIdbHistory = h && Object.keys(h).length > 0;
+        var lsHistory = {};
+        try { lsHistory = JSON.parse(localStorage.getItem(HISTORY_KEY)) || {}; } catch (e) {}
+        if (!hasIdbHistory && Object.keys(lsHistory).length > 0) {
+          _cache.history = lsHistory;
+          window.db.saveHistory(lsHistory).catch(function() {});
+        } else {
+          _cache.history = h || {};
+        }
+        _cache.ready = true;
+        resolve();
+      }).catch(function() {
+        _loadFromLocalStorage();
+        _cache.ready = true;
+        resolve();
+      });
+    }).catch(function() {
+      _loadFromLocalStorage();
+      _cache.ready = true;
+      resolve();
+    });
+  });
+}
+
+function _loadFromLocalStorage() {
+  try {
+    _cache.shifts = JSON.parse(localStorage.getItem(SHIFTS_KEY)) || [];
+    _cache.history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || {};
+  } catch (e) {
+    _cache.shifts = [];
+    _cache.history = {};
+  }
+}
+
 function loadShifts() {
-  try { return JSON.parse(localStorage.getItem(SHIFTS_KEY)) || []; }
-  catch { return []; }
+  return _cache.ready ? _cache.shifts : (function() {
+    try { return JSON.parse(localStorage.getItem(SHIFTS_KEY)) || []; }
+    catch { return []; }
+  })();
 }
 
 function saveShifts(list) {
-  localStorage.setItem(SHIFTS_KEY, JSON.stringify(list));
+  _cache.shifts = list || [];
+  if (typeof window !== 'undefined' && window.db) {
+    window.db.saveShifts(_cache.shifts).catch(function() {
+      try { localStorage.setItem(SHIFTS_KEY, JSON.stringify(list)); } catch (e) {}
+    });
+  } else {
+    try { localStorage.setItem(SHIFTS_KEY, JSON.stringify(list)); } catch (e) {}
+  }
 }
 
 function loadHistory() {
-  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || {}; }
-  catch { return {}; }
+  return _cache.ready ? _cache.history : (function() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || {}; }
+    catch { return {}; }
+  })();
 }
 
 function saveHistory(h) {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
+  _cache.history = h || {};
+  if (typeof window !== 'undefined' && window.db) {
+    window.db.saveHistory(_cache.history).catch(function() {
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch (e) {}
+    });
+  } else {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch (e) {}
+  }
 }
 
 function loadPayslip(year, month) {
@@ -52,6 +134,8 @@ function loadSettings() {
       userRates.bonusQuarterly = s.bonus || 3500;
       if (s.creditPoints !== undefined) creditPoints = s.creditPoints;
       if (s.deductions) dedSettings = { ...dedSettings, ...s.deductions };
+      if (s.showCharts !== undefined) showCharts = !!s.showCharts;
+      if (s.notificationsEnabled !== undefined) notificationsEnabled = !!s.notificationsEnabled;
     }
   } catch {}
 }
