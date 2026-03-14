@@ -194,13 +194,6 @@ function renderCore() {
     }
   }
 
-  // ===== Savings Dashboard (Pension + Keren Hishtalmut) =====
-  if (!simple && typeof renderSavings === 'function') {
-    renderSavings();
-  } else {
-    var savingsSection = document.getElementById('savingsSection');
-    if (savingsSection) savingsSection.style.display = 'none';
-  }
 
   // ===== Monthly Projection (visible in all modes) =====
   renderMonthlyProjection(totalGross, monthShifts);

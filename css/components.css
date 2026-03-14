@@ -583,15 +583,28 @@
 /* ===== CHARTS (Chart.js responsive containers) ===== */
 .charts-wrapper {
   contain: layout style paint;
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-top: 8px;
 }
+.charts-wrapper .section-label { color: var(--text-secondary); }
 .charts-wrapper .chart-box {
   position: relative;
   width: 100%;
   min-height: 0;
+  background: var(--card-alt);
+  border-radius: 12px;
+  padding: 8px;
 }
 .charts-wrapper canvas {
   display: block;
   max-width: 100%;
+}
+.savings-section .chart-box {
+  background: var(--card-alt);
+  border-radius: 12px;
+  padding: 8px;
 }
 
 /* ===== BACKUP INFO ===== */

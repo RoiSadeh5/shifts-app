@@ -4,6 +4,8 @@
  */
 var chartInstances = { monthly: null, donut: null, trend: null };
 
+var CHART_FONT = "'Heebo', -apple-system, BlinkMacSystemFont, sans-serif";
+
 function destroyCharts() {
   [chartInstances.monthly, chartInstances.donut, chartInstances.trend].forEach(function(c) {
     if (c) { c.destroy(); }
@@ -13,15 +15,28 @@ function destroyCharts() {
   chartInstances.trend = null;
 }
 
+function initChartDefaults() {
+  if (typeof Chart === 'undefined') return;
+  Chart.defaults.font.family = CHART_FONT;
+  Chart.defaults.font.size = 11;
+  Chart.defaults.color = '#94a3b8';
+}
+
 function getChartDefaults() {
+  if (typeof Chart !== 'undefined') initChartDefaults();
   return {
     responsive: true,
     maintainAspectRatio: false,
     devicePixelRatio: typeof window !== 'undefined' && window.devicePixelRatio ? Math.min(window.devicePixelRatio, 2) : 1,
     plugins: {
-      legend: { display: true, position: 'top', rtl: true }
+      legend: {
+        display: true,
+        position: 'top',
+        rtl: true,
+        labels: { font: { family: CHART_FONT, size: 11 }, boxWidth: 12, boxHeight: 12, padding: 16 }
+      }
     },
-    layout: { padding: { top: 8, right: 8, bottom: 8, left: 8 } }
+    layout: { padding: { top: 12, right: 16, bottom: 12, left: 16 } }
   };
 }
 
@@ -94,6 +109,7 @@ function initCharts() {
   if (typeof Chart === 'undefined') return;
   var container = document.getElementById('chartsContainer');
   if (!container) return;
+  initChartDefaults();
   try {
     initChartsCore();
   } catch (e) {
@@ -113,17 +129,27 @@ function initChartsCore() {
       data: {
         labels: monthlyData.labels,
         datasets: [
-          { label: 'ברוטו', data: monthlyData.gross, backgroundColor: 'rgba(99,102,241,0.7)' },
-          { label: 'נטו', data: monthlyData.net, backgroundColor: 'rgba(16,185,129,0.7)' }
+          { label: 'ברוטו', data: monthlyData.gross, backgroundColor: 'rgba(129,140,248,0.85)' },
+          { label: 'נטו', data: monthlyData.net, backgroundColor: 'rgba(16,185,129,0.85)' }
         ]
       },
       options: Object.assign({}, getChartDefaults(), {
+        indexAxis: 'x',
         scales: {
-          x: { stacked: false, grid: { display: false } },
-          y: { beginAtZero: true, suggestedMax: maxVal * 1.15, ticks: { maxTicksLimit: 6 } }
+          x: {
+            stacked: false,
+            grid: { display: false },
+            ticks: { font: { family: CHART_FONT, size: 10 }, maxRotation: 45 }
+          },
+          y: {
+            beginAtZero: true,
+            suggestedMax: maxVal * 1.15,
+            grid: { color: 'rgba(148,163,184,0.08)' },
+            ticks: { font: { family: CHART_FONT, size: 10 }, maxTicksLimit: 6 }
+          }
         },
-        barPercentage: 0.7,
-        categoryPercentage: 0.8
+        barPercentage: 0.65,
+        categoryPercentage: 0.85
       })
     });
   }
@@ -135,11 +161,11 @@ function initChartsCore() {
       type: 'doughnut',
       data: {
         labels: donutData.labels,
-        datasets: [{ data: donutData.data, backgroundColor: donutData.backgroundColor }]
+        datasets: [{ data: donutData.data, backgroundColor: donutData.backgroundColor, borderWidth: 2, borderColor: '#1e293b' }]
       },
       options: Object.assign({}, getChartDefaults(), {
-        cutout: '55%',
-        plugins: { legend: { display: true, position: 'bottom', rtl: true } }
+        cutout: '60%',
+        plugins: { legend: { display: true, position: 'bottom', rtl: true, labels: { font: { family: CHART_FONT }, padding: 12 } } }
       })
     });
   }
@@ -151,12 +177,12 @@ function initChartsCore() {
       type: 'line',
       data: {
         labels: monthlyData.labels,
-        datasets: [{ label: 'נטו', data: monthlyData.net, borderColor: '#10b981', borderWidth: 2, fill: true, backgroundColor: 'rgba(16,185,129,0.15)' }]
+        datasets: [{ label: 'נטו', data: monthlyData.net, borderColor: '#10b981', borderWidth: 2, fill: true, backgroundColor: 'rgba(16,185,129,0.12)', tension: 0.3 }]
       },
       options: Object.assign({}, getChartDefaults(), {
         scales: {
-          x: { grid: { display: false } },
-          y: { beginAtZero: true, suggestedMax: maxNet * 1.2, ticks: { maxTicksLimit: 5 } }
+          x: { grid: { display: false }, ticks: { font: { family: CHART_FONT, size: 10 } } },
+          y: { beginAtZero: true, suggestedMax: maxNet * 1.2, grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { font: { family: CHART_FONT, size: 10 }, maxTicksLimit: 5 } }
         }
       })
     });

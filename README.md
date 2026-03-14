@@ -15,13 +15,20 @@ npm run ios       # Open in Xcode
 
 | Path | Purpose |
 |---|---|
-| `src/logic/salaryEngine.js` | **Unified salary engine** – shift pay (getRateAt, calculatePayForRange, calculateShiftPay), 2026 tax brackets (calcDeductions, calcIncomeTax), annual summary (calcAnnualSummary). Pure math, no DOM. |
-| `src/store/dataManager.js` | **Data manager** – localStorage persistence for shifts, settings, and history. Export/import. |
-| `src/components/Dashboard.js` | Dashboard + Calendar – monthly summary, deduction panels, shift list, calendar grid. |
-| `src/components/ShiftForm.js` | Shift form – type selection, date range, result panel. |
-| `src/components/AnnualSummary.js` | Annual summary – Form 106 view and past paycheck history. |
-| `src/components/settings.js` | Settings page – rate inputs, deduction toggles, data management. |
-| `src/app.js` | **Main app** – shared state, constants, engine bridge, navigation, init. |
+| `src/logic/salaryEngine.js` | **Salary engine** – shift pay, tax brackets, deductions, annual summary. Pure math. |
+| `src/store.js` | **Data store** – IndexedDB + localStorage for shifts, history, settings, savings. Export/import. |
+| `src/utils.js` | **Utils** – animations (countUp, staggerEntrance), notifications, payment date helpers. |
+| `src/app.js` | **Main app** – shared state, navigation, init. |
+| `src/components/Dashboard.js` | Dashboard – monthly summary, deductions, shift list, payslip. |
+| `src/components/Charts.js` | Charts – monthly bar, donut, trend (Chart.js). |
+| `src/components/Savings.js` | Savings – pension, study fund, general savings, projections. |
+| `src/components/Calendar.js` | Calendar – month grid, swipe, day detail. |
+| `src/components/ShiftForm.js` | Add shift form – type, date range, result. |
+| `src/components/Templates.js` | Shift templates – apply to week/month. |
+| `src/components/AnnualSummary.js` | Annual – Form 106, history. |
+| `src/components/settings.js` | Settings – rates, toggles, backup. |
+| `src/components/PdfExport.js` | PDF export. |
+| `src/components/ShareImage.js` | Share image (Web Share). |
 | `shiftCalculator.js` | Node.js compatibility wrapper – re-exports from `src/logic/salaryEngine.js` for tests & demo. |
 | `index.html` | UI layout + CSS + script imports. |
 | `sw.js` | Service worker – network-first with offline fallback. |

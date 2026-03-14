@@ -93,10 +93,16 @@ function renderSavings() {
     generalCount > 0 ||
     (dedSettings && (dedSettings.pension || dedSettings.study)) ||
     (getSavingsMonthlyContribution('pension') > 0 || getSavingsMonthlyContribution('study') > 0);
+  var emptyEl = document.getElementById('savingsEmptyState');
+  var contentEl = document.getElementById('savingsContentArea');
   if (!hasAny) {
-    section.style.display = 'none';
+    if (emptyEl) emptyEl.style.display = 'block';
+    if (contentEl) contentEl.style.display = 'none';
+    section.style.display = 'block';
     return;
   }
+  if (emptyEl) emptyEl.style.display = 'none';
+  if (contentEl) contentEl.style.display = 'block';
   section.style.display = 'block';
 
   renderSavingsFund('pension', 'קרן פנסיה');
@@ -244,6 +250,7 @@ function deleteGeneralSavingsEntryUi(id) {
 function renderSavingsChart() {
   var canvas = document.getElementById('savingsChartCanvas');
   if (!canvas || typeof Chart === 'undefined') return;
+  if (typeof initChartDefaults === 'function') initChartDefaults();
   if (savingsChartInstance) {
     savingsChartInstance.destroy();
     savingsChartInstance = null;
@@ -256,14 +263,14 @@ function renderSavingsChart() {
     data: {
       labels: data.labels,
       datasets: [
-        { label: 'פנסיה', data: data.pension, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', fill: true, tension: 0.3 },
-        { label: 'קרן השתלמות', data: data.study, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3 }
+        { label: 'פנסיה', data: data.pension, borderColor: '#818cf8', backgroundColor: 'rgba(129,140,248,0.12)', fill: true, tension: 0.3 },
+        { label: 'קרן השתלמות', data: data.study, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.12)', fill: true, tension: 0.3 }
       ]
     },
     options: Object.assign({}, defaults, {
       scales: {
-        x: { grid: { display: false } },
-        y: { beginAtZero: true, ticks: { callback: function(v) { return '₪' + (v >= 1000 ? (v/1000) + 'k' : v); } } }
+        x: { grid: { display: false }, ticks: { font: { family: "'Heebo', sans-serif", size: 10 } } },
+        y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { font: { family: "'Heebo', sans-serif", size: 10 }, callback: function(v) { return '₪' + (v >= 1000 ? (v/1000) + 'k' : v); } } }
       },
       plugins: { legend: { position: 'bottom', rtl: true } }
     })

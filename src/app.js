@@ -5,9 +5,9 @@
  */
 
 // ===== Bridge to Salary Engine =====
-var SalaryEngine = window.SalaryEngine;
+var SalaryEngine = window.SalaryEngine || { DEFAULTS: { baseRate: 75, weekendMultiplier: 1.5, vacationDayRate: 1750, bonusQuarterly: 3500 }, calculateShiftPay: function() { return {}; }, calcDeductions: function() { return { employee: {}, employer: {} }; }, calcIncomeTax: function() { return { finalTax: 0, tiers: [] }; }, calculateFixedMonthlyAdditions: function() { return { total: 0 }; } };
 
-var userRates = { ...SalaryEngine.DEFAULTS };
+var userRates = Object.assign({}, SalaryEngine.DEFAULTS || { baseRate: 75, weekendMultiplier: 1.5, vacationDayRate: 1750, bonusQuarterly: 3500 });
 var creditPoints = 2.25;
 var dedSettings = { pension: true, study: true, ni: true, incomeTax: true, taxYear2025: false, simpleMode: false };
 var showCharts = false;
@@ -53,10 +53,11 @@ function haptic(light) {
 }
 
 function showToast(msg) {
-  const t = document.getElementById('toast');
+  var t = document.getElementById('toast');
+  if (!t) return;
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
 }
 
 function showConfirm(title, message, onConfirm, okLabel) {
@@ -143,9 +144,11 @@ function switchTab(name) {
     requestAnimationFrame(function() { requestAnimationFrame(renderAnnual); });
   } else if (name === 'Add' && typeof renderTemplates === 'function') {
     requestAnimationFrame(function() { requestAnimationFrame(renderTemplates); });
+  } else if (name === 'Savings' && typeof renderSavings === 'function') {
+    requestAnimationFrame(function() { requestAnimationFrame(renderSavings); });
   }
   if (name !== 'Dashboard') {
-    var titles = { Add: 'הוספת משמרת', Calendar: 'לוח שנה', Annual: 'סיכום שנתי', Settings: 'הגדרות' };
+    var titles = { Add: 'הוספת משמרת', Calendar: 'לוח שנה', Annual: 'סיכום שנתי', Settings: 'הגדרות', Savings: 'חוסן פנסיוני' };
     var titleEl = document.getElementById('pageTitle');
     if (titleEl) {
       titleEl.classList.remove('greeting-animated');
@@ -171,9 +174,11 @@ function changeMonth(delta) {
 }
 
 function updateMonthLabels() {
-  const lbl = `${hebrewMonths[currentMonth]} ${currentYear}`;
-  document.getElementById('monthLabel').textContent = lbl;
-  document.getElementById('calMonthLabel').textContent = lbl;
+  var lbl = hebrewMonths[currentMonth] + ' ' + currentYear;
+  var ml = document.getElementById('monthLabel');
+  if (ml) ml.textContent = lbl;
+  var cml = document.getElementById('calMonthLabel');
+  if (cml) cml.textContent = lbl;
 }
 
 // ===== Service worker update prompt =====
@@ -277,28 +282,48 @@ function initOfflineIndicator() {
 
 // ===== Recalculate All Shifts =====
 function recalcAll() {
-  const shifts = loadShifts();
-  shifts.forEach(s => { s.result = calculateShiftPay(s); });
-  saveShifts(shifts);
-  render();
+  try {
+    var shifts = typeof loadShifts === 'function' ? loadShifts() : [];
+    if (!Array.isArray(shifts)) return;
+    for (var i = 0; i < shifts.length; i++) {
+      shifts[i].result = calculateShiftPay(shifts[i]);
+    }
+    if (typeof saveShifts === 'function') saveShifts(shifts);
+    if (typeof render === 'function') render();
+  } catch (e) {
+    console.error('recalcAll error:', e);
+  }
 }
 
 // ===== Initialization =====
 async function init() {
-  loadSettings();
-  if (typeof initDataStore === 'function') {
-    await initDataStore();
+  try {
+    await initCore();
+  } catch (e) {
+    console.error('Init error:', e);
+    var t = document.getElementById('toast');
+    if (t) { t.textContent = 'שגיאה בטעינה – נסה לרענן'; t.classList.add('show'); }
   }
-  document.getElementById('settingBase').value = userRates.baseRate;
-  document.getElementById('settingWeekend').value = userRates.weekendMultiplier;
-  document.getElementById('settingVacation').value = userRates.vacationDayRate;
-  document.getElementById('settingBonus').value = userRates.bonusQuarterly;
-  document.getElementById('settingCreditPts').value = creditPoints;
+}
 
-  document.getElementById('togglePension').classList.toggle('on', dedSettings.pension);
-  document.getElementById('toggleStudy').classList.toggle('on', dedSettings.study);
-  document.getElementById('toggleNI').classList.toggle('on', dedSettings.ni);
-  document.getElementById('toggleIncomeTax').classList.toggle('on', dedSettings.incomeTax);
+async function initCore() {
+  if (typeof loadSettings === 'function') loadSettings();
+  if (typeof initDataStore === 'function') {
+    await initDataStore().catch(function(e) {
+      console.warn('initDataStore fallback:', e);
+    });
+  }
+  var sb = document.getElementById('settingBase');
+  if (sb) sb.value = userRates.baseRate;
+  var sw = document.getElementById('settingWeekend'); if (sw) sw.value = userRates.weekendMultiplier;
+  var sv = document.getElementById('settingVacation'); if (sv) sv.value = userRates.vacationDayRate;
+  var sbon = document.getElementById('settingBonus'); if (sbon) sbon.value = userRates.bonusQuarterly;
+  var scp = document.getElementById('settingCreditPts'); if (scp) scp.value = creditPoints;
+
+  var tP = document.getElementById('togglePension'); if (tP) tP.classList.toggle('on', dedSettings.pension);
+  var tS = document.getElementById('toggleStudy'); if (tS) tS.classList.toggle('on', dedSettings.study);
+  var tN = document.getElementById('toggleNI'); if (tN) tN.classList.toggle('on', dedSettings.ni);
+  var tI = document.getElementById('toggleIncomeTax'); if (tI) tI.classList.toggle('on', dedSettings.incomeTax);
   const t2025 = document.getElementById('toggleTaxYear2025');
   if (t2025) t2025.classList.toggle('on', dedSettings.taxYear2025);
   const tSimple = document.getElementById('toggleSimpleMode');
@@ -308,18 +333,18 @@ async function init() {
   const tNotif = document.getElementById('toggleNotifications');
   if (tNotif) tNotif.classList.toggle('on', notificationsEnabled);
 
-  const leave = loadLeaveBalances();
-  document.getElementById('settingVacBal').value = leave.vacation;
-  document.getElementById('settingSickBal').value = leave.sick;
+  var leave = typeof loadLeaveBalances === 'function' ? loadLeaveBalances() : { vacation: 0, sick: 0 };
+  var vacEl = document.getElementById('settingVacBal'); if (vacEl) vacEl.value = leave.vacation;
+  var sickEl = document.getElementById('settingSickBal'); if (sickEl) sickEl.value = leave.sick;
 
-  const today = new Date();
+  var today = new Date();
   const y = today.getFullYear();
   const m = String(today.getMonth() + 1).padStart(2, '0');
   const d = String(today.getDate()).padStart(2, '0');
-  const todayStr = `${y}-${m}-${d}`;
-  document.getElementById('shiftDate').value = todayStr;
-  document.getElementById('rangeStart').value = todayStr;
-  document.getElementById('rangeEnd').value = todayStr;
+  var todayStr = y + '-' + m + '-' + d;
+  var sd = document.getElementById('shiftDate'); if (sd) sd.value = todayStr;
+  var rs = document.getElementById('rangeStart'); if (rs) rs.value = todayStr;
+  var re = document.getElementById('rangeEnd'); if (re) re.value = todayStr;
 
   // Profile (wrapped to prevent blocking init if localStorage is unavailable)
   var savedName = null;
@@ -329,7 +354,11 @@ async function init() {
 
   updateMonthLabels();
   recalcAll();
-  updateBackupDisplay();
+  if (typeof requestIdleCallback !== 'undefined') {
+    requestIdleCallback(function() { updateBackupDisplay(); }, { timeout: 500 });
+  } else {
+    updateBackupDisplay();
+  }
   initOfflineIndicator();
   initServiceWorker();
   initInstallHint();
