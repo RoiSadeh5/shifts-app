@@ -123,6 +123,114 @@ function showConfirm(title, message, onConfirm, okLabel) {
   };
 }
 
+// ===== Tutorial (5 slides, first-time) =====
+var TUTORIAL_KEY = 'shifter_tutorial_complete';
+function isTutorialComplete() {
+  try { return localStorage.getItem(TUTORIAL_KEY) === '1'; } catch (e) { return false; }
+}
+function setTutorialComplete() {
+  try { localStorage.setItem(TUTORIAL_KEY, '1'); } catch (e) {}
+}
+
+var tutorialSlide = 0;
+var TUTORIAL_TOTAL = 5;
+
+function initTutorialDots() {
+  var container = document.getElementById('tutorialDots');
+  if (!container) return;
+  container.innerHTML = '';
+  for (var i = 0; i < TUTORIAL_TOTAL; i++) {
+    var dot = document.createElement('span');
+    dot.className = 'tutorial-dot' + (i === 0 ? ' active' : '');
+    dot.setAttribute('aria-hidden', 'true');
+    container.appendChild(dot);
+  }
+}
+
+function updateTutorialUI() {
+  var slides = document.querySelectorAll('.tutorial-slide');
+  var dots = document.querySelectorAll('.tutorial-dot');
+  var backBtn = document.getElementById('tutorialBack');
+  var nextBtn = document.getElementById('tutorialNext');
+  var startBtn = document.getElementById('tutorialStart');
+  slides.forEach(function(s, i) { s.classList.toggle('active', i === tutorialSlide); });
+  dots.forEach(function(d, i) { d.classList.toggle('active', i === tutorialSlide); });
+  if (backBtn) backBtn.style.display = tutorialSlide === 0 ? 'none' : '';
+  if (nextBtn) nextBtn.style.display = tutorialSlide === TUTORIAL_TOTAL - 1 ? 'none' : '';
+  if (startBtn) startBtn.style.display = tutorialSlide === TUTORIAL_TOTAL - 1 ? '' : 'none';
+}
+
+function showTutorial() {
+  var overlay = document.getElementById('tutorialOverlay');
+  if (!overlay) return;
+  tutorialSlide = 0;
+  initTutorialDots();
+  updateTutorialUI();
+  overlay.style.display = 'flex';
+  overlay.setAttribute('aria-hidden', 'false');
+  requestAnimationFrame(function() { overlay.classList.add('visible'); });
+}
+
+function hideTutorial() {
+  var overlay = document.getElementById('tutorialOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('visible');
+  setTimeout(function() {
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden', 'true');
+  }, 250);
+}
+
+function skipTutorial() {
+  if (typeof haptic === 'function') haptic(true);
+  setTutorialComplete();
+  hideTutorial();
+  maybeShowNameOnboarding();
+}
+
+function tutorialNext() {
+  if (typeof haptic === 'function') haptic(true);
+  if (tutorialSlide < TUTORIAL_TOTAL - 1) {
+    tutorialSlide++;
+    updateTutorialUI();
+  }
+}
+
+function tutorialPrev() {
+  if (typeof haptic === 'function') haptic(true);
+  if (tutorialSlide > 0) {
+    tutorialSlide--;
+    updateTutorialUI();
+  }
+}
+
+function completeTutorial() {
+  if (typeof haptic === 'function') haptic(true);
+  setTutorialComplete();
+  hideTutorial();
+  maybeShowNameOnboarding();
+}
+
+function maybeShowNameOnboarding() {
+  var savedName = null;
+  try { savedName = typeof loadUserName === 'function' ? loadUserName() : null; } catch (e) {}
+  if (!savedName || String(savedName).trim() === '') {
+    var overlay = document.getElementById('onboardingOverlay');
+    if (overlay) {
+      overlay.style.display = 'flex';
+      requestAnimationFrame(function() { overlay.classList.add('visible'); });
+      var nameField = document.getElementById('onboardingName');
+      if (nameField) {
+        nameField.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') completeOnboarding();
+        });
+      }
+    }
+  } else {
+    updateGreeting();
+  }
+}
+
 // ===== Greeting & Onboarding =====
 function updateGreeting() {
   const name = (loadUserName() || '').trim();
@@ -414,13 +522,15 @@ async function initCore() {
   var btnAdd = document.getElementById('btnAddToHome');
   if (btnAdd && isStandalone) btnAdd.style.display = 'none';
 
-  // Onboarding: show if no name saved or empty
-  if (!savedName || savedName.trim() === '') {
-    const overlay = document.getElementById('onboardingOverlay');
+  // Tutorial first (first-time only), then name onboarding if needed
+  if (!isTutorialComplete()) {
+    showTutorial();
+  } else if (!savedName || savedName.trim() === '') {
+    var overlay = document.getElementById('onboardingOverlay');
     if (overlay) {
       overlay.style.display = 'flex';
-      requestAnimationFrame(() => overlay.classList.add('visible'));
-      const nameField = document.getElementById('onboardingName');
+      requestAnimationFrame(function() { overlay.classList.add('visible'); });
+      var nameField = document.getElementById('onboardingName');
       if (nameField) {
         nameField.addEventListener('keydown', function(e) {
           if (e.key === 'Enter') completeOnboarding();

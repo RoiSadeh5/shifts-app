@@ -604,7 +604,132 @@ input[type="number"],
 .forecast-label { font-size: 12px; color: var(--text-secondary); }
 .forecast-val { font-size: 15px; font-weight: 800; direction: ltr; }
 
-/* ===== ONBOARDING ===== */
+/* ===== TUTORIAL (5 slides, first-time) ===== */
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(15,23,42,0.95);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  padding: 20px;
+  box-sizing: border-box;
+}
+.tutorial-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.tutorial-modal {
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: 24px;
+  padding: 28px 24px 24px;
+  width: min(360px, 94vw);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+}
+.tutorial-skip {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 10px;
+  font-family: 'Heebo', sans-serif;
+}
+.tutorial-skip:hover { color: var(--text); }
+.tutorial-modal { position: relative; }
+.tutorial-slides {
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+.tutorial-slide {
+  display: none;
+  text-align: center;
+  padding: 12px 0 20px;
+}
+.tutorial-slide.active { display: block; }
+.tutorial-slide .tutorial-emoji {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+.tutorial-slide .tutorial-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 12px;
+  line-height: 1.3;
+}
+.tutorial-slide .tutorial-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  margin: 0;
+}
+.tutorial-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.tutorial-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(148,163,184,0.35);
+  transition: background 0.2s;
+}
+.tutorial-dot.active {
+  background: var(--accent-light);
+  width: 10px;
+  height: 10px;
+}
+.tutorial-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.tutorial-btn {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Heebo', sans-serif;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s, transform 0.15s;
+}
+.tutorial-btn:active { transform: scale(0.96); }
+.tutorial-back, .tutorial-next {
+  background: var(--card-alt);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.tutorial-back:hover, .tutorial-next:hover {
+  background: rgba(148,163,184,0.15);
+  color: var(--text);
+}
+.tutorial-start {
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  color: #fff;
+}
+.tutorial-start:hover { opacity: 0.95; }
+
+/* ===== ONBOARDING (name) ===== */
 .onboarding-overlay {
   position: fixed;
   inset: 0;

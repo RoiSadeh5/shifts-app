@@ -25,7 +25,47 @@
     <span>מרענן...</span>
   </div>
 
-  <!-- Onboarding modal (first-time only) -->
+  <!-- Tutorial overlay (first-time only, 5 slides) -->
+  <div class="tutorial-overlay" id="tutorialOverlay" style="display:none" aria-hidden="true">
+    <div class="tutorial-modal">
+      <button class="tutorial-skip" onclick="skipTutorial()" aria-label="דלג">דלג</button>
+      <div class="tutorial-slides">
+        <div class="tutorial-slide active" data-slide="0">
+          <div class="tutorial-emoji">👋</div>
+          <h2 class="tutorial-title">ברוך הבא</h2>
+          <p class="tutorial-desc">שכ״ש – אפליקציה לחישוב שכר ומשכורת לעובדי משמרות. עקוב אחרי הברוטו והנטו, צפה בניכויים, ושמור על החסכון הפנסיוני שלך.</p>
+        </div>
+        <div class="tutorial-slide" data-slide="1">
+          <div class="tutorial-emoji">📊</div>
+          <h2 class="tutorial-title">עמוד הבית</h2>
+          <p class="tutorial-desc">כאן תראה את סיכום החודש – נטו לבנק, סה״כ ברוטו, פירוט ניכויים (ביטוח לאומי, מס בריאות, פנסיה וכו׳). גלול לראות את המשמרות האחרונות.</p>
+        </div>
+        <div class="tutorial-slide" data-slide="2">
+          <div class="tutorial-emoji">💰</div>
+          <h2 class="tutorial-title">חישוב משכורת</h2>
+          <p class="tutorial-desc">הוסף משמרות מהלשונית הוספה. הזן תלוש בפועל להשוואה. צפה בניכויי עובד (ביטוח לאומי, מס בריאות, פנסיה, קרן השתלמות) ובהפרשות המעסיק.</p>
+        </div>
+        <div class="tutorial-slide" data-slide="3">
+          <div class="tutorial-emoji">🏦</div>
+          <h2 class="tutorial-title">חסכון פנסיוני</h2>
+          <p class="tutorial-desc">בדף חסכון פנסיוני – קרן פנסיה, קרן השתלמות וחסכונות כלליים. הזן יתרות וצפה בתחזיות לטווח ארוך.</p>
+        </div>
+        <div class="tutorial-slide" data-slide="4">
+          <div class="tutorial-emoji">⚙️</div>
+          <h2 class="tutorial-title">הגדרות</h2>
+          <p class="tutorial-desc">קבע תעריפים, נקודות זיכוי, יתרות חופש ומחלה, ושם. ייצא גיבוי, PDF או CSV.</p>
+        </div>
+      </div>
+      <div class="tutorial-dots" id="tutorialDots"></div>
+      <div class="tutorial-btns">
+        <button class="tutorial-btn tutorial-back" id="tutorialBack" onclick="tutorialPrev()">הקודם</button>
+        <button class="tutorial-btn tutorial-next" id="tutorialNext" onclick="tutorialNext()">הבא</button>
+        <button class="tutorial-btn tutorial-start" id="tutorialStart" onclick="completeTutorial()" style="display:none">בוא נתחיל</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding modal (name - first-time only) -->
   <div class="onboarding-overlay" id="onboardingOverlay">
     <div class="onboarding-card">
       <div class="onboarding-emoji">👋</div>
