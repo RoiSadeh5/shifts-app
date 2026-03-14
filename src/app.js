@@ -262,6 +262,14 @@ function completeOnboarding() {
   updateGreeting();
 }
 
+function updateAdminButtonLabel() {
+  var btn = document.getElementById('adminPanelBtn');
+  if (!btn || !window.firebaseAuthApi || !window.firebaseAuthApi.isAdmin) return;
+  window.firebaseAuthApi.isAdmin().then(function(isAdmin) {
+    btn.textContent = isAdmin ? 'לוח מנהל (God Mode)' : 'כניסה כמנהל';
+  }).catch(function() {});
+}
+
 function saveUserNameSetting() {
   const input = document.getElementById('settingUserName');
   const name = (input.value || '').trim();
@@ -292,6 +300,8 @@ function switchTab(name) {
     requestAnimationFrame(function() { requestAnimationFrame(renderTemplates); });
   } else if (name === 'Savings' && typeof renderSavings === 'function') {
     requestAnimationFrame(function() { requestAnimationFrame(renderSavings); });
+  } else if (name === 'Settings') {
+    updateAdminButtonLabel();
   }
   if (name !== 'Dashboard') {
     var titles = { Add: 'הוספת משמרת', Calendar: 'לוח שנה', Annual: 'סיכום שנתי', Settings: 'הגדרות', Savings: 'חסכון פנסיוני' };
@@ -442,9 +452,52 @@ function recalcAll() {
 }
 
 // ===== Initialization =====
+var _initDone = false;
+
+function onAuthSuccess() {
+  if (_initDone) {
+    if (typeof initDataStore === 'function') {
+      initDataStore().then(function() {
+        if (typeof recalcAll === 'function') recalcAll();
+        if (typeof render === 'function') render();
+        if (typeof renderCalendar === 'function') renderCalendar();
+      });
+    }
+    return;
+  }
+  _initDone = true;
+  var logoutSection = document.getElementById('logoutSection');
+  if (logoutSection) logoutSection.style.display = window.usingFirebaseStore ? '' : 'none';
+  initCore();
+}
+
 async function init() {
   try {
-    await initCore();
+    if (window.firebaseAuthApi && window.firebaseAuthApi.isReady()) {
+      window.firebaseAuthUi && window.firebaseAuthUi.bindAuthEvents();
+      window.firebaseAuthApi.onAuthStateChanged(function(user) {
+        if (user) {
+          window.usingFirebaseStore = true;
+          var phoneMasked = user.phoneNumber ? window.firebaseAuthApi.maskPhone(user.phoneNumber) : '***';
+          window.firebaseStore && window.firebaseStore.ensureUserMeta(phoneMasked).catch(function() {});
+          var logoutSection = document.getElementById('logoutSection');
+          if (logoutSection) logoutSection.style.display = '';
+          if (!_initDone) { _initDone = true; initCore(); }
+        } else {
+          window.firebaseAuthUi.showAuthOverlay();
+        }
+      });
+      var user = window.firebaseAuthApi.getCurrentUser();
+      if (user) {
+        window.usingFirebaseStore = true;
+        onAuthSuccess();
+      } else {
+        window.firebaseAuthUi.showAuthOverlay();
+      }
+    } else {
+      _initDone = true;
+      await initCore();
+    }
   } catch (e) {
     console.error('Init error:', e);
     var t = document.getElementById('toast');

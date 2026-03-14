@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0f172a">
@@ -18,6 +18,39 @@
   <link rel="stylesheet" href="css/pages.css">
 </head>
 <body>
+
+  <!-- Auth overlay (phone + OTP) - shown before app when not signed in -->
+  <div class="auth-overlay" id="authOverlay" style="display:none" aria-hidden="true">
+    <div class="auth-card">
+      <div class="auth-emoji">📱</div>
+      <h2 class="auth-title" id="authTitle">כניסה למשתמש קיים</h2>
+      <p class="auth-desc" id="authDesc">הזן את מספר הטלפון שלך לאימות. נשלח אליך קוד SMS.</p>
+      <div id="authPhoneStep">
+        <input type="tel" id="authPhoneInput" class="auth-input" placeholder="050-1234567" inputmode="tel" dir="ltr">
+        <button class="auth-btn" id="authSendOtp">שלח קוד</button>
+      </div>
+      <div id="authOtpStep" style="display:none">
+        <input type="text" id="authOtpInput" class="auth-input" placeholder="קוד 6 ספרות" inputmode="numeric" maxlength="6" dir="ltr">
+        <button class="auth-btn" id="authVerifyOtp">אימות</button>
+        <button class="auth-back" id="authBackToPhone">חזרה</button>
+      </div>
+      <div id="authRecaptchaContainer"></div>
+      <p class="auth-hint">עלות SMS לפי תעריף החבר הסלולרית שלך</p>
+    </div>
+  </div>
+
+  <!-- Migration prompt (on first cloud login with local data) -->
+  <div class="auth-overlay" id="migrationOverlay" style="display:none" aria-hidden="true">
+    <div class="auth-card">
+      <div class="auth-emoji">📦</div>
+      <h2 class="auth-title">נמצאו נתונים מקומיים</h2>
+      <p class="auth-desc">יש לך משמרות והגדרות במכשיר זה. לעבור אותם לחשבון הענן?</p>
+      <div class="auth-btns-row">
+        <button class="auth-btn auth-btn-secondary" id="migrationSkip">דלג</button>
+        <button class="auth-btn" id="migrationDo">העבר לענן</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Pull-to-refresh indicator (hidden by default) -->
   <div class="ptr-indicator" id="ptrIndicator" aria-hidden="true">
@@ -521,6 +554,14 @@
     <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
     <button class="btn-danger" onclick="clearAllData()" style="margin-top:10px;">🗑️ מחק את כל הנתונים</button>
 
+    <div id="logoutSection" style="display:none;margin-top:20px;">
+      <button class="btn-danger" onclick="firebaseLogout()">🚪 יציאה מחשבון</button>
+    </div>
+
+    <button class="btn-secondary" id="adminPanelBtn" onclick="openAdminPrompt()" style="margin-top:20px;font-size:12px;color:var(--text-dim);">
+      כניסה כמנהל
+    </button>
+
     <a href="privacy.html" style="display:block;text-align:center;margin-top:20px;color:var(--accent-light);font-size:12px;text-decoration:none;">מדיניות פרטיות</a>
     <div style="text-align:center;margin-top:30px;padding-bottom:20px;color:var(--text-dim);font-size:11px;line-height:1.6;">
       כל הזכויות שמורות ל-Roi Sadeh - מוענק באהבה לכל עובדי השכ״ש
@@ -614,6 +655,25 @@
     </div>
   </div>
 
+  <!-- Admin Panel Overlay -->
+  <div class="admin-overlay" id="adminOverlay" style="display:none" onclick="if(event.target===this)closeAdminPanel()">
+    <div class="admin-panel" onclick="event.stopPropagation()">
+      <div class="admin-header">
+        <h2>לוח מנהל</h2>
+        <button class="admin-close" onclick="closeAdminPanel()">✕</button>
+      </div>
+      <div class="admin-stats">
+        <div class="admin-stat"><span class="admin-stat-val" id="adminTotalUsers">0</span><span class="admin-stat-label">סה״כ משתמשים</span></div>
+        <div class="admin-stat"><span class="admin-stat-val" id="adminActiveUsers">0</span><span class="admin-stat-label">פעילים (30 יום)</span></div>
+      </div>
+      <div class="admin-section-label">רשימת משתמשים</div>
+      <div class="admin-user-list" id="adminUserList"></div>
+      <div class="admin-footer">
+        <button class="admin-btn-logout" onclick="logoutAdmin()">יציאה ממנהל</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
@@ -686,6 +746,17 @@
   </nav>
 
   <!-- ==================== SCRIPTS ==================== -->
+  <script>window.ADMIN_CONFIG=window.ADMIN_CONFIG||{};</script>
+  <script src="config.example.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-functions-compat.js"></script>
+  <script src="firebase-config.example.js"></script>
+  <script src="src/firebase-init.js"></script>
+  <script src="src/firebase-auth.js"></script>
+  <script src="src/firebase-store.js"></script>
+  <script src="src/firebase-auth-ui.js"></script>
   <script src="src/logic/salaryEngine.js"></script>
   <script src="src/app.js"></script>
   <script src="src/store.js"></script>
@@ -700,6 +771,7 @@
   <script src="src/components/ShiftForm.js"></script>
   <script src="src/components/AnnualSummary.js"></script>
   <script src="src/components/settings.js"></script>
+  <script src="src/admin.js"></script>
   <script>
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', init);

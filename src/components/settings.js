@@ -9,12 +9,14 @@ function saveSettings() {
   userRates.vacationDayRate = parseFloat(document.getElementById('settingVacation').value) || 1750;
   userRates.bonusQuarterly = parseFloat(document.getElementById('settingBonus').value) || 3500;
   creditPoints = parseFloat(document.getElementById('settingCreditPts').value) || 2.25;
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify({
-    baseRate: userRates.baseRate, weekendMul: userRates.weekendMultiplier,
-    vacationRate: userRates.vacationDayRate, bonus: userRates.bonusQuarterly,
-    creditPoints: creditPoints,
-    deductions: dedSettings
-  }));
+  if (typeof persistSettings === 'function') {
+    persistSettings({
+      baseRate: userRates.baseRate, weekendMul: userRates.weekendMultiplier,
+      vacationRate: userRates.vacationDayRate, bonus: userRates.bonusQuarterly,
+      creditPoints: creditPoints,
+      deductions: dedSettings
+    });
+  }
   recalcAll();
   showToast('ההגדרות נשמרו');
 }
@@ -30,9 +32,9 @@ function toggleNotifications() {
   notificationsEnabled = !notificationsEnabled;
   var el = document.getElementById('toggleNotifications');
   if (el) el.classList.toggle('on', notificationsEnabled);
-  var existing = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+  var existing = typeof getSettingsData === 'function' ? getSettingsData() : {};
   existing.notificationsEnabled = notificationsEnabled;
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(existing));
+  if (typeof persistSettings === 'function') persistSettings(existing);
   if (notificationsEnabled && typeof requestNotificationPermission === 'function') {
     requestNotificationPermission(function() {});
   }
@@ -42,9 +44,9 @@ function toggleCharts() {
   showCharts = !showCharts;
   var el = document.getElementById('toggleCharts');
   if (el) el.classList.toggle('on', showCharts);
-  var existing = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+  var existing = typeof getSettingsData === 'function' ? getSettingsData() : {};
   existing.showCharts = showCharts;
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(existing));
+  if (typeof persistSettings === 'function') persistSettings(existing);
   render();
 }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sachash-v7';
+const CACHE_NAME = 'sachash-v8';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -14,12 +14,14 @@ const STATIC_ASSETS = [
   './src/components/Templates.js',
   './src/components/PdfExport.js',
   './src/components/ShareImage.js',
+  './config.example.js',
   './src/logic/salaryEngine.js',
   './src/app.js',
   './src/components/Dashboard.js',
   './src/components/ShiftForm.js',
   './src/components/AnnualSummary.js',
   './src/components/settings.js',
+  './src/admin.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',

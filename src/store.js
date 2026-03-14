@@ -1,10 +1,64 @@
 /**
- * Store – IndexedDB + localStorage for shifts, history, settings, savings.
- * db: IndexedDB wrapper. dataManager: load/save API. Uses globals from app.js.
+ * Store – Firebase Firestore when signed in; IndexedDB + localStorage otherwise.
+ * User-scoped: all data keyed by userId. Uses globals from app.js.
  */
+var USER_ID_KEY = 'shifter_user_id';
+window.usingFirebaseStore = false;
+
+function getCurrentUserId() {
+  if (window.usingFirebaseStore && window.firebaseStore && window.firebaseStore.uid()) {
+    return window.firebaseStore.uid();
+  }
+  try {
+    var id = localStorage.getItem(USER_ID_KEY);
+    if (id) return id;
+    id = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 15);
+    localStorage.setItem(USER_ID_KEY, id);
+    _registerUser(id);
+    return id;
+  } catch (e) { return 'u_unknown'; }
+}
+
+function _registerUser(userId) {
+  var now = new Date().toISOString();
+  window.dbReady.then(function() {
+    if (!dbInstance) return;
+    var tx = dbInstance.transaction('meta', 'readwrite');
+    var getReq = tx.objectStore('meta').get('_user_registry');
+    getReq.onsuccess = function() {
+      var reg = getReq.result ? (getReq.result.value || []) : [];
+      if (!Array.isArray(reg)) reg = [];
+      var entry = reg.find(function(r) { return r.userId === userId; });
+      if (!entry) reg.push({ userId: userId, firstSeen: now, lastActive: now });
+      else entry.lastActive = now;
+      tx.objectStore('meta').put({ key: '_user_registry', value: reg });
+    };
+  });
+}
+
+function touchUserActivity() {
+  if (window.usingFirebaseStore && window.firebaseStore) {
+    window.firebaseStore.touchUserActivity();
+    return;
+  }
+  var uid = getCurrentUserId();
+  window.dbReady.then(function() {
+    if (!dbInstance) return;
+    var tx = dbInstance.transaction('meta', 'readwrite');
+    var getReq = tx.objectStore('meta').get('_user_registry');
+    getReq.onsuccess = function() {
+      var reg = getReq.result ? (getReq.result.value || []) : [];
+      var entry = reg.find(function(r) { return r.userId === uid; });
+      if (entry) entry.lastActive = new Date().toISOString();
+      else reg.push({ userId: uid, firstSeen: new Date().toISOString(), lastActive: new Date().toISOString() });
+      tx.objectStore('meta').put({ key: '_user_registry', value: reg });
+    };
+  });
+}
+
 /* ========== IndexedDB ========== */
 var DB_NAME = 'sachash-db';
-var DB_VERSION = 2;
+var DB_VERSION = 3;
 var dbInstance = null;
 window.dbReady = new Promise(function(resolve) {
   if (typeof indexedDB === 'undefined') { resolve(null); return; }
@@ -23,13 +77,26 @@ window.dbReady = new Promise(function(resolve) {
   };
 });
 
+function _shiftsKey() { return 'main_' + getCurrentUserId(); }
+function _historyKey() { return 'main_' + getCurrentUserId(); }
+
 window.db = {
   getShifts: function() {
     return new Promise(function(resolve) {
       if (!dbInstance) { resolve(null); return; }
       var tx = dbInstance.transaction('shifts', 'readonly');
-      var req = tx.objectStore('shifts').get('main');
-      req.onsuccess = function() { var arr = req.result ? req.result.v : null; resolve(Array.isArray(arr) ? arr : []); };
+      var key = _shiftsKey();
+      var req = tx.objectStore('shifts').get(key);
+      req.onsuccess = function() {
+        var arr = req.result ? req.result.v : null;
+        if (Array.isArray(arr)) { resolve(arr); return; }
+        var legReq = tx.objectStore('shifts').get('main');
+        legReq.onsuccess = function() {
+          var old = legReq.result ? legReq.result.v : null;
+          resolve(Array.isArray(old) ? old : []);
+        };
+        legReq.onerror = function() { resolve([]); };
+      };
       req.onerror = function() { resolve([]); };
     });
   },
@@ -37,7 +104,7 @@ window.db = {
     return new Promise(function(resolve, reject) {
       if (!dbInstance) { resolve(); return; }
       var tx = dbInstance.transaction('shifts', 'readwrite');
-      tx.objectStore('shifts').put({ k: 'main', v: list || [] });
+      tx.objectStore('shifts').put({ k: _shiftsKey(), v: list || [] });
       tx.oncomplete = function() { resolve(); };
       tx.onerror = function() { reject(tx.error); };
     });
@@ -46,8 +113,18 @@ window.db = {
     return new Promise(function(resolve) {
       if (!dbInstance) { resolve(null); return; }
       var tx = dbInstance.transaction('history', 'readonly');
-      var req = tx.objectStore('history').get('main');
-      req.onsuccess = function() { var h = req.result ? req.result.v : null; resolve(h && typeof h === 'object' ? h : {}); };
+      var key = _historyKey();
+      var req = tx.objectStore('history').get(key);
+      req.onsuccess = function() {
+        var h = req.result ? req.result.v : null;
+        if (h && typeof h === 'object') { resolve(h); return; }
+        var legReq = tx.objectStore('history').get('main');
+        legReq.onsuccess = function() {
+          var old = legReq.result ? legReq.result.v : null;
+          resolve(old && typeof old === 'object' ? old : {});
+        };
+        legReq.onerror = function() { resolve({}); };
+      };
       req.onerror = function() { resolve({}); };
     });
   },
@@ -55,7 +132,7 @@ window.db = {
     return new Promise(function(resolve, reject) {
       if (!dbInstance) { resolve(); return; }
       var tx = dbInstance.transaction('history', 'readwrite');
-      tx.objectStore('history').put({ k: 'main', v: h || {} });
+      tx.objectStore('history').put({ k: _historyKey(), v: h || {} });
       tx.oncomplete = function() { resolve(); };
       tx.onerror = function() { reject(tx.error); };
     });
@@ -79,24 +156,34 @@ window.db = {
     });
   },
   getTemplates: function() {
+    if (window.usingFirebaseStore && window.firebaseStore) return window.firebaseStore.getTemplates();
     return new Promise(function(resolve) {
       if (!dbInstance) { resolve([]); return; }
+      var uid = getCurrentUserId();
       var tx = dbInstance.transaction('templates', 'readonly');
       var req = tx.objectStore('templates').getAll();
-      req.onsuccess = function() { resolve(req.result || []); };
+      req.onsuccess = function() {
+        var list = (req.result || []).filter(function(t) {
+          return !t.userId || t.userId === uid;
+        });
+        resolve(list);
+      };
       req.onerror = function() { resolve([]); };
     });
   },
   saveTemplate: function(tpl) {
+    if (window.usingFirebaseStore && window.firebaseStore) return window.firebaseStore.saveTemplate(tpl);
     return new Promise(function(resolve, reject) {
       if (!dbInstance) { resolve(); return; }
+      var obj = Object.assign({}, tpl, { userId: getCurrentUserId() });
       var tx = dbInstance.transaction('templates', 'readwrite');
-      tx.objectStore('templates').put(tpl);
+      tx.objectStore('templates').put(obj);
       tx.oncomplete = function() { resolve(); };
       tx.onerror = function() { reject(tx.error); };
     });
   },
   deleteTemplate: function(id) {
+    if (window.usingFirebaseStore && window.firebaseStore) return window.firebaseStore.deleteTemplate(id);
     return new Promise(function(resolve, reject) {
       if (!dbInstance) { resolve(); return; }
       var tx = dbInstance.transaction('templates', 'readwrite');
@@ -108,6 +195,7 @@ window.db = {
 };
 
 /* ========== Data Manager ========== */
+function _storageKey(base) { return base + '_' + getCurrentUserId(); }
 var SHIFTS_KEY = 'shifter_shifts';
 var SETTINGS_KEY = 'shifter_settings';
 var HISTORY_KEY = 'shifter_history';
@@ -115,9 +203,39 @@ var BACKUP_TS_KEY = 'shifter_last_backup';
 var LEAVE_KEY = 'shifter_leave';
 var USERNAME_KEY = 'shifter_username';
 var SAVINGS_KEY = 'shifter_savings';
-var _cache = { shifts: [], history: {}, ready: false };
+var _cache = { shifts: [], history: {}, settings: {}, profile: {}, savings: null, ready: false };
 
 function initDataStore() {
+  if (window.usingFirebaseStore && window.firebaseStore) {
+    return window.firebaseStore.getShifts().then(function(arr) {
+      _cache.shifts = Array.isArray(arr) ? arr : [];
+      return window.firebaseStore.getHistory();
+    }).then(function(h) {
+      _cache.history = (h && typeof h === 'object') ? h : {};
+      return window.firebaseStore.getSettings();
+    }).then(function(s) {
+      _cache.settings = s || {};
+      return window.firebaseStore.getProfile();
+    }).then(function(p) {
+      _cache.profile = p || { username: null, leave: { vacation: 0, sick: 0 }, lastBackup: null };
+      return window.firebaseStore.getSavings();
+    }).then(function(sav) {
+      _cache.savings = sav;
+      touchUserActivity();
+      _cache.ready = true;
+      _applySettingsFromCache();
+      return _cache;
+    }).catch(function(e) {
+      console.warn('Firebase initDataStore fallback:', e);
+      _cache.shifts = [];
+      _cache.history = {};
+      _cache.settings = {};
+      _cache.profile = { username: null, leave: { vacation: 0, sick: 0 }, lastBackup: null };
+      _cache.savings = null;
+      _cache.ready = true;
+      return _cache;
+    });
+  }
   return new Promise(function(resolve) {
     if (typeof window === 'undefined' || !window.dbReady) {
       _loadFromLocalStorage();
@@ -134,19 +252,22 @@ function initDataStore() {
       }
       window.db.getShifts().then(function(arr) {
         var hasIdbShifts = arr && arr.length > 0;
+        var sk = _storageKey(SHIFTS_KEY);
         var lsShifts = [];
-        try { lsShifts = JSON.parse(localStorage.getItem(SHIFTS_KEY)) || []; } catch (e) {}
+        try { lsShifts = JSON.parse(localStorage.getItem(sk)) || []; } catch (e) {}
         if (!hasIdbShifts && lsShifts.length > 0) {
           _cache.shifts = lsShifts;
           window.db.saveShifts(lsShifts).catch(function() {});
         } else {
           _cache.shifts = arr || [];
         }
+        touchUserActivity();
         return window.db.getHistory();
       }).then(function(h) {
         var hasIdbHistory = h && Object.keys(h).length > 0;
+        var hk = _storageKey(HISTORY_KEY);
         var lsHistory = {};
-        try { lsHistory = JSON.parse(localStorage.getItem(HISTORY_KEY)) || {}; } catch (e) {}
+        try { lsHistory = JSON.parse(localStorage.getItem(hk)) || {}; } catch (e) {}
         if (!hasIdbHistory && Object.keys(lsHistory).length > 0) {
           _cache.history = lsHistory;
           window.db.saveHistory(lsHistory).catch(function() {});
@@ -168,10 +289,25 @@ function initDataStore() {
   });
 }
 
+function _applySettingsFromCache() {
+  var s = _cache.settings;
+  if (!s) return;
+  if (typeof userRates !== 'undefined') {
+    userRates.baseRate = s.baseRate || 75;
+    userRates.weekendMultiplier = s.weekendMul || 1.5;
+    userRates.vacationDayRate = s.vacationRate || 1750;
+    userRates.bonusQuarterly = s.bonus || 3500;
+  }
+  if (typeof creditPoints !== 'undefined' && s.creditPoints !== undefined) creditPoints = s.creditPoints;
+  if (typeof dedSettings !== 'undefined' && s.deductions) dedSettings = Object.assign({}, dedSettings, s.deductions);
+  if (typeof showCharts !== 'undefined' && s.showCharts !== undefined) showCharts = !!s.showCharts;
+  if (typeof notificationsEnabled !== 'undefined' && s.notificationsEnabled !== undefined) notificationsEnabled = !!s.notificationsEnabled;
+}
+
 function _loadFromLocalStorage() {
   try {
-    _cache.shifts = JSON.parse(localStorage.getItem(SHIFTS_KEY)) || [];
-    _cache.history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || {};
+    _cache.shifts = JSON.parse(localStorage.getItem(_storageKey(SHIFTS_KEY))) || [];
+    _cache.history = JSON.parse(localStorage.getItem(_storageKey(HISTORY_KEY))) || {};
   } catch (e) {
     _cache.shifts = [];
     _cache.history = {};
@@ -180,37 +316,45 @@ function _loadFromLocalStorage() {
 
 function loadShifts() {
   return _cache.ready ? _cache.shifts : (function() {
-    try { return JSON.parse(localStorage.getItem(SHIFTS_KEY)) || []; }
+    try { return JSON.parse(localStorage.getItem(_storageKey(SHIFTS_KEY))) || []; }
     catch { return []; }
   })();
 }
 
 function saveShifts(list) {
   _cache.shifts = list || [];
+  if (window.usingFirebaseStore && window.firebaseStore) {
+    window.firebaseStore.saveShifts(_cache.shifts).catch(function() {});
+    return;
+  }
   if (typeof window !== 'undefined' && window.db) {
     window.db.saveShifts(_cache.shifts).catch(function() {
-      try { localStorage.setItem(SHIFTS_KEY, JSON.stringify(list)); } catch (e) {}
+      try { localStorage.setItem(_storageKey(SHIFTS_KEY), JSON.stringify(list)); } catch (e) {}
     });
   } else {
-    try { localStorage.setItem(SHIFTS_KEY, JSON.stringify(list)); } catch (e) {}
+    try { localStorage.setItem(_storageKey(SHIFTS_KEY), JSON.stringify(list)); } catch (e) {}
   }
 }
 
 function loadHistory() {
   return _cache.ready ? _cache.history : (function() {
-    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || {}; }
+    try { return JSON.parse(localStorage.getItem(_storageKey(HISTORY_KEY))) || {}; }
     catch { return {}; }
   })();
 }
 
 function saveHistory(h) {
   _cache.history = h || {};
+  if (window.usingFirebaseStore && window.firebaseStore) {
+    window.firebaseStore.saveHistory(_cache.history).catch(function() {});
+    return;
+  }
   if (typeof window !== 'undefined' && window.db) {
     window.db.saveHistory(_cache.history).catch(function() {
-      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch (e) {}
+      try { localStorage.setItem(_storageKey(HISTORY_KEY), JSON.stringify(h)); } catch (e) {}
     });
   } else {
-    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch (e) {}
+    try { localStorage.setItem(_storageKey(HISTORY_KEY), JSON.stringify(h)); } catch (e) {}
   }
 }
 
@@ -229,8 +373,12 @@ function savePayslip(year, month, data) {
 }
 
 function loadSettings() {
+  if (window.usingFirebaseStore && _cache.settings && typeof _cache.settings === 'object') {
+    _applySettingsFromCache();
+    return;
+  }
   try {
-    var s = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+    var s = JSON.parse(localStorage.getItem(_storageKey(SETTINGS_KEY)));
     if (s) {
       userRates.baseRate = s.baseRate || 75;
       userRates.weekendMultiplier = s.weekendMul || 1.5;
@@ -245,14 +393,35 @@ function loadSettings() {
 }
 
 function saveDedSettings() {
-  var existing = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+  if (window.usingFirebaseStore && window.firebaseStore) {
+    var existing = _cache.settings || {};
+    existing.deductions = dedSettings;
+    _cache.settings = existing;
+    window.firebaseStore.saveSettings(existing).then(function() { if (typeof render === 'function') render(); }).catch(function() {});
+    return;
+  }
+  var existing = JSON.parse(localStorage.getItem(_storageKey(SETTINGS_KEY)) || '{}');
   existing.deductions = dedSettings;
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(existing));
+  localStorage.setItem(_storageKey(SETTINGS_KEY), JSON.stringify(existing));
   render();
 }
 
+function persistSettings(obj) {
+  if (window.usingFirebaseStore && window.firebaseStore) {
+    _cache.settings = obj || {};
+    window.firebaseStore.saveSettings(_cache.settings).catch(function() {});
+    return;
+  }
+  try { localStorage.setItem(_storageKey(SETTINGS_KEY), JSON.stringify(obj)); } catch (e) {}
+}
+function getSettingsData() {
+  if (window.usingFirebaseStore && _cache.settings) return _cache.settings;
+  try { return JSON.parse(localStorage.getItem(_storageKey(SETTINGS_KEY)) || '{}'); } catch (e) { return {}; }
+}
+
 function getLastBackupTime() {
-  return localStorage.getItem(BACKUP_TS_KEY) || null;
+  if (window.usingFirebaseStore && _cache.profile && _cache.profile.lastBackup) return _cache.profile.lastBackup;
+  return localStorage.getItem(_storageKey(BACKUP_TS_KEY)) || null;
 }
 
 function exportShiftsCSV() {
@@ -286,7 +455,7 @@ function exportData() {
     version: '5.1',
     exportedAt: new Date().toISOString(),
     shifts: loadShifts(),
-    settings: JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'),
+    settings: typeof getSettingsData === 'function' ? getSettingsData() : {},
     history: loadHistory(),
     leave: loadLeaveBalances(),
     userName: loadUserName(),
@@ -299,7 +468,14 @@ function exportData() {
   a.download = 'sachash-backup-' + new Date().toISOString().slice(0, 10) + '.json';
   a.click();
   URL.revokeObjectURL(url);
-  localStorage.setItem(BACKUP_TS_KEY, new Date().toISOString());
+  var now = new Date().toISOString();
+  if (window.usingFirebaseStore && window.firebaseStore) {
+    _cache.profile = _cache.profile || {};
+    _cache.profile.lastBackup = now;
+    window.firebaseStore.saveProfile(_cache.profile).catch(function() {});
+  } else {
+    localStorage.setItem(_storageKey(BACKUP_TS_KEY), now);
+  }
   updateBackupDisplay();
   haptic();
   showToast('📤 הגיבוי יוצא בהצלחה');
@@ -347,10 +523,10 @@ function importData(e) {
           updateGreeting();
         }
         if (data.savings && typeof data.savings === 'object') {
-          try { localStorage.setItem(SAVINGS_KEY, JSON.stringify(data.savings)); } catch (e) {}
+          try { localStorage.setItem(_storageKey(SAVINGS_KEY), JSON.stringify(data.savings)); } catch (e) {}
         }
         if (data.settings && typeof data.settings === 'object') {
-          localStorage.setItem(SETTINGS_KEY, JSON.stringify(data.settings));
+          localStorage.setItem(_storageKey(SETTINGS_KEY), JSON.stringify(data.settings));
           loadSettings();
           document.getElementById('settingBase').value = userRates.baseRate;
           document.getElementById('settingWeekend').value = userRates.weekendMultiplier;
@@ -403,27 +579,50 @@ function updateBackupDisplay() {
 }
 
 function loadLeaveBalances() {
-  try { return JSON.parse(localStorage.getItem(LEAVE_KEY)) || { vacation: 0, sick: 0 }; }
+  if (window.usingFirebaseStore && _cache.profile && _cache.profile.leave) return _cache.profile.leave;
+  try { return JSON.parse(localStorage.getItem(_storageKey(LEAVE_KEY))) || { vacation: 0, sick: 0 }; }
   catch (e) { return { vacation: 0, sick: 0 }; }
 }
 
 function saveLeaveBalances(balances) {
-  try { localStorage.setItem(LEAVE_KEY, JSON.stringify(balances)); } catch (e) {}
+  if (window.usingFirebaseStore && window.firebaseStore) {
+    _cache.profile = _cache.profile || {};
+    _cache.profile.leave = balances || { vacation: 0, sick: 0 };
+    window.firebaseStore.saveProfile(_cache.profile).catch(function() {});
+    return;
+  }
+  try { localStorage.setItem(_storageKey(LEAVE_KEY), JSON.stringify(balances)); } catch (e) {}
 }
 
 function loadUserName() {
-  return localStorage.getItem(USERNAME_KEY) || null;
+  if (window.usingFirebaseStore && _cache.profile) return _cache.profile.username || null;
+  return localStorage.getItem(_storageKey(USERNAME_KEY)) || null;
 }
 
 function saveUserName(name) {
-  try { localStorage.setItem(USERNAME_KEY, (name || '').trim()); } catch (e) {}
+  if (window.usingFirebaseStore && window.firebaseStore) {
+    _cache.profile = _cache.profile || {};
+    _cache.profile.username = (name || '').trim() || null;
+    window.firebaseStore.saveProfile(_cache.profile).catch(function() {});
+    return;
+  }
+  try { localStorage.setItem(_storageKey(USERNAME_KEY), (name || '').trim()); } catch (e) {}
 }
 
 /* ========== Savings ========== */
 var SAVINGS_DEFAULT_RETURN = 7;
 function loadSavings() {
+  if (window.usingFirebaseStore && _cache.savings) {
+    var s = _cache.savings;
+    var general = Array.isArray(s.general) ? s.general : [];
+    return {
+      pension: { balance: s.pension && s.pension.balance != null ? s.pension.balance : 0, returnRate: s.pension && s.pension.returnRate != null ? s.pension.returnRate : SAVINGS_DEFAULT_RETURN, contributions: (s.pension && s.pension.contributions) || {} },
+      study: { balance: s.study && s.study.balance != null ? s.study.balance : 0, returnRate: s.study && s.study.returnRate != null ? s.study.returnRate : SAVINGS_DEFAULT_RETURN, contributions: (s.study && s.study.contributions) || {} },
+      general: general
+    };
+  }
   try {
-    var s = JSON.parse(localStorage.getItem(SAVINGS_KEY));
+    var s = JSON.parse(localStorage.getItem(_storageKey(SAVINGS_KEY)));
     if (s) {
       var general = Array.isArray(s.general) ? s.general : [];
       return {
@@ -441,7 +640,12 @@ function loadSavings() {
 }
 
 function saveSavings(savings) {
-  try { localStorage.setItem(SAVINGS_KEY, JSON.stringify(savings)); } catch (e) {}
+  if (window.usingFirebaseStore && window.firebaseStore) {
+    _cache.savings = savings;
+    window.firebaseStore.saveSavings(savings || {}).catch(function() {});
+    return;
+  }
+  try { localStorage.setItem(_storageKey(SAVINGS_KEY), JSON.stringify(savings)); } catch (e) {}
 }
 
 function updateSavingsFromPayslip(year, month, slipData) {
@@ -497,4 +701,51 @@ function deleteGeneralSavingsEntry(id) {
   if (!savings.general) return;
   savings.general = savings.general.filter(function(x) { return x.id !== id; });
   saveSavings(savings);
+}
+
+/* ========== Admin API ========== */
+function getAdminRegistry() {
+  return new Promise(function(resolve) {
+    if (!dbInstance) { resolve([]); return; }
+    var tx = dbInstance.transaction('meta', 'readonly');
+    var req = tx.objectStore('meta').get('_user_registry');
+    req.onsuccess = function() {
+      var reg = req.result ? req.result.value : [];
+      resolve(Array.isArray(reg) ? reg : []);
+    };
+    req.onerror = function() { resolve([]); };
+  });
+}
+
+function adminDeleteUser(userId) {
+  return new Promise(function(resolve, reject) {
+    if (!dbInstance) { resolve(); return; }
+    var tx = dbInstance.transaction(['shifts', 'history', 'meta', 'templates'], 'readwrite');
+    tx.objectStore('shifts').delete('main_' + userId);
+    tx.objectStore('history').delete('main_' + userId);
+    var allTpl = tx.objectStore('templates').getAll();
+    allTpl.onsuccess = function() {
+      var list = allTpl.result || [];
+      list.filter(function(t) { return t.userId === userId; }).forEach(function(t) {
+        tx.objectStore('templates').delete(t.id);
+      });
+    };
+    var getReg = tx.objectStore('meta').get('_user_registry');
+    getReg.onsuccess = function() {
+      var reg = getReg.result ? getReg.result.value : [];
+      if (!Array.isArray(reg)) reg = [];
+      reg = reg.filter(function(r) { return r.userId !== userId; });
+      tx.objectStore('meta').put({ key: '_user_registry', value: reg });
+    };
+    tx.oncomplete = function() {
+      ['shifter_shifts', 'shifter_settings', 'shifter_history', 'shifter_last_backup', 'shifter_leave', 'shifter_username', 'shifter_savings'].forEach(function(base) {
+        try { localStorage.removeItem(base + '_' + userId); } catch (e) {}
+      });
+      if (userId === getCurrentUserId()) {
+        try { localStorage.removeItem(USER_ID_KEY); } catch (e) {}
+      }
+      resolve();
+    };
+    tx.onerror = function() { reject(tx.error); };
+  });
 }

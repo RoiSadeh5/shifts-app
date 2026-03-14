@@ -3,3 +3,6 @@ www/
 .DS_Store
 *.log
 .claude/
+config.js
+firebase-config.js
+scripts/service-account.json

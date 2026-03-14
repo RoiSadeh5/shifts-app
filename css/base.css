@@ -49,7 +49,7 @@ body {
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: space-around;
-  padding: 6px 0 calc(6px + var(--safe-bottom));
+  padding: 6px 0 calc(10px + var(--safe-bottom));
   z-index: 200;
 }
 .tab {
