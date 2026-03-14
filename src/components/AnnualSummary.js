@@ -60,26 +60,48 @@ function buildAnnualMonthlyData(year) {
 }
 
 function renderAnnual() {
-  document.getElementById('annualYearLabel').textContent = annualYear;
-  const monthlyData = buildAnnualMonthlyData(annualYear);
-  const summary = SalaryEngine.calcAnnualSummary(monthlyData, creditPoints, dedSettings);
-  const reportedMonths = monthlyData.filter(m => m.source !== 'empty').length;
-  const manualMonths = monthlyData.filter(m => m.source === 'manual');
+  try {
+    renderAnnualCore();
+  } catch (e) {
+    console.error('Annual render error:', e);
+    if (typeof showToast === 'function') showToast('שגיאה – נסה לרענן');
+  }
+}
 
-  document.getElementById('f106Net').textContent = fmtNIS(summary.totalNet);
-  document.getElementById('f106Sub').textContent = reportedMonths > 0
-    ? `${reportedMonths} חודשים מדווחים · שיעור מס אפקטיבי ${summary.totalGross > 0 ? Math.round(summary.totalIncomeTax / summary.totalGross * 100) : 0}%`
+function renderAnnualCore() {
+  var yearLbl = document.getElementById('annualYearLabel');
+  if (yearLbl) yearLbl.textContent = annualYear;
+  var monthlyData = buildAnnualMonthlyData(annualYear);
+  var summary = SalaryEngine.calcAnnualSummary(monthlyData, creditPoints, dedSettings);
+  var reportedMonths = monthlyData.filter(function(m) { return m.source !== 'empty'; }).length;
+  var manualMonths = monthlyData.filter(function(m) { return m.source === 'manual'; });
+
+  var f106Net = document.getElementById('f106Net');
+  if (f106Net) f106Net.textContent = fmtNIS(summary.totalNet);
+  var f106Sub = document.getElementById('f106Sub');
+  if (f106Sub) f106Sub.textContent = reportedMonths > 0
+    ? (reportedMonths + ' חודשים מדווחים · שיעור מס אפקטיבי ' + (summary.totalGross > 0 ? Math.round(summary.totalIncomeTax / summary.totalGross * 100) : 0) + '%')
     : '';
-  document.getElementById('f106Gross').textContent = fmtNIS(summary.totalGross);
-  document.getElementById('f106Months').textContent = reportedMonths;
-  document.getElementById('f106Tax').textContent = `-${fmtNIS(summary.totalIncomeTax)}`;
-  document.getElementById('f106NI').textContent = `-${fmtNIS(summary.totalNI)}`;
-  document.getElementById('f106Pension').textContent = `-${fmtNIS(summary.totalPension)}`;
-  document.getElementById('f106Study').textContent = `-${fmtNIS(summary.totalStudy)}`;
-  document.getElementById('f106TotalDed').textContent = `-${fmtNIS(summary.totalDeductions)}`;
-  document.getElementById('f106EmpPension').textContent = `+${fmtNIS(summary.totalEmpPension)}`;
-  document.getElementById('f106EmpStudy').textContent = `+${fmtNIS(summary.totalEmpStudy)}`;
-  document.getElementById('f106EmpTotal').textContent = `+${fmtNIS(summary.totalEmpContributions)}`;
+  var f106Gross = document.getElementById('f106Gross');
+  if (f106Gross) f106Gross.textContent = fmtNIS(summary.totalGross);
+  var f106Months = document.getElementById('f106Months');
+  if (f106Months) f106Months.textContent = reportedMonths;
+  var f106Tax = document.getElementById('f106Tax');
+  if (f106Tax) f106Tax.textContent = '-' + fmtNIS(summary.totalIncomeTax);
+  var f106NI = document.getElementById('f106NI');
+  if (f106NI) f106NI.textContent = '-' + fmtNIS(summary.totalNI);
+  var f106Pension = document.getElementById('f106Pension');
+  if (f106Pension) f106Pension.textContent = '-' + fmtNIS(summary.totalPension);
+  var f106Study = document.getElementById('f106Study');
+  if (f106Study) f106Study.textContent = '-' + fmtNIS(summary.totalStudy);
+  var f106TotalDed = document.getElementById('f106TotalDed');
+  if (f106TotalDed) f106TotalDed.textContent = '-' + fmtNIS(summary.totalDeductions);
+  var f106EmpPension = document.getElementById('f106EmpPension');
+  if (f106EmpPension) f106EmpPension.textContent = '+' + fmtNIS(summary.totalEmpPension);
+  var f106EmpStudy = document.getElementById('f106EmpStudy');
+  if (f106EmpStudy) f106EmpStudy.textContent = '+' + fmtNIS(summary.totalEmpStudy);
+  var f106EmpTotal = document.getElementById('f106EmpTotal');
+  if (f106EmpTotal) f106EmpTotal.textContent = '+' + fmtNIS(summary.totalEmpContributions);
 
   // Cumulative data from actual payslips – only show when we have payslip entries
   const cumSection = document.getElementById('f106CumulativeSection');

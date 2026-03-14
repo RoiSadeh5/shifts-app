@@ -10,6 +10,7 @@ var HISTORY_KEY = 'shifter_history';
 var BACKUP_TS_KEY = 'shifter_last_backup';
 var LEAVE_KEY = 'shifter_leave';
 var USERNAME_KEY = 'shifter_username';
+var SAVINGS_KEY = 'shifter_savings';
 
 var _cache = { shifts: [], history: {}, ready: false };
 
@@ -179,13 +180,14 @@ function exportShiftsCSV() {
 
 function exportData() {
   const data = {
-    version: '5.0',
+    version: '5.1',
     exportedAt: new Date().toISOString(),
     shifts: loadShifts(),
     settings: JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'),
     history: loadHistory(),
     leave: loadLeaveBalances(),
     userName: loadUserName(),
+    savings: typeof loadSavings === 'function' ? loadSavings() : null,
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -244,6 +246,10 @@ function importData(e) {
           var nameInput = document.getElementById('settingUserName');
           if (nameInput) nameInput.value = data.userName;
           updateGreeting();
+        }
+
+        if (data.savings && typeof data.savings === 'object') {
+          try { localStorage.setItem(SAVINGS_KEY, JSON.stringify(data.savings)); } catch (e) {}
         }
 
         if (data.settings && typeof data.settings === 'object') {
@@ -316,4 +322,70 @@ function loadUserName() {
 
 function saveUserName(name) {
   localStorage.setItem(USERNAME_KEY, (name || '').trim());
+}
+
+// ===== Savings (Pension + Keren Hishtalmut) =====
+var SAVINGS_DEFAULT_RETURN = 7;
+
+function loadSavings() {
+  try {
+    var s = JSON.parse(localStorage.getItem(SAVINGS_KEY));
+    if (s) {
+      return {
+        pension: { balance: s.pension && s.pension.balance != null ? s.pension.balance : 0, returnRate: s.pension && s.pension.returnRate != null ? s.pension.returnRate : SAVINGS_DEFAULT_RETURN, contributions: (s.pension && s.pension.contributions) || {} },
+        study: { balance: s.study && s.study.balance != null ? s.study.balance : 0, returnRate: s.study && s.study.returnRate != null ? s.study.returnRate : SAVINGS_DEFAULT_RETURN, contributions: (s.study && s.study.contributions) || {} }
+      };
+    }
+  } catch (e) {}
+  return {
+    pension: { balance: 0, returnRate: SAVINGS_DEFAULT_RETURN, contributions: {} },
+    study: { balance: 0, returnRate: SAVINGS_DEFAULT_RETURN, contributions: {} }
+  };
+}
+
+function saveSavings(savings) {
+  try {
+    localStorage.setItem(SAVINGS_KEY, JSON.stringify(savings));
+  } catch (e) {}
+}
+
+function updateSavingsFromPayslip(year, month, slipData) {
+  var savings = loadSavings();
+  var ded = typeof calcDeductions === 'function' ? calcDeductions(slipData.gross || 0) : { employee: { pension: 0, study: 0 }, employer: { pension: 0, study: 0 } };
+  var empPension = ded.employer && ded.employer.pension != null ? ded.employer.pension : 0;
+  var empStudy = ded.employer && ded.employer.study != null ? ded.employer.study : 0;
+  var slipPension = slipData.pension != null ? slipData.pension : (ded.employee && ded.employee.pension) || 0;
+  var slipStudy = slipData.study != null ? slipData.study : (ded.employee && ded.employee.study) || 0;
+  var pensionContrib = (slipPension || 0) + (empPension || 0);
+  var studyContrib = (slipStudy || 0) + (empStudy || 0);
+  if (dedSettings && !dedSettings.pension) pensionContrib = 0;
+  if (dedSettings && !dedSettings.study) studyContrib = 0;
+
+  var ym = year + '-' + month;
+  var prevPension = savings.pension.contributions[ym] || 0;
+  var prevStudy = savings.study.contributions[ym] || 0;
+  savings.pension.balance = (savings.pension.balance || 0) - prevPension + pensionContrib;
+  savings.study.balance = (savings.study.balance || 0) - prevStudy + studyContrib;
+  savings.pension.contributions[ym] = pensionContrib;
+  savings.study.contributions[ym] = studyContrib;
+  saveSavings(savings);
+}
+
+function updateSavingsBalance(fund, balance) {
+  var savings = loadSavings();
+  var f = savings[fund];
+  if (f) {
+    f.balance = Math.max(0, parseFloat(balance) || 0);
+    saveSavings(savings);
+  }
+}
+
+function updateSavingsReturnRate(fund, rate) {
+  var savings = loadSavings();
+  var f = savings[fund];
+  if (f) {
+    var r = parseFloat(rate);
+    f.returnRate = isNaN(r) ? SAVINGS_DEFAULT_RETURN : Math.max(0, Math.min(20, r));
+    saveSavings(savings);
+  }
 }

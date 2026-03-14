@@ -7,14 +7,26 @@
 // ===== Dashboard =====
 
 function getMonthShifts() {
-  return loadShifts().filter(s => {
-    const p = s.date.split('-');
-    return parseInt(p[1]) - 1 === currentMonth && parseInt(p[0]) === currentYear;
-  }).sort((a, b) => b.date.localeCompare(a.date));
+  var raw = typeof loadShifts === 'function' ? loadShifts() : [];
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(function(s) {
+    if (!s || typeof s.date !== 'string') return false;
+    var p = s.date.split('-');
+    return parseInt(p[1], 10) - 1 === currentMonth && parseInt(p[0], 10) === currentYear;
+  }).sort(function(a, b) { return b.date.localeCompare(a.date); });
 }
 
 function render() {
-  const monthShifts = getMonthShifts();
+  try {
+    renderCore();
+  } catch (e) {
+    console.error('Render error:', e);
+    if (typeof showToast === 'function') showToast('שגיאה – נסה לרענן');
+  }
+}
+
+function renderCore() {
+  var monthShifts = getMonthShifts();
   let totalH = 0, totalP = 0, totalMeal = 0;
   const typeTotals = {};
 
@@ -77,35 +89,44 @@ function render() {
     if (heroNetEl) heroNetEl.textContent = fmtNIS(displayNet);
     if (heroGrossEl) heroGrossEl.textContent = fmtNIS(displayGross);
   }
-  document.getElementById('heroNetSub').textContent = netSubText;
-  document.getElementById('heroSub').textContent = `${monthShifts.length} משמרות · ${Math.round(totalH)} שעות`;
+  var heroNetSub = document.getElementById('heroNetSub');
+  if (heroNetSub) heroNetSub.textContent = netSubText;
+  var heroSub = document.getElementById('heroSub');
+  if (heroSub) heroSub.textContent = monthShifts.length + ' משמרות · ' + Math.round(totalH) + ' שעות';
   var payDateEl = document.getElementById('heroPaymentDate');
   if (payDateEl && typeof formatPaymentDateLabel === 'function') {
     payDateEl.textContent = formatPaymentDateLabel(currentMonth, currentYear);
   }
 
-  document.getElementById('statHours').textContent = Math.round(totalH * 10) / 10;
-  document.getElementById('statShifts').textContent = monthShifts.length;
-  document.getElementById('statAvg').textContent = monthShifts.length ? fmtNIS(totalP / monthShifts.length) : '₪0';
+  var statHours = document.getElementById('statHours');
+  if (statHours) statHours.textContent = Math.round(totalH * 10) / 10;
+  var statShifts = document.getElementById('statShifts');
+  if (statShifts) statShifts.textContent = monthShifts.length;
+  var statAvg = document.getElementById('statAvg');
+  if (statAvg) statAvg.textContent = monthShifts.length ? fmtNIS(totalP / monthShifts.length) : '₪0';
 
-  document.getElementById('dedTotal').textContent = `-${fmtNIS(totalAllDeductions)}`;
-  document.getElementById('dedIncomeTax').textContent = `-${fmtNIS(incomeTaxAmount)}`;
+  var dedTotal = document.getElementById('dedTotal');
+  if (dedTotal) dedTotal.textContent = '-' + fmtNIS(totalAllDeductions);
+  var dedIncomeTax = document.getElementById('dedIncomeTax');
+  if (dedIncomeTax) dedIncomeTax.textContent = '-' + fmtNIS(incomeTaxAmount);
 
-  const taxTierRow = document.getElementById('taxTierRow');
-  const taxTierDetail = document.getElementById('taxTierDetail');
-  if (dedSettings.incomeTax && tax.finalTax > 0) {
+  var taxTierRow = document.getElementById('taxTierRow');
+  var taxTierDetail = document.getElementById('taxTierDetail');
+  if (dedSettings.incomeTax && tax.finalTax > 0 && taxTierRow && taxTierDetail) {
     taxTierRow.style.display = '';
     let tierHtml = tax.tiers.filter(t => t.tax > 0).map(t =>
       `<div style="display:flex;justify-content:space-between;margin-bottom:2px"><span>${Math.round(t.rate*100)}% (${fmtNIS(t.from)}–${t.to === Infinity ? '∞' : fmtNIS(t.to)})</span><span>-${fmtNIS(t.tax)}</span></div>`
     ).join('');
     tierHtml += `<div style="display:flex;justify-content:space-between;margin-top:4px;color:var(--green)"><span>זיכוי (${creditPoints} נק׳ × ₪242)</span><span>+${fmtNIS(tax.creditAmount)}</span></div>`;
     taxTierDetail.innerHTML = tierHtml;
-  } else {
+  } else if (taxTierRow) {
     taxTierRow.style.display = 'none';
   }
 
-  document.getElementById('dedPension').textContent = `-${fmtNIS(ded.employee.pension)}`;
-  document.getElementById('dedStudy').textContent = `-${fmtNIS(ded.employee.study)}`;
+  var dedPension = document.getElementById('dedPension');
+  if (dedPension) dedPension.textContent = '-' + fmtNIS(ded.employee.pension);
+  var dedStudy = document.getElementById('dedStudy');
+  if (dedStudy) dedStudy.textContent = '-' + fmtNIS(ded.employee.study);
   const niVal = ded.employee.nationalInsurance != null ? ded.employee.nationalInsurance : ded.employee.ni;
   const healthVal = ded.employee.healthInsurance != null ? ded.employee.healthInsurance : 0;
   if (totalGross > 0 && healthVal === 0) {
@@ -113,49 +134,72 @@ function render() {
       ', healthInsurance=' + ded.employee.healthInsurance,
       ', full ded=', JSON.stringify(ded.employee));
   }
-  document.getElementById('dedNI').textContent = `-${fmtNIS(niVal)}`;
-  document.getElementById('dedHealth').textContent = `-${fmtNIS(healthVal)}`;
+  var dedNI = document.getElementById('dedNI');
+  if (dedNI) dedNI.textContent = '-' + fmtNIS(niVal);
+  var dedHealth = document.getElementById('dedHealth');
+  if (dedHealth) dedHealth.textContent = '-' + fmtNIS(healthVal);
 
-  const niTierRow = document.getElementById('niTierRow');
-  const niDetail = document.getElementById('niTierDetail');
-  if (ded.employee.ni > 0) {
+  var niTierRow = document.getElementById('niTierRow');
+  if (ded.employee.ni > 0 && niTierRow) {
     niTierRow.style.display = '';
-    document.getElementById('niTier1').textContent = `-${fmtNIS(niVal)}`;
-    document.getElementById('niTier2').textContent = `-${fmtNIS(healthVal)}`;
-  } else {
+    var niTier1 = document.getElementById('niTier1');
+    if (niTier1) niTier1.textContent = '-' + fmtNIS(niVal);
+    var niTier2 = document.getElementById('niTier2');
+    if (niTier2) niTier2.textContent = '-' + fmtNIS(healthVal);
+  } else if (niTierRow) {
     niTierRow.style.display = 'none';
   }
 
-  document.getElementById('empTotal').textContent = `+${fmtNIS(ded.employer.total)}`;
-  document.getElementById('empPension').textContent = `+${fmtNIS(ded.employer.pension)}`;
-  document.getElementById('empStudy').textContent = `+${fmtNIS(ded.employer.study)}`;
+  var empTotal = document.getElementById('empTotal');
+  if (empTotal) empTotal.textContent = '+' + fmtNIS(ded.employer.total);
+  var empPension = document.getElementById('empPension');
+  if (empPension) empPension.textContent = '+' + fmtNIS(ded.employer.pension);
+  var empStudy = document.getElementById('empStudy');
+  if (empStudy) empStudy.textContent = '+' + fmtNIS(ded.employer.study);
 
   const hasGross = totalGross > 0;
   const hasAnyData = hasGross || hasActualSlip;
   const simple = !!dedSettings.simpleMode;
 
   // Simple Mode: forcefully hide all advanced panels
-  document.getElementById('deductionsPanel').style.display = (hasGross && !simple) ? '' : 'none';
-  document.getElementById('employerPanel').style.display = (hasGross && !simple) ? '' : 'none';
+  var deductionsPanel = document.getElementById('deductionsPanel');
+  if (deductionsPanel) deductionsPanel.style.display = (hasGross && !simple) ? '' : 'none';
+  var employerPanel = document.getElementById('employerPanel');
+  if (employerPanel) employerPanel.style.display = (hasGross && !simple) ? '' : 'none';
   var shareEl = document.getElementById('shareButtons');
   if (shareEl) {
     shareEl.style.display = hasAnyData ? 'grid' : 'none';
   }
-  document.getElementById('forecastCard').style.display = 'none';
-  document.getElementById('comparisonPanel').style.display = simple ? 'none' : '';
-  document.getElementById('statsGrid').style.display = simple ? 'none' : '';
-  document.getElementById('leaveBalance').style.display = simple ? 'none' : '';
-  document.getElementById('breakdownSection').style.display = simple ? 'none' : '';
+  var forecastCard = document.getElementById('forecastCard');
+  if (forecastCard) forecastCard.style.display = 'none';
+  var comparisonPanel = document.getElementById('comparisonPanel');
+  if (comparisonPanel) comparisonPanel.style.display = simple ? 'none' : '';
+  var statsGrid = document.getElementById('statsGrid');
+  if (statsGrid) statsGrid.style.display = simple ? 'none' : '';
+  var leaveBalance = document.getElementById('leaveBalance');
+  if (leaveBalance) leaveBalance.style.display = simple ? 'none' : '';
+  var breakdownSection = document.getElementById('breakdownSection');
+  if (breakdownSection) breakdownSection.style.display = simple ? 'none' : '';
 
   var chartsEl = document.getElementById('chartsContainer');
   if (chartsEl) {
     if (showCharts && !simple) {
-      chartsEl.style.display = '';
-      if (typeof initCharts === 'function') setTimeout(initCharts, 50);
+      chartsEl.style.display = 'block';
+      if (typeof initCharts === 'function') {
+        setTimeout(initCharts, 80);
+      }
     } else {
       chartsEl.style.display = 'none';
       if (typeof destroyCharts === 'function') destroyCharts();
     }
+  }
+
+  // ===== Savings Dashboard (Pension + Keren Hishtalmut) =====
+  if (!simple && typeof renderSavings === 'function') {
+    renderSavings();
+  } else {
+    var savingsSection = document.getElementById('savingsSection');
+    if (savingsSection) savingsSection.style.display = 'none';
   }
 
   // ===== Monthly Projection (visible in all modes) =====
@@ -170,9 +214,9 @@ function render() {
     const bdSection = document.getElementById('breakdownSection');
     const hasBreakdown = Object.keys(typeTotals).length > 0 || fixedAdd.total > 0;
 
-    if (!hasBreakdown) {
+    if (!hasBreakdown && bdSection) {
       bdSection.style.display = 'none';
-    } else {
+    } else if (bdSection) {
       bdSection.style.display = '';
       let bdHtml = Object.entries(typeTotals).map(([type, data]) => `
         <div class="bd-row">
@@ -207,19 +251,23 @@ function render() {
         </div>`;
       }
 
-      bdList.innerHTML = bdHtml;
+      if (bdList) bdList.innerHTML = bdHtml;
     }
   }
 
   // Leave balance
-  const leave = loadLeaveBalances();
-  document.getElementById('vacBalance').textContent = leave.vacation;
-  document.getElementById('sickBalance').textContent = leave.sick;
+  var leave = typeof loadLeaveBalances === 'function' ? loadLeaveBalances() : { vacation: 0, sick: 0 };
+  var vacBalance = document.getElementById('vacBalance');
+  if (vacBalance) vacBalance.textContent = leave.vacation;
+  var sickBalance = document.getElementById('sickBalance');
+  if (sickBalance) sickBalance.textContent = leave.sick;
 
-  const listEl = document.getElementById('recentShifts');
+  var listEl = document.getElementById('recentShifts');
   if (monthShifts.length === 0) {
-    const allShifts = loadShifts();
-    const isFirstEver = allShifts.length === 0;
+    if (!listEl) return;
+    var allShifts = typeof loadShifts === 'function' ? loadShifts() : [];
+    if (!Array.isArray(allShifts)) allShifts = [];
+    var isFirstEver = allShifts.length === 0;
     listEl.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">${isFirstEver ? '👋' : '📭'}</div>
@@ -229,8 +277,9 @@ function render() {
       </div>`;
     return;
   }
+  if (!listEl) return;
 
-  listEl.innerHTML = monthShifts.map(s => {
+  listEl.innerHTML = monthShifts.map(function(s) {
     const p = s.date.split('-');
     const d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
     return `
@@ -249,7 +298,7 @@ function render() {
       </div>`;
   }).join('');
   if (typeof staggerEntrance === 'function') {
-    staggerEntrance(listEl, '.shift-item');
+    staggerEntrance(listEl, '.shift-item', { maxStagger: 8 });
   }
 }
 
@@ -509,6 +558,9 @@ function savePayslipModal() {
   };
 
   savePayslip(currentYear, currentMonth, data);
+  if (typeof updateSavingsFromPayslip === 'function') {
+    updateSavingsFromPayslip(currentYear, currentMonth, { gross: g, pension: enteredPension, study: enteredStudy });
+  }
   closePayslipModal();
   render();
   if (typeof renderAnnual === 'function') renderAnnual();

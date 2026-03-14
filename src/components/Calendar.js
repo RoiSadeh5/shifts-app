@@ -6,9 +6,19 @@ var calViewMode = 'month';
 var calSwipeStartX = 0;
 
 function renderCalendar() {
+  try {
+    renderCalendarCore();
+  } catch (e) {
+    console.error('Calendar render error:', e);
+    if (typeof showToast === 'function') showToast('שגיאה – נסה לרענן');
+  }
+}
+
+function renderCalendarCore() {
   var grid = document.getElementById('calGrid');
   var details = document.getElementById('calDetails');
-  var monthShifts = getMonthShifts();
+  if (!grid || !details) return;
+  var monthShifts = typeof getMonthShifts === 'function' ? getMonthShifts() : [];
 
   var shiftsByDay = {};
   monthShifts.forEach(function(s) {

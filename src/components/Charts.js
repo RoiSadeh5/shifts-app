@@ -17,9 +17,11 @@ function getChartDefaults() {
   return {
     responsive: true,
     maintainAspectRatio: false,
+    devicePixelRatio: typeof window !== 'undefined' && window.devicePixelRatio ? Math.min(window.devicePixelRatio, 2) : 1,
     plugins: {
       legend: { display: true, position: 'top', rtl: true }
-    }
+    },
+    layout: { padding: { top: 8, right: 8, bottom: 8, left: 8 } }
   };
 }
 
@@ -92,22 +94,36 @@ function initCharts() {
   if (typeof Chart === 'undefined') return;
   var container = document.getElementById('chartsContainer');
   if (!container) return;
+  try {
+    initChartsCore();
+  } catch (e) {
+    console.warn('Charts init failed:', e);
+  }
+}
+
+function initChartsCore() {
   destroyCharts();
   var monthlyData = getMonthlyChartData();
   var monthlyCanvas = document.getElementById('chartMonthly');
   if (monthlyCanvas) {
     var ctx = monthlyCanvas.getContext('2d');
+    var maxVal = Math.max.apply(null, monthlyData.gross.concat(monthlyData.net)) || 1;
     chartInstances.monthly = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: monthlyData.labels,
         datasets: [
-          { label: 'ברוטו', data: monthlyData.gross, backgroundColor: 'rgba(99,102,241,0.6)' },
-          { label: 'נטו', data: monthlyData.net, backgroundColor: 'rgba(16,185,129,0.6)' }
+          { label: 'ברוטו', data: monthlyData.gross, backgroundColor: 'rgba(99,102,241,0.7)' },
+          { label: 'נטו', data: monthlyData.net, backgroundColor: 'rgba(16,185,129,0.7)' }
         ]
       },
       options: Object.assign({}, getChartDefaults(), {
-        scales: { x: { stacked: false }, y: { beginAtZero: true } }
+        scales: {
+          x: { stacked: false, grid: { display: false } },
+          y: { beginAtZero: true, suggestedMax: maxVal * 1.15, ticks: { maxTicksLimit: 6 } }
+        },
+        barPercentage: 0.7,
+        categoryPercentage: 0.8
       })
     });
   }
@@ -121,21 +137,33 @@ function initCharts() {
         labels: donutData.labels,
         datasets: [{ data: donutData.data, backgroundColor: donutData.backgroundColor }]
       },
-      options: Object.assign({}, getChartDefaults(), { cutout: '55%' })
+      options: Object.assign({}, getChartDefaults(), {
+        cutout: '55%',
+        plugins: { legend: { display: true, position: 'bottom', rtl: true } }
+      })
     });
   }
   var trendCanvas = document.getElementById('chartTrend');
   if (trendCanvas) {
     var ctx3 = trendCanvas.getContext('2d');
+    var maxNet = Math.max.apply(null, monthlyData.net) || 1;
     chartInstances.trend = new Chart(ctx3, {
       type: 'line',
       data: {
         labels: monthlyData.labels,
-        datasets: [{ label: 'נטו', data: monthlyData.net, borderColor: '#10b981', fill: true, backgroundColor: 'rgba(16,185,129,0.1)' }]
+        datasets: [{ label: 'נטו', data: monthlyData.net, borderColor: '#10b981', borderWidth: 2, fill: true, backgroundColor: 'rgba(16,185,129,0.15)' }]
       },
       options: Object.assign({}, getChartDefaults(), {
-        scales: { x: {}, y: { beginAtZero: true } }
+        scales: {
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, suggestedMax: maxNet * 1.2, ticks: { maxTicksLimit: 5 } }
+        }
       })
     });
   }
+  setTimeout(function() {
+    [chartInstances.monthly, chartInstances.donut, chartInstances.trend].forEach(function(c) {
+      if (c && typeof c.resize === 'function') c.resize();
+    });
+  }, 100);
 }

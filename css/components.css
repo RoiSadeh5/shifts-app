@@ -572,6 +572,20 @@
 .template-actions { display: flex; gap: 8px; align-items: center; }
 .template-actions .btn-payslip { flex: 1; }
 
+/* ===== CHARTS (Chart.js responsive containers) ===== */
+.charts-wrapper {
+  contain: layout style paint;
+}
+.charts-wrapper .chart-box {
+  position: relative;
+  width: 100%;
+  min-height: 0;
+}
+.charts-wrapper canvas {
+  display: block;
+  max-width: 100%;
+}
+
 /* ===== BACKUP INFO ===== */
 .backup-info {
   text-align: center;

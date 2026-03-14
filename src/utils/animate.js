@@ -4,7 +4,7 @@
 function countUp(el, targetNum, opts) {
   if (!el || typeof targetNum !== 'number') return;
   opts = opts || {};
-  var duration = opts.duration || 600;
+  var duration = opts.duration || 400;
   var easing = opts.easing || function(t) { return t * (2 - t); };
   var formatter = opts.formatter || (function(n) { return '₪' + Math.round(n).toLocaleString(); });
   var from = parseFloat(el.dataset.countUpFrom) || 0;
@@ -28,7 +28,9 @@ function staggerEntrance(container, itemSelector, opts) {
   var items = container.querySelectorAll(itemSelector || '.shift-item');
   var delayStep = opts.delayStep || 50;
   var baseDelay = opts.baseDelay || 0;
+  var maxStagger = opts.maxStagger !== undefined ? opts.maxStagger : 12;
   items.forEach(function(item, i) {
+    if (i >= maxStagger) return;
     item.style.animationDelay = (baseDelay + i * delayStep) + 'ms';
     item.style.animationFillMode = 'backwards';
     if (!item.classList.contains('stagger-in')) item.classList.add('stagger-in');

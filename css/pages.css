@@ -322,6 +322,66 @@
 .leave-val.green { color: var(--green); }
 .leave-val.orange { color: var(--orange); }
 
+/* ===== SAVINGS DASHBOARD ===== */
+.savings-section {
+  margin-bottom: 18px;
+}
+.savings-section .section-label { margin-bottom: 12px; }
+.savings-fund-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.savings-fund-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.savings-fund-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.savings-edit-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+.savings-edit-btn:hover { background: var(--border); color: var(--text); }
+.savings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.savings-row:last-of-type { margin-bottom: 0; }
+.savings-name { color: var(--text-dim); font-weight: 500; }
+.savings-val { font-weight: 700; direction: ltr; text-align: left; }
+.savings-val.green { color: var(--green); }
+.savings-val.accent { color: var(--accent-light); }
+.savings-proj-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.savings-proj-item {
+  text-align: center;
+  font-size: 11px;
+}
+.savings-proj-label { display: block; color: var(--text-dim); margin-bottom: 2px; }
+.savings-proj-val { font-weight: 700; font-size: 11px; direction: ltr; }
+
 /* ===== PAYSLIP COMPARISON ===== */
 .comparison-panel {
   background: var(--card);

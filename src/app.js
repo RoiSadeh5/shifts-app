@@ -125,25 +125,24 @@ function saveUserNameSetting() {
 
 // ===== Tab Navigation =====
 function switchTab(name) {
-  haptic(true);
-  var activePage = document.querySelector('.page.active');
   var targetPage = document.getElementById('page' + name);
   var targetTab = document.getElementById('tab' + name);
   if (!targetPage || !targetTab) return;
+  if (targetPage.classList.contains('active')) return;
+  haptic(true);
   document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
   targetTab.classList.add('active');
-  function doRender() {
-    if (name === 'Dashboard') { updateGreeting(); render(); }
-    else if (name === 'Calendar') renderCalendar();
-    else if (name === 'Annual') renderAnnual();
-    else if (name === 'Add' && typeof renderTemplates === 'function') renderTemplates();
-  }
-  if (typeof transitionPage === 'function' && activePage && activePage !== targetPage) {
-    transitionPage(activePage, targetPage, doRender);
-  } else {
-    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
-    targetPage.classList.add('active');
-    doRender();
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  targetPage.classList.add('active');
+  if (name === 'Dashboard') {
+    updateGreeting();
+    requestAnimationFrame(function() { requestAnimationFrame(render); });
+  } else if (name === 'Calendar') {
+    requestAnimationFrame(function() { requestAnimationFrame(renderCalendar); });
+  } else if (name === 'Annual') {
+    requestAnimationFrame(function() { requestAnimationFrame(renderAnnual); });
+  } else if (name === 'Add' && typeof renderTemplates === 'function') {
+    requestAnimationFrame(function() { requestAnimationFrame(renderTemplates); });
   }
   if (name !== 'Dashboard') {
     var titles = { Add: 'הוספת משמרת', Calendar: 'לוח שנה', Annual: 'סיכום שנתי', Settings: 'הגדרות' };
@@ -156,13 +155,19 @@ function switchTab(name) {
 }
 
 // ===== Month Navigation =====
+var changeMonthPending = false;
 function changeMonth(delta) {
+  if (changeMonthPending) return;
+  changeMonthPending = true;
   currentMonth += delta;
   if (currentMonth > 11) { currentMonth = 0; currentYear++; }
   if (currentMonth < 0) { currentMonth = 11; currentYear--; }
   updateMonthLabels();
   render();
   renderCalendar();
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() { changeMonthPending = false; });
+  });
 }
 
 function updateMonthLabels() {
@@ -280,7 +285,6 @@ function recalcAll() {
 
 // ===== Initialization =====
 async function init() {
-  haptic(true);
   loadSettings();
   if (typeof initDataStore === 'function') {
     await initDataStore();

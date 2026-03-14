@@ -207,17 +207,29 @@
       </div>
     </div>
 
+    <!-- Savings Dashboard (Pension + Keren Hishtalmut) -->
+    <div id="savingsSection" class="savings-section" style="display:none">
+      <div class="section-label" style="display:flex;align-items:center;gap:8px;">
+        <span>חוסן פנסיוני</span>
+      </div>
+      <div id="savingsFundPension"></div>
+      <div id="savingsFundStudy"></div>
+      <div class="chart-box" style="height:160px;margin-top:12px;">
+        <canvas id="savingsChartCanvas"></canvas>
+      </div>
+    </div>
+
     <div class="breakdown-section" id="breakdownSection">
       <div class="section-label">פירוט לפי סוג</div>
       <div id="breakdownList"></div>
     </div>
 
-    <div id="chartsContainer" style="display:none;margin-bottom:18px;">
+    <div id="chartsContainer" class="charts-wrapper" style="display:none;margin-bottom:18px;">
       <div class="section-label" style="margin-bottom:10px;">גרפים</div>
-      <div style="height:180px;margin-bottom:12px;"><canvas id="chartMonthly"></canvas></div>
+      <div class="chart-box" style="height:180px;margin-bottom:12px;"><canvas id="chartMonthly"></canvas></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div style="height:160px;"><canvas id="chartDonut"></canvas></div>
-        <div style="height:160px;"><canvas id="chartTrend"></canvas></div>
+        <div class="chart-box" style="height:160px;"><canvas id="chartDonut"></canvas></div>
+        <div class="chart-box" style="height:160px;"><canvas id="chartTrend"></canvas></div>
       </div>
     </div>
 
@@ -547,6 +559,26 @@
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
+  <!-- Savings Edit Modal -->
+  <div class="confirm-overlay" id="savingsEditOverlay" style="display:none" onclick="if(event.target===this)closeSavingsEditModal()">
+    <div class="confirm-box" style="max-width:320px">
+      <div class="confirm-title" id="savingsEditLabel">עריכת יתרה</div>
+      <input type="hidden" id="savingsEditFund" value="pension">
+      <div class="form-group" style="margin-top:12px">
+        <label>יתרה נוכחית (₪)</label>
+        <input type="number" id="savingsEditBalance" placeholder="0" inputmode="decimal" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label>תשואה שנתית (%)</label>
+        <input type="number" id="savingsEditRate" placeholder="7" inputmode="decimal" step="0.1" min="0" max="20" value="7">
+      </div>
+      <div class="confirm-btns" style="margin-top:16px">
+        <button class="confirm-cancel" onclick="closeSavingsEditModal()">ביטול</button>
+        <button class="confirm-ok" onclick="saveSavingsEdit()">שמור</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== BOTTOM TAB BAR ==================== -->
   <nav class="tab-bar" role="navigation" aria-label="ניווט ראשי">
     <button class="tab active" onclick="switchTab('Dashboard')" id="tabDashboard" aria-label="דף ראשי">
@@ -579,6 +611,7 @@
   <script src="src/utils/animate.js"></script>
   <script src="src/utils/notifications.js"></script>
   <script src="src/components/Charts.js"></script>
+  <script src="src/components/Savings.js"></script>
   <script src="src/components/Dashboard.js"></script>
   <script src="src/components/Calendar.js"></script>
   <script src="src/components/Templates.js"></script>
