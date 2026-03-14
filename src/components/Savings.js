@@ -249,7 +249,13 @@ function deleteGeneralSavingsEntryUi(id) {
 
 function renderSavingsChart() {
   var canvas = document.getElementById('savingsChartCanvas');
-  if (!canvas || typeof Chart === 'undefined') return;
+  if (!canvas) return;
+  if (typeof Chart === 'undefined') {
+    if (typeof loadChartJs === 'function') {
+      loadChartJs().then(renderSavingsChart).catch(function() {});
+    }
+    return;
+  }
   if (typeof initChartDefaults === 'function') initChartDefaults();
   if (savingsChartInstance) {
     savingsChartInstance.destroy();

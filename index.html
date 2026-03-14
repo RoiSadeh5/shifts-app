@@ -11,14 +11,11 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/pages.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -224,19 +221,23 @@
     <div id="recentShifts"></div>
   </div>
 
-  <!-- ==================== SAVINGS (חוסן פנסיוני) ==================== -->
+  <!-- ==================== SAVINGS (חסכון פנסיוני) ==================== -->
   <div class="page" id="pageSavings">
     <div id="savingsSection" class="savings-section">
       <div class="section-label" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-        <span>חוסן פנסיוני</span>
+        <span>חסכון פנסיוני</span>
       </div>
       <div id="savingsEmptyState" class="savings-empty-state" style="display:none">
         <div class="savings-empty-icon">🏦</div>
-        <div class="savings-empty-text">אין עדיין חוסן פנסיוני</div>
+        <div class="savings-empty-text">אין עדיין חסכון פנסיוני</div>
         <div class="savings-empty-hint">הזן יתרות בקרן פנסיה וקרן השתלמות בהגדרות, או הוסף חסכונות כלליים</div>
         <button class="btn-savings-add" onclick="openGeneralSavingsModal()">➕ הוסף חסכון</button>
       </div>
       <div id="savingsContentArea" style="display:none">
+        <div class="savings-total-card" id="savingsTotalCard" style="margin-bottom:16px;">
+          <div class="savings-total-label">סה״כ חסכון פנסיוני</div>
+          <div class="savings-total-val" id="savingsTotalVal">₪0</div>
+        </div>
         <div id="savingsFundPension"></div>
         <div id="savingsFundStudy"></div>
         <div class="savings-general-section">
@@ -246,10 +247,6 @@
         </div>
         <div class="chart-box" dir="ltr" style="height:180px;margin-top:12px;">
           <canvas id="savingsChartCanvas"></canvas>
-        </div>
-        <div class="savings-total-card" id="savingsTotalCard">
-          <div class="savings-total-label">סה״כ חוסן פנסיוני</div>
-          <div class="savings-total-val" id="savingsTotalVal">₪0</div>
         </div>
       </div>
     </div>
@@ -461,7 +458,7 @@
     </div>
 
     <button class="btn-secondary" onclick="switchTab('Savings')" style="margin-bottom:14px;">
-      🏦 חוסן פנסיוני – צפייה והזנת יתרות
+      🏦 חסכון פנסיוני – צפייה והזנת יתרות
     </button>
     <div class="section-label" style="margin-bottom:14px;">יתרות חופש ומחלה</div>
     <div class="setting-group">
@@ -630,9 +627,9 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
       <span>הוספה</span>
     </button>
-    <button class="tab" onclick="switchTab('Savings')" id="tabSavings" aria-label="חוסן פנסיוני">
+    <button class="tab" onclick="switchTab('Savings')" id="tabSavings" aria-label="חסכון פנסיוני">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      <span>חוסן</span>
+      <span>חסכון</span>
     </button>
     <button class="tab" onclick="switchTab('Calendar')" id="tabCalendar" aria-label="לוח שנה">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -664,7 +661,11 @@
   <script src="src/components/AnnualSummary.js"></script>
   <script src="src/components/settings.js"></script>
   <script>
-    window.addEventListener('DOMContentLoaded', init);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
 
     // Pull-to-refresh: only when scroll at top, minimal interference with normal scroll
     (function() {

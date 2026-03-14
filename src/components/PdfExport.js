@@ -49,6 +49,10 @@ function generateMonthlyPdf() {
 
 function downloadMonthlyPdf() {
   haptic(true);
+  if (typeof loadJspdf === 'function' && (!window.jspdf || typeof window.jspdf.jsPDF === 'undefined')) {
+    loadJspdf().then(function() { downloadMonthlyPdf(); }).catch(function() { showToast('שגיאה בטעינת PDF'); });
+    return;
+  }
   var doc = generateMonthlyPdf();
   if (!doc) return;
   var h = typeof hebrewMonths !== 'undefined' ? hebrewMonths[currentMonth] : (currentMonth + 1);

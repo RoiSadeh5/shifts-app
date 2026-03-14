@@ -106,15 +106,18 @@ function getShiftTypeData() {
 }
 
 function initCharts() {
-  if (typeof Chart === 'undefined') return;
   var container = document.getElementById('chartsContainer');
   if (!container) return;
-  initChartDefaults();
-  try {
-    initChartsCore();
-  } catch (e) {
-    console.warn('Charts init failed:', e);
+  if (typeof Chart !== 'undefined') {
+    initChartDefaults();
+    try { initChartsCore(); } catch (e) { console.warn('Charts init failed:', e); }
+    return;
   }
+  if (typeof loadChartJs !== 'function') return;
+  loadChartJs().then(function() {
+    initChartDefaults();
+    try { initChartsCore(); } catch (e) { console.warn('Charts init failed:', e); }
+  }).catch(function() { console.warn('Chart.js load failed'); });
 }
 
 function initChartsCore() {

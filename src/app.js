@@ -43,6 +43,44 @@ var badgeCls = { plus: 'badge-plus', training: 'badge-training', vacation: 'badg
 var dotCls = { plus: 'dot-plus', training: 'dot-training', vacation: 'dot-vacation', sick: 'dot-sick', minus: 'dot-minus' };
 var dotColors = { plus: 'var(--accent-light)', training: 'var(--orange)', vacation: 'var(--green)', sick: 'var(--red)', minus: 'var(--blue)' };
 
+// ===== Lazy-load heavy libs (Chart.js, jsPDF) =====
+var _chartJsReady = null;
+function loadChartJs() {
+  if (typeof Chart !== 'undefined') return Promise.resolve();
+  if (_chartJsReady) return _chartJsReady;
+  _chartJsReady = new Promise(function(resolve, reject) {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js';
+    s.async = true;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+  return _chartJsReady;
+}
+
+var _jspdfReady = null;
+function loadJspdf() {
+  if (window.jspdf && typeof window.jspdf.jsPDF !== 'undefined') return Promise.resolve();
+  if (_jspdfReady) return _jspdfReady;
+  _jspdfReady = new Promise(function(resolve, reject) {
+    var s1 = document.createElement('script');
+    s1.src = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
+    s1.async = true;
+    s1.onload = function() {
+      var s2 = document.createElement('script');
+      s2.src = 'https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js';
+      s2.async = true;
+      s2.onload = resolve;
+      s2.onerror = reject;
+      document.head.appendChild(s2);
+    };
+    s1.onerror = reject;
+    document.head.appendChild(s1);
+  });
+  return _jspdfReady;
+}
+
 // ===== Utilities =====
 function fmtNIS(n) { return `₪${Math.round(n).toLocaleString()}`; }
 
@@ -148,7 +186,7 @@ function switchTab(name) {
     requestAnimationFrame(function() { requestAnimationFrame(renderSavings); });
   }
   if (name !== 'Dashboard') {
-    var titles = { Add: 'הוספת משמרת', Calendar: 'לוח שנה', Annual: 'סיכום שנתי', Settings: 'הגדרות', Savings: 'חוסן פנסיוני' };
+    var titles = { Add: 'הוספת משמרת', Calendar: 'לוח שנה', Annual: 'סיכום שנתי', Settings: 'הגדרות', Savings: 'חסכון פנסיוני' };
     var titleEl = document.getElementById('pageTitle');
     if (titleEl) {
       titleEl.classList.remove('greeting-animated');
@@ -360,8 +398,15 @@ async function initCore() {
     updateBackupDisplay();
   }
   initOfflineIndicator();
-  initServiceWorker();
-  initInstallHint();
+  if (typeof requestIdleCallback !== 'undefined') {
+    requestIdleCallback(function() {
+      initServiceWorker();
+      initInstallHint();
+    }, { timeout: 2000 });
+  } else {
+    initServiceWorker();
+    initInstallHint();
+  }
   if (notificationsEnabled && typeof schedulePeriodicCheck === 'function') schedulePeriodicCheck();
 
   // Hide Add to Home button in Settings when already installed
