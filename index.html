@@ -214,8 +214,17 @@
       </div>
       <div id="savingsFundPension"></div>
       <div id="savingsFundStudy"></div>
+      <div class="savings-general-section">
+        <div class="section-label" style="margin-top:4px;">חסכונות כלליים</div>
+        <div id="savingsGeneralList"></div>
+        <button class="btn-savings-add" onclick="openGeneralSavingsModal()">➕ הוסף חסכון</button>
+      </div>
       <div class="chart-box" style="height:160px;margin-top:12px;">
         <canvas id="savingsChartCanvas"></canvas>
+      </div>
+      <div class="savings-total-card" id="savingsTotalCard">
+        <div class="savings-total-label">סך הכל חסכונות</div>
+        <div class="savings-total-val" id="savingsTotalVal">₪0</div>
       </div>
     </div>
 
@@ -558,6 +567,26 @@
 
   <!-- Toast -->
   <div class="toast" id="toast"></div>
+
+  <!-- General Savings Add/Edit Modal -->
+  <div class="confirm-overlay" id="generalSavingsOverlay" style="display:none" onclick="if(event.target===this)closeGeneralSavingsModal()">
+    <div class="confirm-box" style="max-width:320px">
+      <div class="confirm-title" id="generalSavingsModalTitle">הוסף חסכון</div>
+      <input type="hidden" id="generalSavingsEditId" value="">
+      <div class="form-group" style="margin-top:12px">
+        <label>שם (למשל: קרקע, מזומן, דירה)</label>
+        <input type="text" id="generalSavingsName" placeholder="לדוגמה: קרקע" inputmode="text">
+      </div>
+      <div class="form-group">
+        <label>סכום (₪)</label>
+        <input type="number" id="generalSavingsAmount" placeholder="0" inputmode="decimal" step="0.01" min="0">
+      </div>
+      <div class="confirm-btns" style="margin-top:16px">
+        <button class="confirm-cancel" onclick="closeGeneralSavingsModal()">ביטול</button>
+        <button class="confirm-ok" onclick="saveGeneralSavingsEntry()">שמור</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Savings Edit Modal -->
   <div class="confirm-overlay" id="savingsEditOverlay" style="display:none" onclick="if(event.target===this)closeSavingsEditModal()">

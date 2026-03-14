@@ -88,7 +88,9 @@ function renderSavings() {
   var section = document.getElementById('savingsSection');
   if (!section) return;
   var savings = typeof loadSavings === 'function' ? loadSavings() : { pension: {}, study: {} };
+  var generalCount = Array.isArray(savings.general) ? savings.general.length : 0;
   var hasAny = (savings.pension && savings.pension.balance > 0) || (savings.study && savings.study.balance > 0) ||
+    generalCount > 0 ||
     (dedSettings && (dedSettings.pension || dedSettings.study)) ||
     (getSavingsMonthlyContribution('pension') > 0 || getSavingsMonthlyContribution('study') > 0);
   if (!hasAny) {
@@ -99,6 +101,8 @@ function renderSavings() {
 
   renderSavingsFund('pension', 'קרן פנסיה');
   renderSavingsFund('study', 'קרן השתלמות');
+  renderGeneralSavings();
+  renderSavingsTotal();
   renderSavingsChart();
 }
 
@@ -130,6 +134,111 @@ function renderSavingsFund(fund, label) {
       '<div class="savings-proj-item"><span class="savings-proj-label">פרישה</span><span class="savings-proj-val accent" id="savings' + fund + 'PRet">' + fmtNIS(proj.retirement) + '</span></div>' +
     '</div>' +
   '</div>';
+}
+
+function renderGeneralSavings() {
+  var container = document.getElementById('savingsGeneralList');
+  if (!container) return;
+  var savings = loadSavings();
+  var entries = Array.isArray(savings.general) ? savings.general : [];
+  if (entries.length === 0) {
+    container.innerHTML = '<div class="savings-general-empty">אין עדיין חסכונות כלליים. לחץ להלן להוספה.</div>';
+    return;
+  }
+  container.innerHTML = entries.map(function(e) {
+    return '<div class="savings-general-item">' +
+      '<div class="savings-general-info">' +
+        '<span class="savings-general-name">' + (e.name || 'חסכון') + '</span>' +
+        '<span class="savings-general-amount">' + fmtNIS(e.amount || 0) + '</span>' +
+      '</div>' +
+      '<div class="savings-general-actions">' +
+        '<button class="savings-edit-btn" onclick="openGeneralSavingsModal(\'' + (e.id || '') + '\')" aria-label="ערוך">✎</button>' +
+        '<button class="savings-delete-btn" onclick="deleteGeneralSavingsEntryUi(\'' + (e.id || '') + '\')" aria-label="מחק">✕</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderSavingsTotal() {
+  var card = document.getElementById('savingsTotalCard');
+  var valEl = document.getElementById('savingsTotalVal');
+  if (!card || !valEl) return;
+  var savings = loadSavings();
+  var pensionBal = (savings.pension && savings.pension.balance) || 0;
+  var studyBal = (savings.study && savings.study.balance) || 0;
+  var generalTotal = 0;
+  if (Array.isArray(savings.general)) {
+    savings.general.forEach(function(e) { generalTotal += parseFloat(e.amount) || 0; });
+  }
+  var total = pensionBal + studyBal + generalTotal;
+  valEl.textContent = fmtNIS(total);
+}
+
+function openGeneralSavingsModal(editId) {
+  if (typeof haptic === 'function') haptic(true);
+  var titleEl = document.getElementById('generalSavingsModalTitle');
+  var idEl = document.getElementById('generalSavingsEditId');
+  var nameEl = document.getElementById('generalSavingsName');
+  var amountEl = document.getElementById('generalSavingsAmount');
+  if (!titleEl || !idEl || !nameEl || !amountEl) return;
+  if (editId) {
+    var savings = loadSavings();
+    var e = savings.general && savings.general.find(function(x) { return x.id === editId; });
+    if (e) {
+      titleEl.textContent = 'עריכת חסכון';
+      idEl.value = e.id;
+      nameEl.value = e.name || '';
+      amountEl.value = e.amount != null ? e.amount : '';
+    }
+  } else {
+    titleEl.textContent = 'הוסף חסכון';
+    idEl.value = '';
+    nameEl.value = '';
+    amountEl.value = '';
+  }
+  var ov = document.getElementById('generalSavingsOverlay');
+  if (ov) {
+    ov.style.display = 'flex';
+    requestAnimationFrame(function() { ov.classList.add('visible'); });
+  }
+}
+
+function closeGeneralSavingsModal() {
+  var ov = document.getElementById('generalSavingsOverlay');
+  if (ov) {
+    ov.classList.remove('visible');
+    setTimeout(function() { ov.style.display = 'none'; }, 200);
+  }
+}
+
+function saveGeneralSavingsEntry() {
+  var idEl = document.getElementById('generalSavingsEditId');
+  var nameEl = document.getElementById('generalSavingsName');
+  var amountEl = document.getElementById('generalSavingsAmount');
+  var id = (idEl && idEl.value) || '';
+  var name = (nameEl && nameEl.value) || '';
+  var amount = parseFloat(amountEl && amountEl.value) || 0;
+  if (id) {
+    if (typeof updateGeneralSavingsEntry === 'function') updateGeneralSavingsEntry(id, name, amount);
+  } else {
+    if (typeof addGeneralSavingsEntry === 'function') addGeneralSavingsEntry(name, amount);
+  }
+  closeGeneralSavingsModal();
+  if (typeof render === 'function') render();
+  if (typeof showToast === 'function') showToast('הנתונים נשמרו');
+}
+
+function deleteGeneralSavingsEntryUi(id) {
+  if (typeof showConfirm !== 'function') {
+    if (typeof deleteGeneralSavingsEntry === 'function') deleteGeneralSavingsEntry(id);
+    if (typeof render === 'function') render();
+    return;
+  }
+  showConfirm('מחיקת חסכון', 'למחוק את פריט החסכון?', function() {
+    if (typeof deleteGeneralSavingsEntry === 'function') deleteGeneralSavingsEntry(id);
+    if (typeof render === 'function') render();
+    if (typeof showToast === 'function') showToast('נמחק');
+  }, 'מחק');
 }
 
 function renderSavingsChart() {

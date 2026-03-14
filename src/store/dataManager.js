@@ -331,15 +331,18 @@ function loadSavings() {
   try {
     var s = JSON.parse(localStorage.getItem(SAVINGS_KEY));
     if (s) {
+      var general = Array.isArray(s.general) ? s.general : [];
       return {
         pension: { balance: s.pension && s.pension.balance != null ? s.pension.balance : 0, returnRate: s.pension && s.pension.returnRate != null ? s.pension.returnRate : SAVINGS_DEFAULT_RETURN, contributions: (s.pension && s.pension.contributions) || {} },
-        study: { balance: s.study && s.study.balance != null ? s.study.balance : 0, returnRate: s.study && s.study.returnRate != null ? s.study.returnRate : SAVINGS_DEFAULT_RETURN, contributions: (s.study && s.study.contributions) || {} }
+        study: { balance: s.study && s.study.balance != null ? s.study.balance : 0, returnRate: s.study && s.study.returnRate != null ? s.study.returnRate : SAVINGS_DEFAULT_RETURN, contributions: (s.study && s.study.contributions) || {} },
+        general: general
       };
     }
   } catch (e) {}
   return {
     pension: { balance: 0, returnRate: SAVINGS_DEFAULT_RETURN, contributions: {} },
-    study: { balance: 0, returnRate: SAVINGS_DEFAULT_RETURN, contributions: {} }
+    study: { balance: 0, returnRate: SAVINGS_DEFAULT_RETURN, contributions: {} },
+    general: []
   };
 }
 
@@ -388,4 +391,30 @@ function updateSavingsReturnRate(fund, rate) {
     f.returnRate = isNaN(r) ? SAVINGS_DEFAULT_RETURN : Math.max(0, Math.min(20, r));
     saveSavings(savings);
   }
+}
+
+function addGeneralSavingsEntry(name, amount) {
+  var savings = loadSavings();
+  if (!savings.general) savings.general = [];
+  var id = 'g' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  savings.general.push({ id: id, name: (name || '').trim() || 'חסכון', amount: Math.max(0, parseFloat(amount) || 0) });
+  saveSavings(savings);
+}
+
+function updateGeneralSavingsEntry(id, name, amount) {
+  var savings = loadSavings();
+  if (!savings.general) return;
+  var e = savings.general.find(function(x) { return x.id === id; });
+  if (e) {
+    e.name = (name || '').trim() || 'חסכון';
+    e.amount = Math.max(0, parseFloat(amount) || 0);
+    saveSavings(savings);
+  }
+}
+
+function deleteGeneralSavingsEntry(id) {
+  var savings = loadSavings();
+  if (!savings.general) return;
+  savings.general = savings.general.filter(function(x) { return x.id !== id; });
+  saveSavings(savings);
 }

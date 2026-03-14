@@ -4,8 +4,8 @@
 function countUp(el, targetNum, opts) {
   if (!el || typeof targetNum !== 'number') return;
   opts = opts || {};
-  var duration = opts.duration || 400;
-  var easing = opts.easing || function(t) { return t * (2 - t); };
+  var duration = opts.duration || 380;
+  var easing = opts.easing || function(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; };
   var formatter = opts.formatter || (function(n) { return '₪' + Math.round(n).toLocaleString(); });
   var from = parseFloat(el.dataset.countUpFrom) || 0;
   if (el.dataset.countUpFrom === undefined) from = 0;

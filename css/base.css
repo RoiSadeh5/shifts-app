@@ -1,6 +1,10 @@
 /* Base: reset, body, header, tab-bar, pages, typography, scrollbar */
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: 'Heebo', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   background: var(--bg);
@@ -10,6 +14,7 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   padding-bottom: calc(80px + var(--safe-bottom));
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ===== HEADER ===== */
@@ -60,14 +65,16 @@ body {
   font-family: 'Heebo', sans-serif;
   font-size: 10px;
   font-weight: 600;
-  transition: color 0.2s;
+  transition: color 0.2s ease, transform 0.15s ease;
 }
-.tab svg { width: 22px; height: 22px; }
+.tab:active { transform: scale(0.92); }
+.tab svg { width: 22px; height: 22px; transition: transform 0.2s ease; }
 .tab.active { color: var(--accent-light); }
+.tab.active:active { transform: scale(0.92); }
 
 /* ===== PAGES ===== */
 .page { display: none; padding: 0 16px 20px; max-width: 500px; margin: 0 auto; content-visibility: auto; contain-intrinsic-size: auto 500px; }
-.page.active { display: block; animation: fadeIn 0.18s ease-out; content-visibility: visible; will-change: opacity; }
+.page.active { display: block; animation: fadeIn 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards; content-visibility: visible; }
 
 /* ===== MONTH SELECTOR ===== */
 .month-nav {
@@ -89,9 +96,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
-.month-nav button:active { background: var(--border-strong); }
+.month-nav button:active { background: var(--border-strong); transform: scale(0.94); }
 .month-nav .label {
   font-size: 16px;
   font-weight: 700;

@@ -309,6 +309,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-bottom: 18px;
+  contain: layout style;
 }
 .leave-item {
   background: var(--card);
@@ -382,6 +383,86 @@
 .savings-proj-label { display: block; color: var(--text-dim); margin-bottom: 2px; }
 .savings-proj-val { font-weight: 700; font-size: 11px; direction: ltr; }
 
+/* General Savings */
+.savings-general-section {
+  margin-top: 14px;
+  margin-bottom: 14px;
+}
+.savings-general-empty {
+  font-size: 12px;
+  color: var(--text-dim);
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+.savings-general-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+.savings-general-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.savings-general-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.savings-general-amount { font-size: 15px; font-weight: 800; color: var(--green); direction: ltr; }
+.savings-general-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.savings-delete-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+.savings-delete-btn:hover { background: rgba(239,68,68,0.15); color: var(--red); }
+.btn-savings-add {
+  width: 100%;
+  padding: 12px;
+  background: var(--card);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.btn-savings-add:hover { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+.savings-total-card {
+  background: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(16,185,129,0.12) 100%);
+  border: 1px solid rgba(99,102,241,0.3);
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.savings-total-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.savings-total-val {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--accent-light);
+  direction: ltr;
+  letter-spacing: -0.5px;
+}
+
 /* ===== PAYSLIP COMPARISON ===== */
 .comparison-panel {
   background: var(--card);
@@ -423,7 +504,7 @@
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.25s cubic-bezier(0.33, 1, 0.68, 1);
 }
 .ps-overlay.visible { opacity: 1; }
 .ps-box {
@@ -435,6 +516,13 @@
   max-height: 85vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  transform: scale(0.97);
+  opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.33, 1, 0.68, 1), opacity 0.25s ease;
+}
+.ps-overlay.visible .ps-box {
+  transform: scale(1);
+  opacity: 1;
 }
 .ps-title { font-size: 17px; font-weight: 800; text-align: center; margin-bottom: 4px; }
 .ps-subtitle { font-size: 12px; color: var(--text-dim); text-align: center; margin-bottom: 16px; }
