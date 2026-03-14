@@ -20,6 +20,14 @@ function toggleRange() {
   document.getElementById('rangeToggle').classList.toggle('on', rangeOn);
   document.getElementById('singleDateGroup').classList.toggle('hidden', rangeOn);
   document.getElementById('rangeDateGroup').classList.toggle('hidden', !rangeOn);
+  if (rangeOn) syncRangeDates();
+}
+
+function syncRangeDates() {
+  const start = document.getElementById('rangeStart');
+  const end = document.getElementById('rangeEnd');
+  if (start?.value) end.setAttribute('min', start.value);
+  if (end?.value) start.setAttribute('max', end.value);
 }
 
 function getDatesInRange(startStr, endStr) {
@@ -43,6 +51,12 @@ function addShift() {
     const rs = document.getElementById('rangeStart').value;
     const re = document.getElementById('rangeEnd').value;
     if (!rs || !re) { showToast('⚠️ בחר תאריכי התחלה וסיום'); return; }
+    const start = new Date(rs + 'T00:00:00');
+    const end = new Date(re + 'T00:00:00');
+    if (end < start) {
+      showToast('⚠️ תאריך סיום חייב להיות אחרי או שווה לתאריך התחלה');
+      return;
+    }
     datesToAdd = getDatesInRange(rs, re);
     if (datesToAdd.length === 0) { showToast('⚠️ טווח תאריכים לא תקין'); return; }
     if (datesToAdd.length > 60) { showToast('⚠️ מקסימום 60 ימים בטווח'); return; }
@@ -120,6 +134,7 @@ function addShift() {
 
   if (added.length === 1) {
     showResultPanel(lastResult);
+    haptic();
     showToast(`✅ נשמר! ₪${lastResult.totalPay.toLocaleString()}`);
   } else {
     var totalPay = added.reduce((s, sh) => s + sh.result.totalPay, 0);
@@ -130,6 +145,7 @@ function addShift() {
     });
     let msg = `✅ נוספו ${added.length} משמרות · ₪${Math.round(totalPay).toLocaleString()}`;
     if (skipped.length > 0) msg += ` (${skipped.length} דולגו)`;
+    haptic();
     showToast(msg);
   }
 
@@ -140,6 +156,7 @@ function addShift() {
 
 function deleteShift(id) {
   if (!confirm('למחוק משמרת?')) return;
+  haptic(true);
   const shifts = loadShifts();
   const removed = shifts.find(s => s.id === id);
   saveShifts(shifts.filter(s => s.id !== id));

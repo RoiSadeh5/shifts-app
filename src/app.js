@@ -45,6 +45,12 @@ var dotColors = { plus: 'var(--accent-light)', training: 'var(--orange)', vacati
 // ===== Utilities =====
 function fmtNIS(n) { return `₪${Math.round(n).toLocaleString()}`; }
 
+function haptic(light) {
+  try {
+    if (navigator.vibrate) navigator.vibrate(light ? 10 : 20);
+  } catch (e) {}
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -101,7 +107,10 @@ function completeOnboarding() {
   if (nameInput) nameInput.value = name;
   const overlay = document.getElementById('onboardingOverlay');
   overlay.classList.remove('visible');
-  setTimeout(() => overlay.style.display = 'none', 350);
+  setTimeout(function() {
+    overlay.style.display = 'none';
+    maybeShowInstallHint();
+  }, 350);
   updateGreeting();
 }
 
@@ -146,6 +155,73 @@ function updateMonthLabels() {
   const lbl = `${hebrewMonths[currentMonth]} ${currentYear}`;
   document.getElementById('monthLabel').textContent = lbl;
   document.getElementById('calMonthLabel').textContent = lbl;
+}
+
+// ===== Service worker update prompt =====
+var swRegistrationForUpdate = null;
+function applyUpdate() {
+  if (swRegistrationForUpdate && swRegistrationForUpdate.waiting) {
+    swRegistrationForUpdate.waiting.postMessage({ type: 'SKIP_WAITING' });
+  }
+}
+function initServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('./sw.js').then(function(reg) {
+    swRegistrationForUpdate = reg;
+    if (reg.waiting) {
+      document.getElementById('updateBanner')?.classList.add('visible');
+    }
+    reg.addEventListener('updatefound', function() {
+      var w = reg.installing;
+      if (!w) return;
+      w.addEventListener('statechange', function() {
+        if (w.state === 'installed' && navigator.serviceWorker.controller) {
+          document.getElementById('updateBanner')?.classList.add('visible');
+        }
+      });
+    });
+  });
+  navigator.serviceWorker.addEventListener('controllerchange', function() {
+    document.getElementById('updateBanner')?.classList.remove('visible');
+    location.reload();
+  });
+}
+
+// ===== Install hint (Add to Home Screen) =====
+var INSTALL_HINT_KEY = 'shifter_hide_install_hint';
+function dismissInstallHint() {
+  try { localStorage.setItem(INSTALL_HINT_KEY, '1'); } catch (e) {}
+  document.getElementById('installHint')?.classList.remove('visible');
+}
+function maybeShowInstallHint() {
+  const el = document.getElementById('installHint');
+  if (!el) return;
+  try {
+    if (localStorage.getItem(INSTALL_HINT_KEY)) return;
+  } catch (e) { return; }
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+    (typeof navigator !== 'undefined' && navigator.standalone === true);
+  if (isStandalone) return;
+  el.classList.add('visible');
+}
+function initInstallHint() {
+  setTimeout(function() {
+    if (!document.getElementById('onboardingOverlay')?.classList?.contains('visible')) {
+      maybeShowInstallHint();
+    }
+  }, 1500);
+}
+
+// ===== Offline indicator =====
+function initOfflineIndicator() {
+  const banner = document.getElementById('offlineBanner');
+  if (!banner) return;
+  function update() {
+    banner.classList.toggle('visible', !navigator.onLine);
+  }
+  update();
+  window.addEventListener('online', update);
+  window.addEventListener('offline', update);
 }
 
 // ===== Recalculate All Shifts =====
@@ -197,6 +273,9 @@ function init() {
   updateMonthLabels();
   recalcAll();
   updateBackupDisplay();
+  initOfflineIndicator();
+  initServiceWorker();
+  initInstallHint();
 
   // Onboarding: show if no name saved or empty
   if (!savedName || savedName.trim() === '') {

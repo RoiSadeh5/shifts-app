@@ -25,14 +25,16 @@ Hebrew (RTL) PWA for tracking work shifts and calculating gross/net salary.
 
 ```bash
 cd shifts-app
-python3 -m http.server 8000
+npm run dev
+# or: python3 -m http.server 8000
 ```
 Open `http://localhost:8000` on your phone/browser.
 
 ## Run Tests
 
 ```bash
-node test-regression.js
+npm test
+# or: node test-regression.js
 ```
 
 ## Data Storage

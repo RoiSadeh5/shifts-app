@@ -171,6 +171,32 @@ function renderHistoryMonths(monthlyData) {
   }).join('');
 }
 
+function exportAnnualCSV() {
+  const monthlyData = buildAnnualMonthlyData(annualYear);
+  const summary = SalaryEngine.calcAnnualSummary(monthlyData, creditPoints, dedSettings);
+  const BOM = '\uFEFF';
+  const header = 'חודש,ברוטו,מס הכנסה,ביטוח לאומי,פנסיה,קרן השתלמות,סה"כ ניכויים,נטו';
+  const rows = monthlyData.map((m, idx) => {
+    const totalDed = (m.incomeTax || 0) + (m.ni || 0) + (m.pension || 0) + (m.study || 0);
+    const net = (m.gross || 0) - totalDed;
+    const monthName = hebrewMonths[idx];
+    return [monthName, Math.round(m.gross || 0), Math.round(m.incomeTax || 0), Math.round(m.ni || 0),
+      Math.round(m.pension || 0), Math.round(m.study || 0), Math.round(totalDed), Math.round(net)].join(',');
+  });
+  const totalRow = 'סה"כ,' + [summary.totalGross, summary.totalIncomeTax, summary.totalNI,
+    summary.totalPension, summary.totalStudy, summary.totalDeductions, summary.totalNet].map(Math.round).join(',');
+  const csv = BOM + header + '\n' + rows.join('\n') + '\n' + totalRow;
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'sachash-annual-' + annualYear + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  haptic();
+  showToast('📊 ייצוא שנתי הושלם');
+}
+
 function toggleHistoryMonth(idx) {
   const body = document.getElementById('hmBody' + idx);
   body.classList.toggle('open');

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sachash-v2';
+const CACHE_NAME = 'sachash-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -18,7 +18,12 @@ self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(c => c.addAll(STATIC_ASSETS))
   );
-  self.skipWaiting();
+  // Don't skipWaiting – let the page prompt user to refresh
+  // self.skipWaiting();
+});
+
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {

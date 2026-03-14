@@ -381,6 +381,20 @@
     .empty-state .empty-icon { font-size: 44px; margin-bottom: 12px; opacity: 0.6; }
     .empty-state .empty-text { font-size: 15px; font-weight: 600; color: var(--text-secondary); }
     .empty-state .empty-hint { font-size: 12px; margin-top: 6px; }
+    .empty-state-btn {
+      margin-top: 16px;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, var(--accent), #4f46e5);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: 'Heebo', sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.25);
+    }
+    .empty-state-btn:active { opacity: 0.9; }
 
     /* ===== ADD SHIFT PAGE ===== */
     .type-grid {
@@ -505,6 +519,50 @@
       max-width: 90%;
     }
     .toast.show { top: 60px; }
+
+    /* Offline banner */
+    .offline-banner {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 99;
+      background: var(--orange);
+      color: #000;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      padding: 10px 16px;
+    }
+    .offline-banner.visible { display: block; }
+
+    /* Update banner */
+    .update-banner {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 98;
+      background: var(--accent);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 16px;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .update-banner.visible { display: flex !important; }
+    .update-banner button {
+      background: rgba(255,255,255,0.3);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .update-banner button:active { opacity: 0.8; }
 
     /* Result panel */
     .result-panel {
@@ -1145,6 +1203,41 @@
       animation: ptr-spin 0.7s linear infinite;
     }
     @keyframes ptr-spin { to { transform: rotate(360deg); } }
+
+    /* Install hint */
+    .install-hint {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 97;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 10px 16px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .install-hint.visible { display: flex !important; }
+    .install-hint button {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 4px;
+    }
+
+    /* Reduced motion (accessibility) */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1168,6 +1261,23 @@
 
   <div class="header">
     <h1 id="pageTitle">שכ״ש</h1>
+  </div>
+
+  <!-- Offline indicator -->
+  <div class="offline-banner" id="offlineBanner">
+    <span>📡 אין חיבור לאינטרנט – האפליקציה פועלת במצב לא מקוון</span>
+  </div>
+
+  <!-- Update available banner -->
+  <div class="update-banner" id="updateBanner">
+    <span>עדכון זמין</span>
+    <button type="button" onclick="applyUpdate()" aria-label="רענן לעדכון">רענן</button>
+  </div>
+
+  <!-- Install hint (dismissible) -->
+  <div class="install-hint" id="installHint">
+    <span>📱 הוסף למסך הבית לשימוש מהיר</span>
+    <button type="button" onclick="dismissInstallHint()" aria-label="סגור">×</button>
   </div>
 
   <!-- ==================== DASHBOARD ==================== -->
@@ -1366,11 +1476,11 @@
       <div class="time-row">
         <div class="form-group">
           <label>תאריך התחלה</label>
-          <input type="date" id="rangeStart">
+          <input type="date" id="rangeStart" onchange="syncRangeDates()">
         </div>
         <div class="form-group">
           <label>תאריך סיום</label>
-          <input type="date" id="rangeEnd">
+          <input type="date" id="rangeEnd" onchange="syncRangeDates()">
         </div>
       </div>
     </div>
@@ -1522,6 +1632,7 @@
     <div class="section-label" style="margin-bottom:14px;">גיבוי ושחזור</div>
     <div class="backup-info" id="lastBackupInfo">לא בוצע גיבוי עדיין</div>
     <button class="btn-secondary" onclick="exportData()">📤 ייצוא גיבוי</button>
+    <button class="btn-secondary" onclick="exportShiftsCSV()">📊 ייצוא CSV (חודש נוכחי)</button>
     <button class="btn-secondary" onclick="document.getElementById('importFile').click()">📥 ייבוא גיבוי</button>
     <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
     <button class="btn-danger" onclick="clearAllData()" style="margin-top:10px;">🗑️ מחק את כל הנתונים</button>
@@ -1546,6 +1657,7 @@
 
     <!-- Form 106 Summary -->
     <div id="annualSummaryView">
+      <button class="btn-secondary" onclick="exportAnnualCSV()" style="margin-bottom:14px;">📊 ייצוא שנתי CSV</button>
       <div class="f106-hero">
         <div class="f106-label">נטו שנתי (אומדן)</div>
         <div class="f106-val" id="f106Net">₪0</div>
@@ -1621,24 +1733,24 @@
   <div class="toast" id="toast"></div>
 
   <!-- ==================== BOTTOM TAB BAR ==================== -->
-  <nav class="tab-bar">
-    <button class="tab active" onclick="switchTab('Dashboard')" id="tabDashboard">
+  <nav class="tab-bar" role="navigation" aria-label="ניווט ראשי">
+    <button class="tab active" onclick="switchTab('Dashboard')" id="tabDashboard" aria-label="דף ראשי">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       <span>ראשי</span>
     </button>
-    <button class="tab" onclick="switchTab('Add')" id="tabAdd">
+    <button class="tab" onclick="switchTab('Add')" id="tabAdd" aria-label="הוספת משמרת">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
       <span>הוספה</span>
     </button>
-    <button class="tab" onclick="switchTab('Calendar')" id="tabCalendar">
+    <button class="tab" onclick="switchTab('Calendar')" id="tabCalendar" aria-label="לוח שנה">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       <span>לוח שנה</span>
     </button>
-    <button class="tab" onclick="switchTab('Annual')" id="tabAnnual">
+    <button class="tab" onclick="switchTab('Annual')" id="tabAnnual" aria-label="סיכום שנתי">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       <span>שנתי</span>
     </button>
-    <button class="tab" onclick="switchTab('Settings')" id="tabSettings">
+    <button class="tab" onclick="switchTab('Settings')" id="tabSettings" aria-label="הגדרות">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       <span>הגדרות</span>
     </button>
@@ -1654,9 +1766,6 @@
   <script src="src/components/settings.js"></script>
   <script>
     init();
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js');
-    }
 
     // Pull-to-refresh: only when scroll at top, minimal interference with normal scroll
     (function() {

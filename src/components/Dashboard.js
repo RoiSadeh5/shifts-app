@@ -195,11 +195,14 @@ function render() {
 
   const listEl = document.getElementById('recentShifts');
   if (monthShifts.length === 0) {
+    const allShifts = loadShifts();
+    const isFirstEver = allShifts.length === 0;
     listEl.innerHTML = `
       <div class="empty-state">
-        <div class="empty-icon">📭</div>
-        <div class="empty-text">אין משמרות ב${hebrewMonths[currentMonth]}</div>
-        <div class="empty-hint">לחץ על "הוספה" להוסיף משמרת</div>
+        <div class="empty-icon">${isFirstEver ? '👋' : '📭'}</div>
+        <div class="empty-text">${isFirstEver ? 'ברוך הבא! הוסף משמרת ראשונה' : 'אין משמרות ב' + hebrewMonths[currentMonth]}</div>
+        <div class="empty-hint">${isFirstEver ? 'לחץ למטה להתחיל' : 'לחץ למטה להוסיף משמרת'}</div>
+        <button class="empty-state-btn" onclick="switchTab('Add')">➕ הוסף משמרת</button>
       </div>`;
     return;
   }

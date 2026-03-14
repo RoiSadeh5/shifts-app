@@ -67,6 +67,32 @@ function getLastBackupTime() {
   return localStorage.getItem(BACKUP_TS_KEY) || null;
 }
 
+function exportShiftsCSV() {
+  const shifts = loadShifts().filter(s => {
+    const p = s.date.split('-');
+    return parseInt(p[1]) - 1 === currentMonth && parseInt(p[0]) === currentYear;
+  }).sort((a, b) => a.date.localeCompare(b.date));
+  const monthLabel = (typeof hebrewMonths !== 'undefined') ? hebrewMonths[currentMonth] + '_' + currentYear : currentMonth + 1 + '_' + currentYear;
+  const BOM = '\uFEFF';
+  const header = 'תאריך,סוג,שעות,תשלום';
+  const rows = shifts.map(s => {
+    const typeName = (typeof typeNames !== 'undefined' && typeNames[s.type]) ? typeNames[s.type] : s.type;
+    const hours = (s.result && s.result.totalHours != null) ? s.result.totalHours : 0;
+    const pay = (s.result && s.result.totalPay != null) ? s.result.totalPay : 0;
+    return [s.date, typeName, hours, pay].join(',');
+  });
+  const csv = BOM + header + '\n' + rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'sachash-mashmarot-' + monthLabel + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  haptic();
+  showToast('📊 ייצוא CSV הושלם');
+}
+
 function exportData() {
   const data = {
     version: '5.0',
@@ -87,6 +113,7 @@ function exportData() {
 
   localStorage.setItem(BACKUP_TS_KEY, new Date().toISOString());
   updateBackupDisplay();
+  haptic();
   showToast('📤 הגיבוי יוצא בהצלחה');
 }
 
