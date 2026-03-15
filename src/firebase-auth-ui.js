@@ -228,6 +228,7 @@
                 }
               } catch (e) { console.error('UID alert error:', e); }
               hideAuthOverlay();
+              if (typeof showMainUIImmediately === 'function') showMainUIImmediately();
               verifyBtn.disabled = false;
               verifyBtn.textContent = 'אימות';
             },
