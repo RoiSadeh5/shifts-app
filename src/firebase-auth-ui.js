@@ -63,27 +63,52 @@
     } catch (e) { return false; }
   }
 
+  function shouldShowMigrationPromptAsync() {
+    if (localStorage.getItem(MIGRATION_DONE_KEY)) return Promise.resolve(false);
+    var oldUserId = localStorage.getItem('shifter_user_id');
+    if (!oldUserId) return Promise.resolve(false);
+    if (hasLocalDataToMigrate()) return Promise.resolve(true);
+    if (typeof window.getLocalDataForUserId !== 'function') return Promise.resolve(false);
+    return window.getLocalDataForUserId(oldUserId).then(function(data) {
+      return (Array.isArray(data.shifts) && data.shifts.length > 0) ||
+             (data.history && typeof data.history === 'object' && Object.keys(data.history).length > 0);
+    });
+  }
+
   function runMigration(onComplete) {
     var oldUserId = localStorage.getItem('shifter_user_id');
     if (!oldUserId || !window.firebaseStore) {
       if (onComplete) onComplete();
       return;
     }
-    var shifts = [];
-    var history = {};
-    var settings = {};
-    var leave = { vacation: 0, sick: 0 };
-    var username = null;
-    var savings = null;
+    if (typeof window.getLocalDataForUserId === 'function') {
+      window.getLocalDataForUserId(oldUserId).then(function(data) {
+        runMigrationWithData(data, oldUserId, onComplete);
+      }).catch(function() {
+        runMigrationWithData({ shifts: [], history: {}, settings: {}, profile: { username: null, leave: { vacation: 0, sick: 0 } }, savings: null }, oldUserId, onComplete);
+      });
+      return;
+    }
+    var data = { shifts: [], history: {}, settings: {}, profile: { username: null, leave: { vacation: 0, sick: 0 } }, savings: null };
     try {
       var pre = 'shifter_';
-      shifts = JSON.parse(localStorage.getItem(pre + 'shifts_' + oldUserId) || '[]') || [];
-      history = JSON.parse(localStorage.getItem(pre + 'history_' + oldUserId) || '{}') || {};
-      settings = JSON.parse(localStorage.getItem(pre + 'settings_' + oldUserId) || '{}') || {};
-      leave = JSON.parse(localStorage.getItem(pre + 'leave_' + oldUserId) || '{}') || { vacation: 0, sick: 0 };
-      username = localStorage.getItem(pre + 'username_' + oldUserId) || null;
-      savings = JSON.parse(localStorage.getItem(pre + 'savings_' + oldUserId) || 'null');
+      data.shifts = JSON.parse(localStorage.getItem(pre + 'shifts_' + oldUserId) || '[]') || [];
+      data.history = JSON.parse(localStorage.getItem(pre + 'history_' + oldUserId) || '{}') || {};
+      data.settings = JSON.parse(localStorage.getItem(pre + 'settings_' + oldUserId) || '{}') || {};
+      data.profile.leave = JSON.parse(localStorage.getItem(pre + 'leave_' + oldUserId) || '{}') || { vacation: 0, sick: 0 };
+      data.profile.username = localStorage.getItem(pre + 'username_' + oldUserId);
+      data.savings = JSON.parse(localStorage.getItem(pre + 'savings_' + oldUserId) || 'null');
     } catch (e) {}
+    runMigrationWithData(data, oldUserId, onComplete);
+  }
+
+  function runMigrationWithData(data, oldUserId, onComplete) {
+    var shifts = data.shifts || [];
+    var history = data.history || {};
+    var settings = data.settings || {};
+    var leave = (data.profile && data.profile.leave) || { vacation: 0, sick: 0 };
+    var username = (data.profile && data.profile.username) || null;
+    var savings = data.savings || null;
     Promise.all([
       window.firebaseStore.saveShifts(Array.isArray(shifts) ? shifts : []),
       window.firebaseStore.saveHistory(history && typeof history === 'object' ? history : {}),
@@ -156,10 +181,6 @@
         window.firebaseAuthApi.verifyOtp(code,
           function(user) {
             hideAuthOverlay();
-            if (shouldShowMigrationPrompt()) {
-              showMigrationOverlay();
-            }
-            if (typeof onAuthSuccess === 'function') onAuthSuccess(user);
             verifyBtn.disabled = false;
             verifyBtn.textContent = 'אימות';
           },
@@ -178,6 +199,7 @@
       skipMigration.onclick = function() {
         try { localStorage.setItem(MIGRATION_DONE_KEY, '1'); } catch (e) {}
         hideMigrationOverlay();
+        window.usingFirebaseStore = true;
         if (typeof onAuthSuccess === 'function') onAuthSuccess(null);
       };
     }
@@ -189,6 +211,7 @@
           hideMigrationOverlay();
           doMigration.disabled = false;
           doMigration.textContent = 'העבר לענן';
+          window.usingFirebaseStore = true;
           if (typeof onAuthSuccess === 'function') onAuthSuccess(null);
         });
       };
@@ -212,6 +235,7 @@
     showMigrationOverlay: showMigrationOverlay,
     hideMigrationOverlay: hideMigrationOverlay,
     shouldShowMigrationPrompt: shouldShowMigrationPrompt,
+    shouldShowMigrationPromptAsync: shouldShowMigrationPromptAsync,
     runMigration: runMigration,
     bindAuthEvents: bindAuthEvents,
     firebaseLogout: firebaseLogout

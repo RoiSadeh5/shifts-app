@@ -505,14 +505,35 @@ async function init() {
             console.log('Auth State:', user ? (user.uid || user) : null);
             if (user) {
               console.log('MY_UID_FOR_GOD_MODE:', user.uid);
-              window.usingFirebaseStore = true;
-              showMainUIImmediately();
               var phoneMasked = user.phoneNumber ? window.firebaseAuthApi.maskPhone(user.phoneNumber) : '***';
               window.firebaseStore && window.firebaseStore.ensureUserMeta(phoneMasked).catch(function() {});
-              var logoutSection = document.getElementById('logoutSection');
-              if (logoutSection) logoutSection.style.display = '';
-              if (typeof updateAdminButtonLabel === 'function') updateAdminButtonLabel();
-              if (!_initDone) { _initDone = true; initCore(); }
+              var checkMigration = window.firebaseAuthUi && window.firebaseAuthUi.shouldShowMigrationPromptAsync;
+              if (typeof checkMigration === 'function') {
+                checkMigration().then(function(needsMigration) {
+                  if (needsMigration) {
+                    window.usingFirebaseStore = false;
+                    showMainUIImmediately();
+                    var logoutSection = document.getElementById('logoutSection');
+                    if (logoutSection) logoutSection.style.display = '';
+                    if (!_initDone) { _initDone = true; initCore(); }
+                    window.firebaseAuthUi.showMigrationOverlay();
+                  } else {
+                    window.usingFirebaseStore = true;
+                    showMainUIImmediately();
+                    var logoutSection = document.getElementById('logoutSection');
+                    if (logoutSection) logoutSection.style.display = '';
+                    if (typeof updateAdminButtonLabel === 'function') updateAdminButtonLabel();
+                    if (!_initDone) { _initDone = true; initCore(); }
+                  }
+                });
+              } else {
+                window.usingFirebaseStore = true;
+                showMainUIImmediately();
+                var logoutSection = document.getElementById('logoutSection');
+                if (logoutSection) logoutSection.style.display = '';
+                if (typeof updateAdminButtonLabel === 'function') updateAdminButtonLabel();
+                if (!_initDone) { _initDone = true; initCore(); }
+              }
             } else {
               window.firebaseAuthUi.showAuthOverlay();
             }
@@ -524,9 +545,27 @@ async function init() {
         var user = window.firebaseAuthApi.getCurrentUser();
         if (user) {
           console.log('MY_UID_FOR_GOD_MODE:', user.uid);
-          window.usingFirebaseStore = true;
-          showMainUIImmediately();
-          onAuthSuccess();
+          var checkMigrationSync = window.firebaseAuthUi && window.firebaseAuthUi.shouldShowMigrationPromptAsync;
+          if (typeof checkMigrationSync === 'function') {
+            checkMigrationSync().then(function(needsMigration) {
+              if (needsMigration) {
+                window.usingFirebaseStore = false;
+                showMainUIImmediately();
+                var logoutSection = document.getElementById('logoutSection');
+                if (logoutSection) logoutSection.style.display = '';
+                if (!_initDone) { _initDone = true; initCore(); }
+                window.firebaseAuthUi.showMigrationOverlay();
+              } else {
+                window.usingFirebaseStore = true;
+                showMainUIImmediately();
+                onAuthSuccess();
+              }
+            });
+          } else {
+            window.usingFirebaseStore = true;
+            showMainUIImmediately();
+            onAuthSuccess();
+          }
         } else {
           window.firebaseAuthUi.showAuthOverlay();
         }

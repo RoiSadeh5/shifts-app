@@ -80,6 +80,56 @@ window.dbReady = new Promise(function(resolve) {
 function _shiftsKey() { return 'main_' + getCurrentUserId(); }
 function _historyKey() { return 'main_' + getCurrentUserId(); }
 
+function _shiftsKeyFor(userId) { return 'main_' + (userId || getCurrentUserId()); }
+function _historyKeyFor(userId) { return 'main_' + (userId || getCurrentUserId()); }
+
+/** Read local data for a given userId (for migration). Returns Promise<{shifts,history,settings,profile,savings}> */
+window.getLocalDataForUserId = function(userId) {
+  if (!userId) return Promise.resolve({ shifts: [], history: {}, settings: {}, profile: { username: null, leave: { vacation: 0, sick: 0 } }, savings: null });
+  var pre = 'shifter_';
+  var result = {
+    shifts: [],
+    history: {},
+    settings: {},
+    profile: { username: null, leave: { vacation: 0, sick: 0 }, lastBackup: null },
+    savings: null
+  };
+  try {
+    result.shifts = JSON.parse(localStorage.getItem(pre + 'shifts_' + userId) || '[]') || [];
+    result.history = JSON.parse(localStorage.getItem(pre + 'history_' + userId) || '{}') || {};
+    result.settings = JSON.parse(localStorage.getItem(pre + 'settings_' + userId) || '{}') || {};
+    result.profile.leave = JSON.parse(localStorage.getItem(pre + 'leave_' + userId) || '{}') || { vacation: 0, sick: 0 };
+    result.profile.username = localStorage.getItem(pre + 'username_' + userId);
+    result.savings = JSON.parse(localStorage.getItem(pre + 'savings_' + userId) || 'null');
+  } catch (e) {}
+  if (!dbInstance || !window.dbReady) return Promise.resolve(result);
+  return window.dbReady.then(function() {
+    if (!dbInstance) return result;
+    return new Promise(function(resolve) {
+      var tx = dbInstance.transaction(['shifts', 'history'], 'readonly');
+      var shiftsReq = tx.objectStore('shifts').get(_shiftsKeyFor(userId));
+      var histReq = tx.objectStore('history').get(_historyKeyFor(userId));
+      var done = 0;
+      function check() {
+        done++;
+        if (done >= 2) resolve(result);
+      }
+      shiftsReq.onsuccess = function() {
+        var v = shiftsReq.result ? shiftsReq.result.v : null;
+        if (Array.isArray(v) && v.length > 0) result.shifts = v;
+        check();
+      };
+      shiftsReq.onerror = check;
+      histReq.onsuccess = function() {
+        var v = histReq.result ? histReq.result.v : null;
+        if (v && typeof v === 'object' && Object.keys(v).length > 0) result.history = v;
+        check();
+      };
+      histReq.onerror = check;
+    });
+  });
+};
+
 window.db = {
   getShifts: function() {
     return new Promise(function(resolve) {
