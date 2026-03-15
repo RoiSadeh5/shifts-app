@@ -4,5 +4,5 @@
  * password: admin panel password when not using God Mode.
  */
 window.ADMIN_CONFIG = window.ADMIN_CONFIG || {};
-window.ADMIN_CONFIG.adminUid = 'REPLACE_WITH_YOUR_UID';
+window.ADMIN_CONFIG.adminUid = 'gJNnlyMuSkcZKHw99hvvv6kWfOO2';
 window.ADMIN_CONFIG.password = 'change-me';

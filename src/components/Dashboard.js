@@ -262,11 +262,12 @@ function renderCore() {
     var allShifts = typeof loadShifts === 'function' ? loadShifts() : [];
     if (!Array.isArray(allShifts)) allShifts = [];
     var isFirstEver = allShifts.length === 0;
+    var name = (typeof loadUserName === 'function' ? loadUserName() : null) || 'רועי';
     if (listEl) {
       listEl.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">${isFirstEver ? '👋' : '📭'}</div>
-          <div class="empty-text">${isFirstEver ? 'אין משמרות להצגה, התחל להזין נתונים!' : 'אין משמרות ב' + hebrewMonths[currentMonth]}</div>
+          <div class="empty-text">${isFirstEver ? 'ברוך הבא ' + name + '! אין משמרות להצגה, לחץ על + כדי להוסיף את המשמרת הראשונה.' : 'אין משמרות ב' + hebrewMonths[currentMonth]}</div>
           <div class="empty-hint">${isFirstEver ? 'לחץ למטה להתחיל' : 'לחץ למטה להוסיף משמרת'}</div>
           <button class="empty-state-btn" onclick="switchTab('Add')">➕ הוסף משמרת</button>
         </div>`;

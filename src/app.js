@@ -3,7 +3,7 @@
  * Shared state, constants, engine bridge, navigation, utilities, and init.
  * Loaded after src/logic/salaryEngine.js, before store and component scripts.
  */
-console.log('Current Origin (app.js):', window.location.origin);
+var isAdmin = false;
 
 // ===== Bridge to Salary Engine =====
 var SalaryEngine = window.SalaryEngine || { DEFAULTS: { baseRate: 75, weekendMultiplier: 1.5, vacationDayRate: 1750, bonusQuarterly: 3500 }, calculateShiftPay: function() { return {}; }, calcDeductions: function() { return { employee: {}, employer: {} }; }, calcIncomeTax: function() { return { finalTax: 0, tiers: [] }; }, calculateFixedMonthlyAdditions: function() { return { total: 0 }; } };
@@ -455,7 +455,6 @@ function recalcAll() {
 var _initDone = false;
 
 function showMainUIImmediately() {
-  console.log('UI Debug: Rendering Navigation...');
   window.firebaseAuthUi && window.firebaseAuthUi.hideAuthOverlay();
   var migration = document.getElementById('migrationOverlay');
   if (migration) { migration.style.display = 'none'; migration.classList.remove('visible'); }
@@ -505,14 +504,6 @@ function onAuthSuccess() {
 
 async function init() {
   try {
-    if (localStorage.getItem('shifter_dev_bypass')) {
-      console.log('window.location.href:', window.location.href);
-      window.usingFirebaseStore = false;
-      showMainUIImmediately();
-      _initDone = true;
-      initCore();
-      return;
-    }
     var dashboard = document.getElementById('pageDashboard');
     if (dashboard) {
       dashboard.classList.add('active');
@@ -523,10 +514,8 @@ async function init() {
         window.firebaseAuthUi && window.firebaseAuthUi.bindAuthEvents();
         window.firebaseAuthApi.onAuthStateChanged(function(user) {
           try {
-            console.log('Auth State:', user ? (user.uid || user) : null);
+            isAdmin = !!(user && user.uid === 'gJNnlyMuSkcZKHw99hvvv6kWfOO2');
             if (user) {
-              console.log('USER_ID:', user.uid);
-              console.log('MY_UID_FOR_GOD_MODE:', user.uid);
               var phoneMasked = user.phoneNumber ? window.firebaseAuthApi.maskPhone(user.phoneNumber) : '***';
               window.firebaseStore && window.firebaseStore.ensureUserMeta(phoneMasked).catch(function() {});
               var checkMigration = window.firebaseAuthUi && window.firebaseAuthUi.shouldShowMigrationPromptAsync;
@@ -567,8 +556,7 @@ async function init() {
         });
         var user = window.firebaseAuthApi.getCurrentUser();
         if (user) {
-          console.log('USER_ID:', user.uid);
-          console.log('MY_UID_FOR_GOD_MODE:', user.uid);
+          isAdmin = !!(user.uid === 'gJNnlyMuSkcZKHw99hvvv6kWfOO2');
           var checkMigrationSync = window.firebaseAuthUi && window.firebaseAuthUi.shouldShowMigrationPromptAsync;
           if (typeof checkMigrationSync === 'function') {
             checkMigrationSync().then(function(needsMigration) {

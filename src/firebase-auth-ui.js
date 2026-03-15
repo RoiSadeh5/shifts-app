@@ -170,8 +170,6 @@
           if (typeof showToast === 'function') showToast(msg);
           var isDomainUnauthorized = (code === 'auth/network-request-failed' || code === 'auth/unauthorized-domain');
           if (isDomainUnauthorized) {
-            var banner = document.getElementById('domainUnauthorizedBanner');
-            if (banner) banner.style.display = 'block';
             window.firebaseAuthUi && window.firebaseAuthUi.hideAuthOverlay();
             if (typeof showMainUIImmediately === 'function') showMainUIImmediately();
             if (!window._initDone && typeof initCore === 'function') {
@@ -222,11 +220,7 @@
         try {
           window.firebaseAuthApi.verifyOtp(code,
             function(user) {
-              try {
-                if (user && user.uid && typeof alert === 'function') {
-                  alert('SUCCESS! UID: ' + user.uid);
-                }
-              } catch (e) { console.error('UID alert error:', e); }
+              window.isAdmin = !!(user && user.uid === 'gJNnlyMuSkcZKHw99hvvv6kWfOO2');
               hideAuthOverlay();
               if (typeof showMainUIImmediately === 'function') showMainUIImmediately();
               verifyBtn.disabled = false;
