@@ -166,10 +166,8 @@
           var msg = (err && err.message) ? err.message : 'שגיאה בשליחת קוד';
           if (code === 'auth/operation-not-allowed') {
             msg = 'יש להפעיל את ה-SMS Region Policy ב-Firebase Settings';
-            if (typeof alert === 'function') alert(msg);
-          } else if (typeof alert === 'function') {
-            alert('Firebase Auth Error: ' + code + ' - ' + msg);
           }
+          if (typeof showToast === 'function') showToast(msg);
           var isDomainUnauthorized = (code === 'auth/network-request-failed' || code === 'auth/unauthorized-domain');
           if (isDomainUnauthorized) {
             var banner = document.getElementById('domainUnauthorizedBanner');
@@ -238,10 +236,7 @@
             verifyBtn.textContent = 'אימות';
             var code = (err && err.code) ? err.code : '';
             var msg = (err && err.message) ? err.message : 'קוד לא תקין';
-            if (typeof alert === 'function') {
-              alert('Firebase Auth Error: ' + code + ' - ' + msg);
-            }
-            if (typeof showToast === 'function') showToast('קוד לא תקין – נסה שוב');
+            if (typeof showToast === 'function') showToast('קוד לא תקין: ' + msg);
           }
         );
         } catch (e) {

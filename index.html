@@ -18,6 +18,14 @@
   <link rel="stylesheet" href="css/pages.css">
   <script>
     console.log('Current Origin:', window.location.origin);
+    console.log('window.location.href:', window.location.href);
+    window.devBypass = function() {
+      try {
+        localStorage.setItem('shifter_dev_bypass', '1');
+        console.log('Dev bypass: window.location.href =', window.location.href);
+        location.reload();
+      } catch (e) { console.error('devBypass error:', e); }
+    };
     window.checkFirebaseConfig = function() {
       var c = window.FIREBASE_CONFIG;
       if (!c) {
@@ -30,6 +38,7 @@
     };
     window.forceLogout = function() {
       try {
+        localStorage.removeItem('shifter_dev_bypass');
         if (window.firebaseAuthApi && window.firebaseAuthApi.signOut) {
           window.firebaseAuthApi.signOut().then(function() { location.reload(); }).catch(function() { location.reload(); });
         } else {
@@ -68,6 +77,7 @@
       <div id="authRecaptchaContainer" style="min-height:78px;margin:12px 0;"></div>
       <div id="authSecurityError" style="display:none;padding:12px;background:rgba(239,68,68,0.2);border-radius:12px;color:#fca5a5;font-size:13px;margin-top:12px;text-align:center;">שגיאת אבטחה: יש לאשר את הדומיין ב-Firebase Console</div>
       <p class="auth-hint">עלות SMS לפי תעריף החבר הסלולרית שלך</p>
+      <button type="button" id="dev-bypass" onclick="devBypass()" style="opacity:0.2;font-size:10px;padding:4px 8px;margin-top:16px;border:none;background:transparent;color:var(--text-dim);cursor:pointer;width:100%;" title="Developer bypass">dev bypass</button>
     </div>
   </div>
 

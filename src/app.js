@@ -505,6 +505,14 @@ function onAuthSuccess() {
 
 async function init() {
   try {
+    if (localStorage.getItem('shifter_dev_bypass')) {
+      console.log('window.location.href:', window.location.href);
+      window.usingFirebaseStore = false;
+      showMainUIImmediately();
+      _initDone = true;
+      initCore();
+      return;
+    }
     var dashboard = document.getElementById('pageDashboard');
     if (dashboard) {
       dashboard.classList.add('active');
@@ -554,7 +562,7 @@ async function init() {
             }
           } catch (cbErr) {
             console.error('onAuthStateChanged error:', cbErr);
-            alert('שגיאה באימות: ' + (cbErr && cbErr.message ? cbErr.message : String(cbErr)));
+            if (typeof showToast === 'function') showToast('שגיאה באימות: ' + (cbErr && cbErr.message ? cbErr.message : String(cbErr)));
           }
         });
         var user = window.firebaseAuthApi.getCurrentUser();
@@ -589,7 +597,7 @@ async function init() {
         }
       } catch (fbErr) {
         console.error('Firebase init error:', fbErr);
-        alert('שגיאה בחיבור Firebase: ' + (fbErr && fbErr.message ? fbErr.message : String(fbErr)));
+        if (typeof showToast === 'function') showToast('שגיאה בחיבור Firebase: ' + (fbErr && fbErr.message ? fbErr.message : String(fbErr)));
         _initDone = true;
         await initCore();
       }
@@ -599,7 +607,7 @@ async function init() {
     }
   } catch (e) {
     console.error('Init error:', e);
-    alert('שגיאה בטעינה: ' + (e && e.message ? e.message : String(e)));
+    if (typeof showToast === 'function') showToast('שגיאה בטעינה: ' + (e && e.message ? e.message : String(e)));
     var t = document.getElementById('toast');
     if (t) { t.textContent = 'שגיאה בטעינה – נסה לרענן'; t.classList.add('show'); }
     _initDone = true;
