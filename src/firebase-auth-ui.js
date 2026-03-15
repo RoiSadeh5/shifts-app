@@ -19,6 +19,8 @@
     document.getElementById('authOtpStep').style.display = 'none';
     document.getElementById('authPhoneInput').value = '';
     document.getElementById('authOtpInput').value = '';
+    var errEl = document.getElementById('authSecurityError');
+    if (errEl) errEl.style.display = 'none';
   }
 
   function hideAuthOverlay() {
@@ -159,9 +161,27 @@
         function(err) {
           sendBtn.disabled = false;
           sendBtn.textContent = 'שלח קוד';
+          var code = (err && err.code) ? err.code : '';
           var msg = (err && err.message) ? err.message : 'שגיאה בשליחת קוד';
-          if (msg.indexOf('reCAPTCHA') >= 0) msg = 'אנא אשר שאתה לא רובוט';
-          if (typeof showToast === 'function') showToast(msg);
+          if (typeof alert === 'function') {
+            alert('Firebase Auth Error: ' + code + ' - ' + msg);
+          }
+          var isRecaptchaOr401 = !!(msg && (msg.indexOf('reCAPTCHA') >= 0 || msg.indexOf('401') >= 0 || msg.indexOf('recaptcha') >= 0 || code === 'auth/argument-error' || code === 'auth/invalid-recaptcha-response' || code === 'auth/captcha-check-failed' || code === 'auth/missing-recaptcha-response'));
+          if (isRecaptchaOr401) {
+            var errEl = document.getElementById('authSecurityError');
+            if (errEl) {
+              errEl.style.display = 'block';
+              errEl.textContent = 'שגיאת אבטחה: יש לאשר את הדומיין ב-Firebase Console';
+            }
+            window.firebaseAuthUi && window.firebaseAuthUi.hideAuthOverlay();
+            if (typeof showMainUIImmediately === 'function') showMainUIImmediately();
+            if (!window._initDone && typeof initCore === 'function') {
+              window._initDone = true;
+              initCore();
+            }
+          } else {
+            if (typeof showToast === 'function') showToast(msg);
+          }
         }
       );
     };
@@ -187,6 +207,11 @@
           function(err) {
             verifyBtn.disabled = false;
             verifyBtn.textContent = 'אימות';
+            var code = (err && err.code) ? err.code : '';
+            var msg = (err && err.message) ? err.message : 'קוד לא תקין';
+            if (typeof alert === 'function') {
+              alert('Firebase Auth Error: ' + code + ' - ' + msg);
+            }
             if (typeof showToast === 'function') showToast('קוד לא תקין – נסה שוב');
           }
         );

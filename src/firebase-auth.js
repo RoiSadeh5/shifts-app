@@ -60,14 +60,15 @@
       if (!container) {
         container = document.createElement('div');
         container.id = 'authRecaptchaContainer';
-        container.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;';
+        container.style.cssText = 'min-height:78px;margin:12px 0;';
         document.body.appendChild(container);
       }
+      container.style.cssText = 'min-height:78px;margin:12px 0;';
       if (recaptchaVerifier) {
         try { recaptchaVerifier.clear && recaptchaVerifier.clear(); } catch (e) {}
       }
       recaptchaVerifier = new firebase.auth.RecaptchaVerifier(container.id, {
-        size: 'invisible',
+        size: 'normal',
         callback: function() {}
       });
       auth.signInWithPhoneNumber(phone, recaptchaVerifier)

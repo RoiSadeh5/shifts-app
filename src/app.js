@@ -454,20 +454,32 @@ function recalcAll() {
 var _initDone = false;
 
 function showMainUIImmediately() {
+  console.log('UI Debug: Rendering Navigation...');
   window.firebaseAuthUi && window.firebaseAuthUi.hideAuthOverlay();
   var migration = document.getElementById('migrationOverlay');
   if (migration) { migration.style.display = 'none'; migration.classList.remove('visible'); }
   var tabBar = document.querySelector('.tab-bar');
-  if (tabBar) tabBar.style.display = '';
+  if (tabBar) {
+    tabBar.style.display = 'flex';
+    tabBar.style.visibility = 'visible';
+    tabBar.style.opacity = '1';
+  }
+  document.querySelectorAll('.tab').forEach(function(t) {
+    t.style.display = '';
+    t.style.visibility = 'visible';
+  });
   var dashboard = document.getElementById('pageDashboard');
   if (dashboard) {
     dashboard.classList.add('active');
     dashboard.style.display = 'block';
+    dashboard.style.visibility = 'visible';
   }
+  var header = document.querySelector('.header');
+  if (header) { header.style.display = ''; header.style.visibility = 'visible'; }
   document.querySelectorAll('.page').forEach(function(p) {
     if (p.id !== 'pageDashboard') p.classList.remove('active');
   });
-  updateMonthLabels();
+  if (typeof updateMonthLabels === 'function') updateMonthLabels();
   if (typeof recalcAll === 'function') recalcAll();
   if (typeof render === 'function') render();
   if (typeof renderCalendar === 'function') renderCalendar();
@@ -504,6 +516,7 @@ async function init() {
           try {
             console.log('Auth State:', user ? (user.uid || user) : null);
             if (user) {
+              console.log('USER_ID:', user.uid);
               console.log('MY_UID_FOR_GOD_MODE:', user.uid);
               var phoneMasked = user.phoneNumber ? window.firebaseAuthApi.maskPhone(user.phoneNumber) : '***';
               window.firebaseStore && window.firebaseStore.ensureUserMeta(phoneMasked).catch(function() {});
@@ -535,6 +548,7 @@ async function init() {
                 if (!_initDone) { _initDone = true; initCore(); }
               }
             } else {
+              showMainUIImmediately();
               window.firebaseAuthUi.showAuthOverlay();
             }
           } catch (cbErr) {
@@ -544,6 +558,7 @@ async function init() {
         });
         var user = window.firebaseAuthApi.getCurrentUser();
         if (user) {
+          console.log('USER_ID:', user.uid);
           console.log('MY_UID_FOR_GOD_MODE:', user.uid);
           var checkMigrationSync = window.firebaseAuthUi && window.firebaseAuthUi.shouldShowMigrationPromptAsync;
           if (typeof checkMigrationSync === 'function') {
@@ -567,6 +582,8 @@ async function init() {
             onAuthSuccess();
           }
         } else {
+          showMainUIImmediately();
+          if (!_initDone) { _initDone = true; initCore(); }
           window.firebaseAuthUi.showAuthOverlay();
         }
       } catch (fbErr) {

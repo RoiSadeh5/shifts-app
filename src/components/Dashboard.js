@@ -18,6 +18,8 @@ function getMonthShifts() {
 
 function render() {
   try {
+    var data = typeof loadShifts === 'function' ? loadShifts() : [];
+    console.log('UI Debug: Firestore Data Status:', { shiftsCount: Array.isArray(data) ? data.length : 0, data: data });
     renderCore();
   } catch (e) {
     console.error('Render error:', e);
@@ -257,17 +259,18 @@ function renderCore() {
 
   var listEl = document.getElementById('recentShifts');
   if (monthShifts.length === 0) {
-    if (!listEl) return;
     var allShifts = typeof loadShifts === 'function' ? loadShifts() : [];
     if (!Array.isArray(allShifts)) allShifts = [];
     var isFirstEver = allShifts.length === 0;
-    listEl.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">${isFirstEver ? '👋' : '📭'}</div>
-        <div class="empty-text">${isFirstEver ? 'אין משמרות להצגה, התחל להזין נתונים!' : 'אין משמרות ב' + hebrewMonths[currentMonth]}</div>
-        <div class="empty-hint">${isFirstEver ? 'לחץ למטה להתחיל' : 'לחץ למטה להוסיף משמרת'}</div>
-        <button class="empty-state-btn" onclick="switchTab('Add')">➕ הוסף משמרת</button>
-      </div>`;
+    if (listEl) {
+      listEl.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">${isFirstEver ? '👋' : '📭'}</div>
+          <div class="empty-text">${isFirstEver ? 'אין משמרות להצגה, התחל להזין נתונים!' : 'אין משמרות ב' + hebrewMonths[currentMonth]}</div>
+          <div class="empty-hint">${isFirstEver ? 'לחץ למטה להתחיל' : 'לחץ למטה להוסיף משמרת'}</div>
+          <button class="empty-state-btn" onclick="switchTab('Add')">➕ הוסף משמרת</button>
+        </div>`;
+    }
     return;
   }
   if (!listEl) return;
