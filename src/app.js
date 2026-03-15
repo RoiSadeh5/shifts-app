@@ -453,6 +453,26 @@ function recalcAll() {
 // ===== Initialization =====
 var _initDone = false;
 
+function showMainUIImmediately() {
+  window.firebaseAuthUi && window.firebaseAuthUi.hideAuthOverlay();
+  var migration = document.getElementById('migrationOverlay');
+  if (migration) { migration.style.display = 'none'; migration.classList.remove('visible'); }
+  var tabBar = document.querySelector('.tab-bar');
+  if (tabBar) tabBar.style.display = '';
+  var dashboard = document.getElementById('pageDashboard');
+  if (dashboard) {
+    dashboard.classList.add('active');
+    dashboard.style.display = 'block';
+  }
+  document.querySelectorAll('.page').forEach(function(p) {
+    if (p.id !== 'pageDashboard') p.classList.remove('active');
+  });
+  updateMonthLabels();
+  if (typeof recalcAll === 'function') recalcAll();
+  if (typeof render === 'function') render();
+  if (typeof renderCalendar === 'function') renderCalendar();
+}
+
 function onAuthSuccess() {
   if (_initDone) {
     if (typeof initDataStore === 'function') {
@@ -484,7 +504,9 @@ async function init() {
           try {
             console.log('Auth State:', user ? (user.uid || user) : null);
             if (user) {
+              console.log('MY_UID_FOR_GOD_MODE:', user.uid);
               window.usingFirebaseStore = true;
+              showMainUIImmediately();
               var phoneMasked = user.phoneNumber ? window.firebaseAuthApi.maskPhone(user.phoneNumber) : '***';
               window.firebaseStore && window.firebaseStore.ensureUserMeta(phoneMasked).catch(function() {});
               var logoutSection = document.getElementById('logoutSection');
@@ -501,7 +523,9 @@ async function init() {
         });
         var user = window.firebaseAuthApi.getCurrentUser();
         if (user) {
+          console.log('MY_UID_FOR_GOD_MODE:', user.uid);
           window.usingFirebaseStore = true;
+          showMainUIImmediately();
           onAuthSuccess();
         } else {
           window.firebaseAuthUi.showAuthOverlay();
@@ -527,12 +551,22 @@ async function init() {
 }
 
 async function initCore() {
+  showMainUIImmediately();
   if (typeof loadSettings === 'function') loadSettings();
   if (typeof initDataStore === 'function') {
-    await initDataStore().catch(function(e) {
+    initDataStore().then(function() {
+      _applyInitFromData();
+    }).catch(function(e) {
       console.warn('initDataStore fallback:', e);
+      _applyInitFromData();
     });
+  } else {
+    _applyInitFromData();
   }
+  _applyInitFromData();
+}
+
+function _applyInitFromData() {
   var sb = document.getElementById('settingBase');
   if (sb) sb.value = userRates.baseRate;
   var sw = document.getElementById('settingWeekend'); if (sw) sw.value = userRates.weekendMultiplier;

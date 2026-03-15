@@ -264,7 +264,7 @@ function renderCore() {
     listEl.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">${isFirstEver ? '👋' : '📭'}</div>
-        <div class="empty-text">${isFirstEver ? 'ברוך הבא! הוסף משמרת ראשונה' : 'אין משמרות ב' + hebrewMonths[currentMonth]}</div>
+        <div class="empty-text">${isFirstEver ? 'אין משמרות להצגה, התחל להזין נתונים!' : 'אין משמרות ב' + hebrewMonths[currentMonth]}</div>
         <div class="empty-hint">${isFirstEver ? 'לחץ למטה להתחיל' : 'לחץ למטה להוסיף משמרת'}</div>
         <button class="empty-state-btn" onclick="switchTab('Add')">➕ הוסף משמרת</button>
       </div>`;
