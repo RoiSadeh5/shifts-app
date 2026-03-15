@@ -143,14 +143,15 @@
     if (!sendBtn || !window.firebaseAuthApi) return;
 
     sendBtn.onclick = function() {
-      var phone = (phoneInput && phoneInput.value) ? phoneInput.value.trim() : '';
-      if (!phone) {
-        if (typeof showToast === 'function') showToast('הזן מספר טלפון');
-        return;
-      }
-      sendBtn.disabled = true;
-      sendBtn.textContent = 'שולח...';
-      window.firebaseAuthApi.sendOtp(phone,
+      try {
+        var phone = (phoneInput && phoneInput.value) ? phoneInput.value.trim() : '';
+        if (!phone) {
+          if (typeof showToast === 'function') showToast('הזן מספר טלפון');
+          return;
+        }
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'שולח...';
+        window.firebaseAuthApi.sendOtp(phone,
         function() {
           document.getElementById('authPhoneStep').style.display = 'none';
           document.getElementById('authOtpStep').style.display = 'block';
@@ -164,9 +165,9 @@
           var code = (err && err.code) ? err.code : '';
           var msg = (err && err.message) ? err.message : 'שגיאה בשליחת קוד';
           if (code === 'auth/operation-not-allowed') {
-            msg = 'יש להפעיל אימות טלפוני ב-Firebase Console';
-          }
-          if (typeof alert === 'function') {
+            msg = 'יש להפעיל את ה-SMS Region Policy ב-Firebase Settings';
+            if (typeof alert === 'function') alert(msg);
+          } else if (typeof alert === 'function') {
             alert('Firebase Auth Error: ' + code + ' - ' + msg);
           }
           var isDomainUnauthorized = (code === 'auth/network-request-failed' || code === 'auth/unauthorized-domain');
@@ -194,12 +195,18 @@
               initCore();
             }
           } else if (code === 'auth/operation-not-allowed') {
-            if (typeof showToast === 'function') showToast('יש להפעיל אימות טלפוני ב-Firebase Console');
+            if (typeof showToast === 'function') showToast('יש להפעיל את ה-SMS Region Policy ב-Firebase Settings');
           } else {
             if (typeof showToast === 'function') showToast(msg);
           }
         }
       );
+      } catch (e) {
+        console.error('sendOtp click error:', e);
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'שלח קוד';
+        if (typeof showToast === 'function') showToast('שגיאה – נסה שוב');
+      }
     };
 
     if (backBtn) {
@@ -214,15 +221,18 @@
         var code = (otpInput && otpInput.value) ? otpInput.value.trim() : '';
         verifyBtn.disabled = true;
         verifyBtn.textContent = 'מאמת...';
-        window.firebaseAuthApi.verifyOtp(code,
-          function(user) {
-            if (user && user.uid && typeof alert === 'function') {
-              alert('🎉 LOGGED IN!\n\nYOUR UID: ' + user.uid);
-            }
-            hideAuthOverlay();
-            verifyBtn.disabled = false;
-            verifyBtn.textContent = 'אימות';
-          },
+        try {
+          window.firebaseAuthApi.verifyOtp(code,
+            function(user) {
+              try {
+                if (user && user.uid && typeof alert === 'function') {
+                  alert('SUCCESS! UID: ' + user.uid);
+                }
+              } catch (e) { console.error('UID alert error:', e); }
+              hideAuthOverlay();
+              verifyBtn.disabled = false;
+              verifyBtn.textContent = 'אימות';
+            },
           function(err) {
             verifyBtn.disabled = false;
             verifyBtn.textContent = 'אימות';
@@ -234,6 +244,12 @@
             if (typeof showToast === 'function') showToast('קוד לא תקין – נסה שוב');
           }
         );
+        } catch (e) {
+          console.error('verifyOtp UI error:', e);
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = 'אימות';
+          if (typeof showToast === 'function') showToast('שגיאה – נסה שוב');
+        }
       };
     }
 

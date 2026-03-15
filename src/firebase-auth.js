@@ -18,9 +18,10 @@
 
   function normalizePhone(input) {
     var s = (input || '').replace(/\D/g, '');
+    if (!s) return '';
     if (s.charAt(0) === '0') s = '972' + s.slice(1);
     else if (!s.startsWith('972')) s = '972' + s;
-    return '+' + s;
+    return '+972' + s.replace(/^972/, '');
   }
 
   window.firebaseAuthApi = {
@@ -83,6 +84,10 @@
         return;
       }
       try {
+        if (!phone.startsWith('+972')) {
+          var digits = phone.replace(/\D/g, '');
+          phone = '+972' + (digits.charAt(0) === '0' ? digits.slice(1) : digits);
+        }
         auth.signInWithPhoneNumber(phone, recaptchaVerifier)
           .then(function(result) {
             confirmationResult = result;
