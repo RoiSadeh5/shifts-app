@@ -20,6 +20,9 @@
     window.firebaseReady = Promise.resolve(true);
   } catch (e) {
     console.warn('Firebase init error:', e);
+    if (typeof alert === 'function') {
+      alert('Firebase init error: ' + (e && e.message ? e.message : String(e)));
+    }
     window.firebaseApp = null;
     window.firebaseAuth = null;
     window.firebaseDb = null;

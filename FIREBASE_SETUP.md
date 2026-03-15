@@ -5,7 +5,10 @@
 1. Go to [Firebase Console](https://console.firebase.google.com/)
 2. Create a new project (or use existing)
 3. Enable **Authentication** → **Sign-in method** → **Phone**
-4. Add your app domain to authorized domains (e.g. `localhost`, your production domain)
+4. Add your app domains to **Authorized domains**:
+   - Firebase Console → **Authentication** → **Settings** (gear) → **Authorized domains**
+   - Add `localhost` for development
+   - Add `roisadeh5.github.io` for GitHub Pages production (phone auth & reCAPTCHA require this)
 5. Enable **Firestore Database** → Create database
 
 ## 2. Configure the App

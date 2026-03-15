@@ -472,27 +472,45 @@ function onAuthSuccess() {
 
 async function init() {
   try {
+    var dashboard = document.getElementById('pageDashboard');
+    if (dashboard) {
+      dashboard.classList.add('active');
+      dashboard.style.display = 'block';
+    }
     if (window.firebaseAuthApi && window.firebaseAuthApi.isReady()) {
-      window.firebaseAuthUi && window.firebaseAuthUi.bindAuthEvents();
-      window.firebaseAuthApi.onAuthStateChanged(function(user) {
+      try {
+        window.firebaseAuthUi && window.firebaseAuthUi.bindAuthEvents();
+        window.firebaseAuthApi.onAuthStateChanged(function(user) {
+          try {
+            console.log('Auth State:', user ? (user.uid || user) : null);
+            if (user) {
+              window.usingFirebaseStore = true;
+              var phoneMasked = user.phoneNumber ? window.firebaseAuthApi.maskPhone(user.phoneNumber) : '***';
+              window.firebaseStore && window.firebaseStore.ensureUserMeta(phoneMasked).catch(function() {});
+              var logoutSection = document.getElementById('logoutSection');
+              if (logoutSection) logoutSection.style.display = '';
+              if (typeof updateAdminButtonLabel === 'function') updateAdminButtonLabel();
+              if (!_initDone) { _initDone = true; initCore(); }
+            } else {
+              window.firebaseAuthUi.showAuthOverlay();
+            }
+          } catch (cbErr) {
+            console.error('onAuthStateChanged error:', cbErr);
+            alert('שגיאה באימות: ' + (cbErr && cbErr.message ? cbErr.message : String(cbErr)));
+          }
+        });
+        var user = window.firebaseAuthApi.getCurrentUser();
         if (user) {
           window.usingFirebaseStore = true;
-          var phoneMasked = user.phoneNumber ? window.firebaseAuthApi.maskPhone(user.phoneNumber) : '***';
-          window.firebaseStore && window.firebaseStore.ensureUserMeta(phoneMasked).catch(function() {});
-          var logoutSection = document.getElementById('logoutSection');
-          if (logoutSection) logoutSection.style.display = '';
-          if (typeof updateAdminButtonLabel === 'function') updateAdminButtonLabel();
-          if (!_initDone) { _initDone = true; initCore(); }
+          onAuthSuccess();
         } else {
           window.firebaseAuthUi.showAuthOverlay();
         }
-      });
-      var user = window.firebaseAuthApi.getCurrentUser();
-      if (user) {
-        window.usingFirebaseStore = true;
-        onAuthSuccess();
-      } else {
-        window.firebaseAuthUi.showAuthOverlay();
+      } catch (fbErr) {
+        console.error('Firebase init error:', fbErr);
+        alert('שגיאה בחיבור Firebase: ' + (fbErr && fbErr.message ? fbErr.message : String(fbErr)));
+        _initDone = true;
+        await initCore();
       }
     } else {
       _initDone = true;
@@ -500,8 +518,11 @@ async function init() {
     }
   } catch (e) {
     console.error('Init error:', e);
+    alert('שגיאה בטעינה: ' + (e && e.message ? e.message : String(e)));
     var t = document.getElementById('toast');
     if (t) { t.textContent = 'שגיאה בטעינה – נסה לרענן'; t.classList.add('show'); }
+    _initDone = true;
+    await initCore();
   }
 }
 
