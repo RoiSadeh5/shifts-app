@@ -39,6 +39,13 @@
       }).catch(function() { return false; });
     },
 
+    /** Force token refresh so new custom claims take effect immediately */
+    forceTokenRefresh: function() {
+      var u = getAuth() ? getAuth().currentUser : null;
+      if (!u) return Promise.resolve();
+      return u.getIdToken(true);
+    },
+
     onAuthStateChanged: function(cb) {
       var a = getAuth();
       if (!a) { cb(null); return function() {}; }

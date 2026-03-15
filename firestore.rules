@@ -1,9 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper: admin has full access (custom claim set via Admin SDK)
+    // Admin UID – replace with your UID from Firebase Console → Authentication → Users
     function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
+      return request.auth != null && request.auth.uid == 'REPLACE_WITH_YOUR_UID';
     }
     // Helper: user owns this resource
     function isOwner(userId) {

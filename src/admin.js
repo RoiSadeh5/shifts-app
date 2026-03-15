@@ -1,8 +1,16 @@
 /**
- * Admin panel – password-protected, sessionStorage, user management.
- * Requires config.js with window.ADMIN_CONFIG.password (copy from config.example.js).
+ * Admin panel – UID-based God Mode (no Cloud Functions).
+ * Set ADMIN_UID in admin.js or ADMIN_CONFIG.adminUid in config.js
  */
 var ADMIN_SESSION_KEY = 'shifter_admin_session';
+var ADMIN_UID = (window.ADMIN_CONFIG && window.ADMIN_CONFIG.adminUid) || 'REPLACE_WITH_YOUR_UID';
+
+function isAdminByUid() {
+  var uid = (typeof ADMIN_UID === 'string' && ADMIN_UID) ? ADMIN_UID.trim() : '';
+  if (!uid || uid === 'REPLACE_WITH_YOUR_UID') return false;
+  var u = window.firebaseAuthApi && window.firebaseAuthApi.getCurrentUser();
+  return !!(u && u.uid && u.uid === uid);
+}
 
 function isAdminLoggedIn() {
   try { return sessionStorage.getItem(ADMIN_SESSION_KEY) === '1'; } catch (e) { return false; }
@@ -18,15 +26,9 @@ function getAdminPassword() {
 
 function openAdminPrompt() {
   if (typeof haptic === 'function') haptic(true);
-  if (window.firebaseAuthApi && window.firebaseAuthApi.isAdmin) {
-    window.firebaseAuthApi.isAdmin().then(function(isAdmin) {
-      if (isAdmin) {
-        setAdminSession(true);
-        showAdminPanel();
-        return;
-      }
-      _openAdminWithPassword();
-    }).catch(function() { _openAdminWithPassword(); });
+  if (isAdminByUid()) {
+    setAdminSession(true);
+    showAdminPanel();
     return;
   }
   _openAdminWithPassword();
@@ -119,12 +121,8 @@ function renderAdminPanel() {
       });
   }
   if (window.usingFirebaseStore && typeof firebase !== 'undefined' && firebase.functions) {
-    window.firebaseAuthApi.isAdmin().then(function(isAdmin) {
-      hasAdminClaim = isAdmin;
-      callAdminListUsers();
-    }).catch(function() {
-      callAdminListUsers();
-    });
+    hasAdminClaim = isAdminByUid();
+    callAdminListUsers();
     return;
   }
   if (typeof getAdminRegistry !== 'function') return;
@@ -140,13 +138,12 @@ function renderAdminPanel() {
   var _localAdminDeleteUser = typeof adminDeleteUser === 'function' ? adminDeleteUser : null;
   window.adminDeleteUser = function(userId) {
     if (window.usingFirebaseStore && typeof firebase !== 'undefined' && firebase.functions) {
-      return window.firebaseAuthApi.isAdmin().then(function(isAdmin) {
-        var payload = { userId: userId };
-        if (!isAdmin) payload.password = getAdminPassword();
-        if (!isAdmin && !payload.password) return Promise.reject(new Error('No admin password'));
-        var fn = firebase.functions().httpsCallable('adminDeleteUser');
-        return fn(payload).then(function() {});
-      });
+      var isAdmin = isAdminByUid();
+      var payload = { userId: userId };
+      if (!isAdmin) payload.password = getAdminPassword();
+      if (!isAdmin && !payload.password) return Promise.reject(new Error('No admin password'));
+      var fn = firebase.functions().httpsCallable('adminDeleteUser');
+      return fn(payload).then(function() {});
     }
     return _localAdminDeleteUser ? _localAdminDeleteUser(userId) : Promise.reject(new Error('Not available'));
   };

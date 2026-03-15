@@ -16,7 +16,7 @@
     window.firebaseApp = firebase.initializeApp(config);
     window.firebaseAuth = firebase.auth();
     window.firebaseDb = firebase.firestore();
-    firebaseAuth.useDeviceLanguage && firebaseAuth.useDeviceLanguage();
+    if (window.firebaseAuth.useDeviceLanguage) window.firebaseAuth.useDeviceLanguage();
     window.firebaseReady = Promise.resolve(true);
   } catch (e) {
     console.warn('Firebase init error:', e);

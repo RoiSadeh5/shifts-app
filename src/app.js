@@ -264,10 +264,9 @@ function completeOnboarding() {
 
 function updateAdminButtonLabel() {
   var btn = document.getElementById('adminPanelBtn');
-  if (!btn || !window.firebaseAuthApi || !window.firebaseAuthApi.isAdmin) return;
-  window.firebaseAuthApi.isAdmin().then(function(isAdmin) {
-    btn.textContent = isAdmin ? 'לוח מנהל (God Mode)' : 'כניסה כמנהל';
-  }).catch(function() {});
+  if (!btn) return;
+  var isAdmin = typeof isAdminByUid === 'function' && isAdminByUid();
+  btn.textContent = isAdmin ? 'לוח מנהל (God Mode)' : 'כניסה כמנהל';
 }
 
 function saveUserNameSetting() {
@@ -482,6 +481,7 @@ async function init() {
           window.firebaseStore && window.firebaseStore.ensureUserMeta(phoneMasked).catch(function() {});
           var logoutSection = document.getElementById('logoutSection');
           if (logoutSection) logoutSection.style.display = '';
+          if (typeof updateAdminButtonLabel === 'function') updateAdminButtonLabel();
           if (!_initDone) { _initDone = true; initCore(); }
         } else {
           window.firebaseAuthUi.showAuthOverlay();
@@ -574,6 +574,8 @@ async function initCore() {
   var isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator.standalone === true);
   var btnAdd = document.getElementById('btnAddToHome');
   if (btnAdd && isStandalone) btnAdd.style.display = 'none';
+
+  if (window.usingFirebaseStore && typeof updateAdminButtonLabel === 'function') updateAdminButtonLabel();
 
   // Tutorial first (first-time only), then name onboarding if needed
   if (!isTutorialComplete()) {
