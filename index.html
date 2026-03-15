@@ -17,6 +17,17 @@
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/pages.css">
   <script>
+    console.log('Current Origin:', window.location.origin);
+    window.checkFirebaseConfig = function() {
+      var c = window.FIREBASE_CONFIG;
+      if (!c) {
+        console.log('FIREBASE_CONFIG: not defined');
+        return;
+      }
+      console.log('Firebase Config – apiKey:', c.apiKey);
+      console.log('Firebase Config – projectId:', c.projectId);
+      console.log('Firebase Config (full):', JSON.stringify({ apiKey: c.apiKey, projectId: c.projectId, authDomain: c.authDomain }));
+    };
     window.forceLogout = function() {
       try {
         if (window.firebaseAuthApi && window.firebaseAuthApi.signOut) {
@@ -32,8 +43,12 @@
 </head>
 <body>
 
-  <!-- Force Logout (debug) - always visible to clear stuck sessions -->
+  <!-- Domain unauthorized banner (hidden by default, shown on auth/unauthorized-domain) -->
+  <div id="domainUnauthorizedBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:999999;background:#dc2626;color:#fff;padding:24px;font-size:20px;font-weight:800;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.5);">DOMAIN NOT AUTHORIZED IN FIREBASE</div>
+
+  <!-- Debug buttons - always visible -->
   <button type="button" id="forceLogoutBtn" onclick="forceLogout()" style="position:fixed;bottom:12px;left:12px;z-index:99999;padding:8px 14px;font-size:12px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);" title="נקה סשן וטען מחדש">Force Logout</button>
+  <button type="button" id="checkFirebaseConfigBtn" onclick="checkFirebaseConfig()" style="position:fixed;bottom:12px;left:140px;z-index:99999;padding:8px 14px;font-size:12px;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);" title="בדוק Firebase Config">Check Firebase Config</button>
 
   <!-- Auth overlay (phone + OTP) - shown before app when not signed in -->
   <div class="auth-overlay" id="authOverlay" style="display:none" aria-hidden="true">

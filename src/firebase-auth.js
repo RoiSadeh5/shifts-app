@@ -56,30 +56,48 @@
       if (!isReady()) { if (onError) onError(new Error('Firebase not configured')); return; }
       var phone = normalizePhone(phoneInput);
       var auth = getAuth();
-      var container = document.getElementById('authRecaptchaContainer');
-      if (!container) {
-        container = document.createElement('div');
-        container.id = 'authRecaptchaContainer';
+      var container = null;
+      try {
+        container = document.getElementById('authRecaptchaContainer');
+        if (!container) {
+          container = document.createElement('div');
+          container.id = 'authRecaptchaContainer';
+          container.style.cssText = 'min-height:78px;margin:12px 0;';
+          document.body.appendChild(container);
+        }
         container.style.cssText = 'min-height:78px;margin:12px 0;';
-        document.body.appendChild(container);
-      }
-      container.style.cssText = 'min-height:78px;margin:12px 0;';
-      if (recaptchaVerifier) {
-        try { recaptchaVerifier.clear && recaptchaVerifier.clear(); } catch (e) {}
-      }
-      recaptchaVerifier = new firebase.auth.RecaptchaVerifier(container.id, {
-        size: 'normal',
-        callback: function() {}
-      });
-      auth.signInWithPhoneNumber(phone, recaptchaVerifier)
-        .then(function(result) {
-          confirmationResult = result;
-          if (onSuccess) onSuccess();
-        })
-        .catch(function(err) {
-          if (recaptchaVerifier && recaptchaVerifier.clear) recaptchaVerifier.clear();
-          if (onError) onError(err);
+        if (recaptchaVerifier) {
+          try { recaptchaVerifier.clear && recaptchaVerifier.clear(); } catch (e) {}
+        }
+        recaptchaVerifier = new firebase.auth.RecaptchaVerifier(container.id, {
+          size: 'normal',
+          callback: function() {}
         });
+      } catch (initErr) {
+        console.error('RecaptchaVerifier init error:', initErr);
+        if (onError) onError(initErr);
+        return;
+      }
+      try {
+        auth.signInWithPhoneNumber(phone, recaptchaVerifier)
+          .then(function(result) {
+            confirmationResult = result;
+            if (onSuccess) onSuccess();
+          })
+          .catch(function(err) {
+            console.error('signInWithPhoneNumber error:', err);
+            try {
+              if (recaptchaVerifier && recaptchaVerifier.clear) recaptchaVerifier.clear();
+            } catch (e) {}
+            if (onError) onError(err);
+          });
+      } catch (callErr) {
+        console.error('signInWithPhoneNumber call error:', callErr);
+        try {
+          if (recaptchaVerifier && recaptchaVerifier.clear) recaptchaVerifier.clear();
+        } catch (e) {}
+        if (onError) onError(callErr);
+      }
     },
 
     verifyOtp: function(code, onSuccess, onError) {

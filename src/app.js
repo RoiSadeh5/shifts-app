@@ -3,6 +3,7 @@
  * Shared state, constants, engine bridge, navigation, utilities, and init.
  * Loaded after src/logic/salaryEngine.js, before store and component scripts.
  */
+console.log('Current Origin (app.js):', window.location.origin);
 
 // ===== Bridge to Salary Engine =====
 var SalaryEngine = window.SalaryEngine || { DEFAULTS: { baseRate: 75, weekendMultiplier: 1.5, vacationDayRate: 1750, bonusQuarterly: 3500 }, calculateShiftPay: function() { return {}; }, calcDeductions: function() { return { employee: {}, employer: {} }; }, calcIncomeTax: function() { return { finalTax: 0, tiers: [] }; }, calculateFixedMonthlyAdditions: function() { return { total: 0 }; } };

@@ -166,6 +166,17 @@
           if (typeof alert === 'function') {
             alert('Firebase Auth Error: ' + code + ' - ' + msg);
           }
+          var isDomainUnauthorized = (code === 'auth/network-request-failed' || code === 'auth/unauthorized-domain');
+          if (isDomainUnauthorized) {
+            var banner = document.getElementById('domainUnauthorizedBanner');
+            if (banner) banner.style.display = 'block';
+            window.firebaseAuthUi && window.firebaseAuthUi.hideAuthOverlay();
+            if (typeof showMainUIImmediately === 'function') showMainUIImmediately();
+            if (!window._initDone && typeof initCore === 'function') {
+              window._initDone = true;
+              initCore();
+            }
+          }
           var isRecaptchaOr401 = !!(msg && (msg.indexOf('reCAPTCHA') >= 0 || msg.indexOf('401') >= 0 || msg.indexOf('recaptcha') >= 0 || code === 'auth/argument-error' || code === 'auth/invalid-recaptcha-response' || code === 'auth/captcha-check-failed' || code === 'auth/missing-recaptcha-response'));
           if (isRecaptchaOr401) {
             var errEl = document.getElementById('authSecurityError');
