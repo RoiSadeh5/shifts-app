@@ -18,7 +18,7 @@
 
   function normalizePhone(input) {
     var s = (input || '').replace(/\D/g, '');
-    if (s.startsWith('0')) s = '972' + s.slice(1);
+    if (s.charAt(0) === '0') s = '972' + s.slice(1);
     else if (!s.startsWith('972')) s = '972' + s;
     return '+' + s;
   }
@@ -55,6 +55,10 @@
     sendOtp: function(phoneInput, onSuccess, onError) {
       if (!isReady()) { if (onError) onError(new Error('Firebase not configured')); return; }
       var phone = normalizePhone(phoneInput);
+      if (!phone || phone.length < 12) {
+        if (onError) onError(new Error('מספר טלפון קצר מדי. הזן למשל: 050-1234567'));
+        return;
+      }
       var auth = getAuth();
       var container = null;
       try {

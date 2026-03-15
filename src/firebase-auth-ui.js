@@ -163,6 +163,9 @@
           sendBtn.textContent = 'שלח קוד';
           var code = (err && err.code) ? err.code : '';
           var msg = (err && err.message) ? err.message : 'שגיאה בשליחת קוד';
+          if (code === 'auth/operation-not-allowed') {
+            msg = 'יש להפעיל אימות טלפוני ב-Firebase Console';
+          }
           if (typeof alert === 'function') {
             alert('Firebase Auth Error: ' + code + ' - ' + msg);
           }
@@ -190,6 +193,8 @@
               window._initDone = true;
               initCore();
             }
+          } else if (code === 'auth/operation-not-allowed') {
+            if (typeof showToast === 'function') showToast('יש להפעיל אימות טלפוני ב-Firebase Console');
           } else {
             if (typeof showToast === 'function') showToast(msg);
           }
@@ -211,6 +216,9 @@
         verifyBtn.textContent = 'מאמת...';
         window.firebaseAuthApi.verifyOtp(code,
           function(user) {
+            if (user && user.uid && typeof alert === 'function') {
+              alert('🎉 LOGGED IN!\n\nYOUR UID: ' + user.uid);
+            }
             hideAuthOverlay();
             verifyBtn.disabled = false;
             verifyBtn.textContent = 'אימות';
