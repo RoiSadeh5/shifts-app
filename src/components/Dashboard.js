@@ -18,8 +18,6 @@ function getMonthShifts() {
 
 function render() {
   try {
-    var data = typeof loadShifts === 'function' ? loadShifts() : [];
-    console.log('UI Debug: Firestore Data Status:', { shiftsCount: Array.isArray(data) ? data.length : 0, data: data });
     renderCore();
   } catch (e) {
     console.error('Render error:', e);

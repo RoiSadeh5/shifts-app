@@ -266,8 +266,8 @@ function completeOnboarding() {
 function updateAdminButtonLabel() {
   var btn = document.getElementById('adminPanelBtn');
   if (!btn) return;
-  var isAdmin = typeof isAdminByUid === 'function' && isAdminByUid();
-  btn.textContent = isAdmin ? 'לוח מנהל (God Mode)' : 'כניסה כמנהל';
+  var admin = typeof isAdminByUid === 'function' && isAdminByUid();
+  btn.textContent = admin ? 'לוח מנהל (God Mode)' : 'כניסה כמנהל';
 }
 
 function saveUserNameSetting() {
@@ -285,9 +285,14 @@ function switchTab(name) {
   if (!targetPage || !targetTab) return;
   if (targetPage.classList.contains('active')) return;
   haptic(true);
+  try { localStorage.setItem('shifter_current_tab', name); } catch (e) {}
   document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
   targetTab.classList.add('active');
-  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.page').forEach(function(p) {
+    p.classList.remove('active');
+    p.style.display = '';
+    p.style.visibility = '';
+  });
   targetPage.classList.add('active');
   if (name === 'Dashboard') {
     updateGreeting();
@@ -302,6 +307,7 @@ function switchTab(name) {
     requestAnimationFrame(function() { requestAnimationFrame(renderSavings); });
   } else if (name === 'Settings') {
     updateAdminButtonLabel();
+    if (typeof initSettingsView === 'function') initSettingsView();
   }
   if (name !== 'Dashboard') {
     var titles = { Add: 'הוספת משמרת', Calendar: 'לוח שנה', Annual: 'סיכום שנתי', Settings: 'הגדרות', Savings: 'חסכון פנסיוני' };
@@ -458,31 +464,64 @@ function showMainUIImmediately() {
   window.firebaseAuthUi && window.firebaseAuthUi.hideAuthOverlay();
   var migration = document.getElementById('migrationOverlay');
   if (migration) { migration.style.display = 'none'; migration.classList.remove('visible'); }
+  var user = window.firebaseAuthApi && window.firebaseAuthApi.getCurrentUser();
   var tabBar = document.querySelector('.tab-bar');
-  if (tabBar) {
-    tabBar.style.display = 'flex';
-    tabBar.style.visibility = 'visible';
-    tabBar.style.opacity = '1';
-  }
-  document.querySelectorAll('.tab').forEach(function(t) {
-    t.style.display = '';
-    t.style.visibility = 'visible';
-  });
-  var dashboard = document.getElementById('pageDashboard');
-  if (dashboard) {
-    dashboard.classList.add('active');
-    dashboard.style.display = 'block';
-    dashboard.style.visibility = 'visible';
-  }
   var header = document.querySelector('.header');
-  if (header) { header.style.display = ''; header.style.visibility = 'visible'; }
   document.querySelectorAll('.page').forEach(function(p) {
-    if (p.id !== 'pageDashboard') p.classList.remove('active');
+    p.classList.remove('active');
+    p.style.display = '';
+    p.style.visibility = '';
   });
-  if (typeof updateMonthLabels === 'function') updateMonthLabels();
-  if (typeof recalcAll === 'function') recalcAll();
-  if (typeof render === 'function') render();
-  if (typeof renderCalendar === 'function') renderCalendar();
+  document.querySelectorAll('.tab').forEach(function(t) {
+    t.classList.remove('active');
+    t.style.display = '';
+    t.style.visibility = '';
+  });
+  if (user) {
+    if (tabBar) { tabBar.style.display = ''; tabBar.style.visibility = ''; tabBar.style.opacity = ''; }
+    if (header) { header.style.display = ''; header.style.visibility = ''; }
+    var currentTab = '';
+    try { currentTab = localStorage.getItem('shifter_current_tab') || 'Dashboard'; } catch (e) { currentTab = 'Dashboard'; }
+    var validTabs = ['Dashboard', 'Calendar', 'Savings', 'Settings', 'Add', 'Annual'];
+    if (validTabs.indexOf(currentTab) === -1) currentTab = 'Dashboard';
+    var targetPage = document.getElementById('page' + currentTab);
+    var targetTab = document.getElementById('tab' + currentTab);
+    if (targetPage && targetTab) {
+      targetPage.classList.add('active');
+      targetTab.classList.add('active');
+      if (currentTab === 'Dashboard') {
+        if (typeof updateGreeting === 'function') updateGreeting();
+        if (typeof render === 'function') requestAnimationFrame(function() { requestAnimationFrame(render); });
+      } else if (currentTab === 'Calendar' && typeof renderCalendar === 'function') {
+        requestAnimationFrame(function() { requestAnimationFrame(renderCalendar); });
+      } else if (currentTab === 'Annual' && typeof renderAnnual === 'function') {
+        requestAnimationFrame(function() { requestAnimationFrame(renderAnnual); });
+      } else if (currentTab === 'Add' && typeof renderTemplates === 'function') {
+        requestAnimationFrame(function() { requestAnimationFrame(renderTemplates); });
+      } else if (currentTab === 'Savings' && typeof renderSavings === 'function') {
+        requestAnimationFrame(function() { requestAnimationFrame(renderSavings); });
+      } else if (currentTab === 'Settings') {
+        if (typeof updateAdminButtonLabel === 'function') updateAdminButtonLabel();
+        if (typeof initSettingsView === 'function') initSettingsView();
+      }
+    } else {
+      var dash = document.getElementById('pageDashboard');
+      var dashTab = document.getElementById('tabDashboard');
+      if (dash) dash.classList.add('active');
+      if (dashTab) dashTab.classList.add('active');
+      if (typeof updateGreeting === 'function') updateGreeting();
+      if (typeof render === 'function') requestAnimationFrame(function() { requestAnimationFrame(render); });
+    }
+    if (typeof updateMonthLabels === 'function') updateMonthLabels();
+    if (typeof recalcAll === 'function') recalcAll();
+    if (typeof render === 'function') render();
+    if (typeof renderCalendar === 'function') renderCalendar();
+  } else {
+    if (tabBar) { tabBar.style.display = 'none'; }
+    if (header) { header.style.display = 'none'; }
+    var dash = document.getElementById('pageDashboard');
+    if (dash) dash.classList.add('active');
+  }
 }
 
 function onAuthSuccess() {
@@ -504,11 +543,6 @@ function onAuthSuccess() {
 
 async function init() {
   try {
-    var dashboard = document.getElementById('pageDashboard');
-    if (dashboard) {
-      dashboard.classList.add('active');
-      dashboard.style.display = 'block';
-    }
     if (window.firebaseAuthApi && window.firebaseAuthApi.isReady()) {
       try {
         window.firebaseAuthUi && window.firebaseAuthUi.bindAuthEvents();
