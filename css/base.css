@@ -72,9 +72,31 @@ body {
 .tab.active { color: var(--accent-light); }
 .tab.active:active { transform: scale(0.92); }
 
+/* ===== VIEW CONTAINERS (SPA) ===== */
+.view-container {
+  padding: 0 16px 20px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+/* Ensure only active view affects layout */
+.page.hidden {
+  display: none !important;
+}
+
 /* ===== PAGES ===== */
-.page { display: none; padding: 0 16px 20px; max-width: 500px; margin: 0 auto; content-visibility: auto; contain-intrinsic-size: auto 500px; }
-.page.active { display: block; animation: fadeIn 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards; content-visibility: visible; }
+.page {
+  display: none;
+  padding: 0 16px 20px;
+  max-width: 500px;
+  margin: 0 auto;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+}
+.page.active {
+  display: block !important;
+  animation: fadeIn 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+  content-visibility: visible;
+}
 
 /* ===== MONTH SELECTOR ===== */
 .month-nav {

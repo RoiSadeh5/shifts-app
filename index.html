@@ -134,7 +134,7 @@
   </div>
 
   <!-- ==================== DASHBOARD ==================== -->
-  <div class="page active" id="pageDashboard">
+  <div class="page view-container active" id="pageDashboard" data-view-id="dashboard-view">
     <div class="month-nav">
       <button onclick="changeMonth(-1)">›</button>
       <span class="label" id="monthLabel"></span>
@@ -296,7 +296,7 @@
   </div>
 
   <!-- ==================== SAVINGS (חסכון פנסיוני) ==================== -->
-  <div class="page" id="pageSavings">
+  <div class="page view-container hidden" id="pageSavings">
     <div id="savingsSection" class="savings-section">
       <div class="section-label" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
         <span>חסכון פנסיוני</span>
@@ -327,7 +327,7 @@
   </div>
 
   <!-- ==================== ADD SHIFT ==================== -->
-  <div class="page" id="pageAdd">
+  <div class="page view-container hidden" id="pageAdd">
     <div id="templatesContainer"></div>
 
     <div class="section-label" style="margin-bottom:14px;">סוג משמרת</div>
@@ -416,7 +416,7 @@
   </div>
 
   <!-- ==================== CALENDAR ==================== -->
-  <div class="page" id="pageCalendar">
+  <div class="page view-container hidden" id="pageCalendar">
     <div class="month-nav" style="flex-wrap:wrap;gap:8px;">
       <button onclick="changeMonth(-1)">›</button>
       <span class="label" id="calMonthLabel"></span>
@@ -429,7 +429,7 @@
   </div>
 
   <!-- ==================== SETTINGS ==================== -->
-  <div class="page" id="pageSettings">
+  <div class="page view-container hidden" id="pageSettings">
     <div class="section-label" style="margin-bottom:14px;">אפליקציה</div>
     <div class="setting-toggle">
       <div class="st-right">
@@ -572,7 +572,7 @@
   </div>
 
   <!-- ==================== ANNUAL / FORM 106 ==================== -->
-  <div class="page" id="pageAnnual">
+  <div class="page view-container hidden" id="pageAnnual">
     <div class="annual-year-nav">
       <button onclick="changeAnnualYear(-1)">›</button>
       <span class="label" id="annualYearLabel"></span>

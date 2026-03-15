@@ -182,6 +182,7 @@
 }
 .btn-share:active { transform: scale(0.97); opacity: 0.9; }
 
+/* SPA view hiding – hidden views occupy zero space */
 .hidden { display: none !important; }
 
 /* ===== TOAST ===== */

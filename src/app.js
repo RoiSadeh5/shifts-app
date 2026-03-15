@@ -278,22 +278,34 @@ function saveUserNameSetting() {
   showToast('השם עודכן');
 }
 
-// ===== Tab Navigation =====
+// ===== Tab Navigation (SPA View Switcher) =====
+var VIEW_IDS = ['Dashboard', 'Add', 'Savings', 'Calendar', 'Annual', 'Settings'];
+window.switchView = function(viewId) {
+  var name = viewId;
+  if (typeof viewId === 'string' && viewId.indexOf('-') >= 0) {
+    var map = { 'dashboard-view': 'Dashboard', 'add-shift-view': 'Add', 'calendar-view': 'Calendar', 'savings-view': 'Savings', 'settings-view': 'Settings', 'annual-view': 'Annual' };
+    name = map[viewId] || viewId;
+  }
+  return switchTab(name);
+};
+
 function switchTab(name) {
   var targetPage = document.getElementById('page' + name);
   var targetTab = document.getElementById('tab' + name);
   if (!targetPage || !targetTab) return;
-  if (targetPage.classList.contains('active')) return;
+  if (targetPage.classList.contains('active') && !targetPage.classList.contains('hidden')) return;
   haptic(true);
   try { localStorage.setItem('shifter_current_tab', name); } catch (e) {}
   document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
   targetTab.classList.add('active');
   document.querySelectorAll('.page').forEach(function(p) {
     p.classList.remove('active');
-    p.style.display = '';
-    p.style.visibility = '';
+    p.classList.add('hidden');
+    p.removeAttribute('style');
   });
+  targetPage.classList.remove('hidden');
   targetPage.classList.add('active');
+  window.scrollTo(0, 0);
   if (name === 'Dashboard') {
     updateGreeting();
     requestAnimationFrame(function() { requestAnimationFrame(render); });
@@ -469,17 +481,16 @@ function showMainUIImmediately() {
   var header = document.querySelector('.header');
   document.querySelectorAll('.page').forEach(function(p) {
     p.classList.remove('active');
-    p.style.display = '';
-    p.style.visibility = '';
+    p.classList.add('hidden');
+    p.removeAttribute('style');
   });
   document.querySelectorAll('.tab').forEach(function(t) {
     t.classList.remove('active');
-    t.style.display = '';
-    t.style.visibility = '';
+    t.removeAttribute('style');
   });
   if (user) {
-    if (tabBar) { tabBar.style.display = ''; tabBar.style.visibility = ''; tabBar.style.opacity = ''; }
-    if (header) { header.style.display = ''; header.style.visibility = ''; }
+    if (tabBar) { tabBar.removeAttribute('style'); }
+    if (header) { header.removeAttribute('style'); }
     var currentTab = '';
     try { currentTab = localStorage.getItem('shifter_current_tab') || 'Dashboard'; } catch (e) { currentTab = 'Dashboard'; }
     var validTabs = ['Dashboard', 'Calendar', 'Savings', 'Settings', 'Add', 'Annual'];
@@ -487,6 +498,7 @@ function showMainUIImmediately() {
     var targetPage = document.getElementById('page' + currentTab);
     var targetTab = document.getElementById('tab' + currentTab);
     if (targetPage && targetTab) {
+      targetPage.classList.remove('hidden');
       targetPage.classList.add('active');
       targetTab.classList.add('active');
       if (currentTab === 'Dashboard') {
@@ -507,7 +519,7 @@ function showMainUIImmediately() {
     } else {
       var dash = document.getElementById('pageDashboard');
       var dashTab = document.getElementById('tabDashboard');
-      if (dash) dash.classList.add('active');
+      if (dash) { dash.classList.remove('hidden'); dash.classList.add('active'); }
       if (dashTab) dashTab.classList.add('active');
       if (typeof updateGreeting === 'function') updateGreeting();
       if (typeof render === 'function') requestAnimationFrame(function() { requestAnimationFrame(render); });
@@ -520,7 +532,7 @@ function showMainUIImmediately() {
     if (tabBar) { tabBar.style.display = 'none'; }
     if (header) { header.style.display = 'none'; }
     var dash = document.getElementById('pageDashboard');
-    if (dash) dash.classList.add('active');
+    if (dash) { dash.classList.remove('hidden'); dash.classList.add('active'); }
   }
 }
 
