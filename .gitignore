@@ -4,5 +4,4 @@ www/
 *.log
 .claude/
 config.js
-firebase-config.js
 scripts/service-account.json

@@ -1,14 +1,9 @@
 /**
- * Store – Firebase Firestore when signed in; IndexedDB + localStorage otherwise.
- * User-scoped: all data keyed by userId. Uses globals from app.js.
+ * Store – IndexedDB + localStorage (per-device). User-scoped keys via local user id.
  */
 var USER_ID_KEY = 'shifter_user_id';
-window.usingFirebaseStore = false;
 
 function getCurrentUserId() {
-  if (window.usingFirebaseStore && window.firebaseStore && window.firebaseStore.uid()) {
-    return window.firebaseStore.uid();
-  }
   try {
     var id = localStorage.getItem(USER_ID_KEY);
     if (id) return id;
@@ -37,10 +32,6 @@ function _registerUser(userId) {
 }
 
 function touchUserActivity() {
-  if (window.usingFirebaseStore && window.firebaseStore) {
-    window.firebaseStore.touchUserActivity();
-    return;
-  }
   var uid = getCurrentUserId();
   window.dbReady.then(function() {
     if (!dbInstance) return;
@@ -83,7 +74,7 @@ function _historyKey() { return 'main_' + getCurrentUserId(); }
 function _shiftsKeyFor(userId) { return 'main_' + (userId || getCurrentUserId()); }
 function _historyKeyFor(userId) { return 'main_' + (userId || getCurrentUserId()); }
 
-/** Read local data for a given userId (for migration). Returns Promise<{shifts,history,settings,profile,savings}> */
+/** Read local data for a given userId (admin / diagnostics). Returns Promise<{shifts,history,settings,profile,savings}> */
 window.getLocalDataForUserId = function(userId) {
   if (!userId) return Promise.resolve({ shifts: [], history: {}, settings: {}, profile: { username: null, leave: { vacation: 0, sick: 0 } }, savings: null });
   var pre = 'shifter_';
@@ -206,7 +197,6 @@ window.db = {
     });
   },
   getTemplates: function() {
-    if (window.usingFirebaseStore && window.firebaseStore) return window.firebaseStore.getTemplates();
     return new Promise(function(resolve) {
       if (!dbInstance) { resolve([]); return; }
       var uid = getCurrentUserId();
@@ -222,7 +212,6 @@ window.db = {
     });
   },
   saveTemplate: function(tpl) {
-    if (window.usingFirebaseStore && window.firebaseStore) return window.firebaseStore.saveTemplate(tpl);
     return new Promise(function(resolve, reject) {
       if (!dbInstance) { resolve(); return; }
       var obj = Object.assign({}, tpl, { userId: getCurrentUserId() });
@@ -233,7 +222,6 @@ window.db = {
     });
   },
   deleteTemplate: function(id) {
-    if (window.usingFirebaseStore && window.firebaseStore) return window.firebaseStore.deleteTemplate(id);
     return new Promise(function(resolve, reject) {
       if (!dbInstance) { resolve(); return; }
       var tx = dbInstance.transaction('templates', 'readwrite');
@@ -256,36 +244,6 @@ var SAVINGS_KEY = 'shifter_savings';
 var _cache = { shifts: [], history: {}, settings: {}, profile: {}, savings: null, ready: false };
 
 function initDataStore() {
-  if (window.usingFirebaseStore && window.firebaseStore) {
-    return window.firebaseStore.getShifts().then(function(arr) {
-      _cache.shifts = Array.isArray(arr) ? arr : [];
-      return window.firebaseStore.getHistory();
-    }).then(function(h) {
-      _cache.history = (h && typeof h === 'object') ? h : {};
-      return window.firebaseStore.getSettings();
-    }).then(function(s) {
-      _cache.settings = s || {};
-      return window.firebaseStore.getProfile();
-    }).then(function(p) {
-      _cache.profile = p || { username: null, leave: { vacation: 0, sick: 0 }, lastBackup: null };
-      return window.firebaseStore.getSavings();
-    }).then(function(sav) {
-      _cache.savings = sav;
-      touchUserActivity();
-      _cache.ready = true;
-      _applySettingsFromCache();
-      return _cache;
-    }).catch(function(e) {
-      console.warn('Firebase initDataStore fallback:', e);
-      _cache.shifts = [];
-      _cache.history = {};
-      _cache.settings = {};
-      _cache.profile = { username: null, leave: { vacation: 0, sick: 0 }, lastBackup: null };
-      _cache.savings = null;
-      _cache.ready = true;
-      return _cache;
-    });
-  }
   return new Promise(function(resolve) {
     if (typeof window === 'undefined' || !window.dbReady) {
       _loadFromLocalStorage();
@@ -339,21 +297,6 @@ function initDataStore() {
   });
 }
 
-function _applySettingsFromCache() {
-  var s = _cache.settings;
-  if (!s) return;
-  if (typeof userRates !== 'undefined') {
-    userRates.baseRate = s.baseRate || 75;
-    userRates.weekendMultiplier = s.weekendMul || 1.5;
-    userRates.vacationDayRate = s.vacationRate || 1750;
-    userRates.bonusQuarterly = s.bonus || 3500;
-  }
-  if (typeof creditPoints !== 'undefined' && s.creditPoints !== undefined) creditPoints = s.creditPoints;
-  if (typeof dedSettings !== 'undefined' && s.deductions) dedSettings = Object.assign({}, dedSettings, s.deductions);
-  if (typeof showCharts !== 'undefined' && s.showCharts !== undefined) showCharts = !!s.showCharts;
-  if (typeof notificationsEnabled !== 'undefined' && s.notificationsEnabled !== undefined) notificationsEnabled = !!s.notificationsEnabled;
-}
-
 function _loadFromLocalStorage() {
   try {
     _cache.shifts = JSON.parse(localStorage.getItem(_storageKey(SHIFTS_KEY))) || [];
@@ -362,6 +305,12 @@ function _loadFromLocalStorage() {
     _cache.shifts = [];
     _cache.history = {};
   }
+}
+
+function _writeLocalStorageSafely(baseKey, value) {
+  try {
+    localStorage.setItem(_storageKey(baseKey), JSON.stringify(value));
+  } catch (e) {}
 }
 
 function loadShifts() {
@@ -373,10 +322,6 @@ function loadShifts() {
 
 function saveShifts(list) {
   _cache.shifts = list || [];
-  if (window.usingFirebaseStore && window.firebaseStore) {
-    window.firebaseStore.saveShifts(_cache.shifts).catch(function() {});
-    return;
-  }
   if (typeof window !== 'undefined' && window.db) {
     window.db.saveShifts(_cache.shifts).catch(function() {
       try { localStorage.setItem(_storageKey(SHIFTS_KEY), JSON.stringify(list)); } catch (e) {}
@@ -395,10 +340,6 @@ function loadHistory() {
 
 function saveHistory(h) {
   _cache.history = h || {};
-  if (window.usingFirebaseStore && window.firebaseStore) {
-    window.firebaseStore.saveHistory(_cache.history).catch(function() {});
-    return;
-  }
   if (typeof window !== 'undefined' && window.db) {
     window.db.saveHistory(_cache.history).catch(function() {
       try { localStorage.setItem(_storageKey(HISTORY_KEY), JSON.stringify(h)); } catch (e) {}
@@ -423,10 +364,6 @@ function savePayslip(year, month, data) {
 }
 
 function loadSettings() {
-  if (window.usingFirebaseStore && _cache.settings && typeof _cache.settings === 'object') {
-    _applySettingsFromCache();
-    return;
-  }
   try {
     var s = JSON.parse(localStorage.getItem(_storageKey(SETTINGS_KEY)));
     if (s) {
@@ -443,13 +380,6 @@ function loadSettings() {
 }
 
 function saveDedSettings() {
-  if (window.usingFirebaseStore && window.firebaseStore) {
-    var existing = _cache.settings || {};
-    existing.deductions = dedSettings;
-    _cache.settings = existing;
-    window.firebaseStore.saveSettings(existing).then(function() { if (typeof render === 'function') render(); }).catch(function() {});
-    return;
-  }
   var existing = JSON.parse(localStorage.getItem(_storageKey(SETTINGS_KEY)) || '{}');
   existing.deductions = dedSettings;
   localStorage.setItem(_storageKey(SETTINGS_KEY), JSON.stringify(existing));
@@ -457,20 +387,13 @@ function saveDedSettings() {
 }
 
 function persistSettings(obj) {
-  if (window.usingFirebaseStore && window.firebaseStore) {
-    _cache.settings = obj || {};
-    window.firebaseStore.saveSettings(_cache.settings).catch(function() {});
-    return;
-  }
   try { localStorage.setItem(_storageKey(SETTINGS_KEY), JSON.stringify(obj)); } catch (e) {}
 }
 function getSettingsData() {
-  if (window.usingFirebaseStore && _cache.settings) return _cache.settings;
   try { return JSON.parse(localStorage.getItem(_storageKey(SETTINGS_KEY)) || '{}'); } catch (e) { return {}; }
 }
 
 function getLastBackupTime() {
-  if (window.usingFirebaseStore && _cache.profile && _cache.profile.lastBackup) return _cache.profile.lastBackup;
   return localStorage.getItem(_storageKey(BACKUP_TS_KEY)) || null;
 }
 
@@ -519,13 +442,9 @@ function exportData() {
   a.click();
   URL.revokeObjectURL(url);
   var now = new Date().toISOString();
-  if (window.usingFirebaseStore && window.firebaseStore) {
-    _cache.profile = _cache.profile || {};
-    _cache.profile.lastBackup = now;
-    window.firebaseStore.saveProfile(_cache.profile).catch(function() {});
-  } else {
+  try {
     localStorage.setItem(_storageKey(BACKUP_TS_KEY), now);
-  }
+  } catch (e) {}
   updateBackupDisplay();
   haptic();
   showToast('📤 הגיבוי יוצא בהצלחה');
@@ -573,10 +492,10 @@ function importData(e) {
           updateGreeting();
         }
         if (data.savings && typeof data.savings === 'object') {
-          try { localStorage.setItem(_storageKey(SAVINGS_KEY), JSON.stringify(data.savings)); } catch (e) {}
+          saveSavings(data.savings);
         }
         if (data.settings && typeof data.settings === 'object') {
-          localStorage.setItem(_storageKey(SETTINGS_KEY), JSON.stringify(data.settings));
+          persistSettings(data.settings);
           loadSettings();
           document.getElementById('settingBase').value = userRates.baseRate;
           document.getElementById('settingWeekend').value = userRates.weekendMultiplier;
@@ -629,48 +548,25 @@ function updateBackupDisplay() {
 }
 
 function loadLeaveBalances() {
-  if (window.usingFirebaseStore && _cache.profile && _cache.profile.leave) return _cache.profile.leave;
   try { return JSON.parse(localStorage.getItem(_storageKey(LEAVE_KEY))) || { vacation: 0, sick: 0 }; }
   catch (e) { return { vacation: 0, sick: 0 }; }
 }
 
 function saveLeaveBalances(balances) {
-  if (window.usingFirebaseStore && window.firebaseStore) {
-    _cache.profile = _cache.profile || {};
-    _cache.profile.leave = balances || { vacation: 0, sick: 0 };
-    window.firebaseStore.saveProfile(_cache.profile).catch(function() {});
-    return;
-  }
   try { localStorage.setItem(_storageKey(LEAVE_KEY), JSON.stringify(balances)); } catch (e) {}
 }
 
 function loadUserName() {
-  if (window.usingFirebaseStore && _cache.profile) return _cache.profile.username || null;
   return localStorage.getItem(_storageKey(USERNAME_KEY)) || null;
 }
 
 function saveUserName(name) {
-  if (window.usingFirebaseStore && window.firebaseStore) {
-    _cache.profile = _cache.profile || {};
-    _cache.profile.username = (name || '').trim() || null;
-    window.firebaseStore.saveProfile(_cache.profile).catch(function() {});
-    return;
-  }
   try { localStorage.setItem(_storageKey(USERNAME_KEY), (name || '').trim()); } catch (e) {}
 }
 
 /* ========== Savings ========== */
 var SAVINGS_DEFAULT_RETURN = 7;
 function loadSavings() {
-  if (window.usingFirebaseStore && _cache.savings) {
-    var s = _cache.savings;
-    var general = Array.isArray(s.general) ? s.general : [];
-    return {
-      pension: { balance: s.pension && s.pension.balance != null ? s.pension.balance : 0, returnRate: s.pension && s.pension.returnRate != null ? s.pension.returnRate : SAVINGS_DEFAULT_RETURN, contributions: (s.pension && s.pension.contributions) || {} },
-      study: { balance: s.study && s.study.balance != null ? s.study.balance : 0, returnRate: s.study && s.study.returnRate != null ? s.study.returnRate : SAVINGS_DEFAULT_RETURN, contributions: (s.study && s.study.contributions) || {} },
-      general: general
-    };
-  }
   try {
     var s = JSON.parse(localStorage.getItem(_storageKey(SAVINGS_KEY)));
     if (s) {
@@ -690,11 +586,6 @@ function loadSavings() {
 }
 
 function saveSavings(savings) {
-  if (window.usingFirebaseStore && window.firebaseStore) {
-    _cache.savings = savings;
-    window.firebaseStore.saveSavings(savings || {}).catch(function() {});
-    return;
-  }
   try { localStorage.setItem(_storageKey(SAVINGS_KEY), JSON.stringify(savings)); } catch (e) {}
 }
 

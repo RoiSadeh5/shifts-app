@@ -123,6 +123,7 @@ function applyTemplateToWeek(tplId) {
     added++;
   });
   saveShifts(existing);
+  if (typeof refreshCurrentView === 'function') refreshCurrentView();
   recalcAll();
   render();
   renderCalendar();
@@ -153,6 +154,7 @@ function applyTemplateToMonth(tplId) {
     added++;
   }
   saveShifts(existing);
+  if (typeof refreshCurrentView === 'function') refreshCurrentView();
   recalcAll();
   render();
   renderCalendar();

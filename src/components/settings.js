@@ -18,6 +18,7 @@ function saveSettings() {
     });
   }
   recalcAll();
+  if (typeof refreshCurrentView === 'function') refreshCurrentView();
   showToast('ההגדרות נשמרו');
 }
 
@@ -82,8 +83,8 @@ function clearAllData() {
   showConfirm('מחיקת כל הנתונים', 'בטוח שברצונך למחוק את כל המשמרות והתלושים? לא ניתן לשחזר.', () => {
     saveShifts([]);
     saveHistory({});
-    render();
-    renderCalendar();
+    if (typeof refreshCurrentView === 'function') refreshCurrentView();
+    else { render(); renderCalendar(); }
     if (typeof initCharts === 'function' && showCharts) initCharts();
     showToast('🗑️ כל הנתונים נמחקו');
   });

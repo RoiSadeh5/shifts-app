@@ -150,6 +150,7 @@ function addShift() {
   }
 
   recalcAll();
+  if (typeof refreshCurrentView === 'function') refreshCurrentView();
   bonusOn = false;
   document.getElementById('bonusToggle').classList.remove('on');
 }
@@ -167,7 +168,8 @@ function deleteShift(id) {
     saveLeaveBalances(leave);
   }
   recalcAll();
-  renderCalendar();
+  if (typeof refreshCurrentView === 'function') refreshCurrentView();
+  else renderCalendar();
 }
 
 function showResultPanel(r) {

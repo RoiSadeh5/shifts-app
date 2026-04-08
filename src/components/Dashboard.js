@@ -557,8 +557,8 @@ function savePayslipModal() {
     updateSavingsFromPayslip(currentYear, currentMonth, { gross: g, pension: enteredPension, study: enteredStudy });
   }
   closePayslipModal();
-  render();
-  if (typeof renderAnnual === 'function') renderAnnual();
+  if (typeof refreshCurrentView === 'function') refreshCurrentView();
+  else { render(); if (typeof renderAnnual === 'function') renderAnnual(); }
   showToast('✅ תלוש נשמר');
 }
 

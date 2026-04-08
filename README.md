@@ -55,7 +55,9 @@ npm test
 
 ## Data Storage
 
-All data lives in **localStorage** under three keys:
+The app is **local-only** (no cloud account or sync). Shifts and settings are stored on the device via **localStorage** and **IndexedDB**. Use **Export** in Settings for a JSON backup.
+
+Core keys in **localStorage** include:
 - `shifter_shifts` – array of shift objects (type, date, result, etc.)
 - `shifter_settings` – user rates + deduction toggles
 - `shifter_history` – past paycheck data for annual summary

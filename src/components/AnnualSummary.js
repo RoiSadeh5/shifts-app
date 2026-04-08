@@ -34,7 +34,7 @@ function buildAnnualMonthlyData(year) {
 
   for (let m = 0; m < 12; m++) {
     const shiftGross = getShiftGrossForMonth(year, m);
-    const hist = yearHistory[m] || {};
+    const hist = yearHistory[m] || yearHistory[String(m)] || {};
     const hasHistory = hist.gross > 0 || hist.incomeTax > 0 || hist.ni > 0;
     const hasShifts = shiftGross > 0;
 
@@ -42,9 +42,12 @@ function buildAnnualMonthlyData(year) {
     const ded = calcDeductions(gross);
     const tax = calcIncomeTax(gross);
 
+    const totalDed = (hasHistory ? (hist.incomeTax || 0) + (hist.ni || 0) + (hist.pension || 0) + (hist.study || 0) : (dedSettings.incomeTax ? tax.finalTax : 0) + ded.employee.ni + ded.employee.pension + ded.employee.study);
+    const net = (hasHistory && hist.actualNet && hist.actualNet > 0) ? hist.actualNet : (gross - totalDed);
     months.push({
       month: m,
       gross: gross,
+      net: net,
       incomeTax: hasHistory ? (hist.incomeTax || 0) : (dedSettings.incomeTax ? tax.finalTax : 0),
       ni: hasHistory ? (hist.ni || 0) : ded.employee.ni,
       pension: hasHistory ? (hist.pension || 0) : ded.employee.pension,
@@ -75,9 +78,10 @@ function renderAnnualCore() {
   var summary = SalaryEngine.calcAnnualSummary(monthlyData, creditPoints, dedSettings);
   var reportedMonths = monthlyData.filter(function(m) { return m.source !== 'empty'; }).length;
   var manualMonths = monthlyData.filter(function(m) { return m.source === 'manual'; });
+  var totalNet = monthlyData.reduce(function(s, m) { return s + (m.net || (m.gross || 0) - ((m.incomeTax || 0) + (m.ni || 0) + (m.pension || 0) + (m.study || 0))); }, 0);
 
   var f106Net = document.getElementById('f106Net');
-  if (f106Net) f106Net.textContent = fmtNIS(summary.totalNet);
+  if (f106Net) f106Net.textContent = fmtNIS(totalNet);
   var f106Sub = document.getElementById('f106Sub');
   if (f106Sub) f106Sub.textContent = reportedMonths > 0
     ? (reportedMonths + ' חודשים מדווחים · שיעור מס אפקטיבי ' + (summary.totalGross > 0 ? Math.round(summary.totalIncomeTax / summary.totalGross * 100) : 0) + '%')
@@ -146,12 +150,6 @@ function renderAnnualCore() {
         }
         studyValue = runningGross;
       }
-
-      console.log('Summary Debug:', {
-        annualYear, yearKey, latestMonthFound, taxValue, studyValue,
-        manualCount: manualMonths.length,
-        yearHistKeys: Object.keys(yearHist),
-      });
 
       const avgGross = manualMonths.reduce((s, m) => s + m.gross, 0) / manualMonths.length;
 

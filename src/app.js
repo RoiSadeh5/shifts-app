@@ -3,8 +3,6 @@
  * Shared state, constants, engine bridge, navigation, utilities, and init.
  * Loaded after src/logic/salaryEngine.js, before store and component scripts.
  */
-var isAdmin = false;
-
 // ===== Bridge to Salary Engine =====
 var SalaryEngine = window.SalaryEngine || { DEFAULTS: { baseRate: 75, weekendMultiplier: 1.5, vacationDayRate: 1750, bonusQuarterly: 3500 }, calculateShiftPay: function() { return {}; }, calcDeductions: function() { return { employee: {}, employer: {} }; }, calcIncomeTax: function() { return { finalTax: 0, tiers: [] }; }, calculateFixedMonthlyAdditions: function() { return { total: 0 }; } };
 
@@ -266,8 +264,8 @@ function completeOnboarding() {
 function updateAdminButtonLabel() {
   var btn = document.getElementById('adminPanelBtn');
   if (!btn) return;
-  var admin = typeof isAdminByUid === 'function' && isAdminByUid();
-  btn.textContent = admin ? 'לוח מנהל (God Mode)' : 'כניסה כמנהל';
+  var admin = typeof isAdminLoggedIn === 'function' && isAdminLoggedIn();
+  btn.textContent = admin ? 'לוח מנהל' : 'כניסה כמנהל';
 }
 
 function saveUserNameSetting() {
@@ -469,16 +467,34 @@ function recalcAll() {
   }
 }
 
-// ===== Initialization =====
-var _initDone = false;
+// ===== Refresh Current View (no tab switch) =====
+function refreshCurrentView() {
+  var active = document.querySelector('.page.active');
+  if (!active) return;
+  var id = active.id || '';
+  if (id === 'pageDashboard') {
+    if (typeof render === 'function') render();
+    if (typeof renderCalendar === 'function') renderCalendar();
+  } else if (id === 'pageCalendar') {
+    if (typeof renderCalendar === 'function') renderCalendar();
+  } else if (id === 'pageAnnual') {
+    if (typeof renderAnnual === 'function') renderAnnual();
+  } else if (id === 'pageAdd') {
+    if (typeof renderTemplates === 'function') renderTemplates();
+  } else if (id === 'pageSavings') {
+    if (typeof renderSavings === 'function') renderSavings();
+  } else if (id === 'pageSettings') {
+    if (typeof initSettingsView === 'function') initSettingsView();
+  }
+}
+
+// ===== Initialization (local-only storage) =====
 
 function showMainUIImmediately() {
-  window.firebaseAuthUi && window.firebaseAuthUi.hideAuthOverlay();
-  var migration = document.getElementById('migrationOverlay');
-  if (migration) { migration.style.display = 'none'; migration.classList.remove('visible'); }
-  var user = window.firebaseAuthApi && window.firebaseAuthApi.getCurrentUser();
   var tabBar = document.querySelector('.tab-bar');
   var header = document.querySelector('.header');
+  if (tabBar) tabBar.removeAttribute('style');
+  if (header) header.removeAttribute('style');
   document.querySelectorAll('.page').forEach(function(p) {
     p.classList.remove('active');
     p.classList.add('hidden');
@@ -488,163 +504,53 @@ function showMainUIImmediately() {
     t.classList.remove('active');
     t.removeAttribute('style');
   });
-  if (user) {
-    if (tabBar) { tabBar.removeAttribute('style'); }
-    if (header) { header.removeAttribute('style'); }
-    var currentTab = '';
-    try { currentTab = localStorage.getItem('shifter_current_tab') || 'Dashboard'; } catch (e) { currentTab = 'Dashboard'; }
-    var validTabs = ['Dashboard', 'Calendar', 'Savings', 'Settings', 'Add', 'Annual'];
-    if (validTabs.indexOf(currentTab) === -1) currentTab = 'Dashboard';
-    var targetPage = document.getElementById('page' + currentTab);
-    var targetTab = document.getElementById('tab' + currentTab);
-    if (targetPage && targetTab) {
-      targetPage.classList.remove('hidden');
-      targetPage.classList.add('active');
-      targetTab.classList.add('active');
-      if (currentTab === 'Dashboard') {
-        if (typeof updateGreeting === 'function') updateGreeting();
-        if (typeof render === 'function') requestAnimationFrame(function() { requestAnimationFrame(render); });
-      } else if (currentTab === 'Calendar' && typeof renderCalendar === 'function') {
-        requestAnimationFrame(function() { requestAnimationFrame(renderCalendar); });
-      } else if (currentTab === 'Annual' && typeof renderAnnual === 'function') {
-        requestAnimationFrame(function() { requestAnimationFrame(renderAnnual); });
-      } else if (currentTab === 'Add' && typeof renderTemplates === 'function') {
-        requestAnimationFrame(function() { requestAnimationFrame(renderTemplates); });
-      } else if (currentTab === 'Savings' && typeof renderSavings === 'function') {
-        requestAnimationFrame(function() { requestAnimationFrame(renderSavings); });
-      } else if (currentTab === 'Settings') {
-        if (typeof updateAdminButtonLabel === 'function') updateAdminButtonLabel();
-        if (typeof initSettingsView === 'function') initSettingsView();
-      }
-    } else {
-      var dash = document.getElementById('pageDashboard');
-      var dashTab = document.getElementById('tabDashboard');
-      if (dash) { dash.classList.remove('hidden'); dash.classList.add('active'); }
-      if (dashTab) dashTab.classList.add('active');
+  var currentTab = '';
+  try { currentTab = localStorage.getItem('shifter_current_tab') || 'Dashboard'; } catch (e) { currentTab = 'Dashboard'; }
+  var validTabs = ['Dashboard', 'Calendar', 'Savings', 'Settings', 'Add', 'Annual'];
+  if (validTabs.indexOf(currentTab) === -1) currentTab = 'Dashboard';
+  var targetPage = document.getElementById('page' + currentTab);
+  var targetTab = document.getElementById('tab' + currentTab);
+  if (targetPage && targetTab) {
+    targetPage.classList.remove('hidden');
+    targetPage.classList.add('active');
+    targetTab.classList.add('active');
+    if (currentTab === 'Dashboard') {
       if (typeof updateGreeting === 'function') updateGreeting();
       if (typeof render === 'function') requestAnimationFrame(function() { requestAnimationFrame(render); });
+    } else if (currentTab === 'Calendar' && typeof renderCalendar === 'function') {
+      requestAnimationFrame(function() { requestAnimationFrame(renderCalendar); });
+    } else if (currentTab === 'Annual' && typeof renderAnnual === 'function') {
+      requestAnimationFrame(function() { requestAnimationFrame(renderAnnual); });
+    } else if (currentTab === 'Add' && typeof renderTemplates === 'function') {
+      requestAnimationFrame(function() { requestAnimationFrame(renderTemplates); });
+    } else if (currentTab === 'Savings' && typeof renderSavings === 'function') {
+      requestAnimationFrame(function() { requestAnimationFrame(renderSavings); });
+    } else if (currentTab === 'Settings') {
+      if (typeof updateAdminButtonLabel === 'function') updateAdminButtonLabel();
+      if (typeof initSettingsView === 'function') initSettingsView();
     }
-    if (typeof updateMonthLabels === 'function') updateMonthLabels();
-    if (typeof recalcAll === 'function') recalcAll();
-    if (typeof render === 'function') render();
-    if (typeof renderCalendar === 'function') renderCalendar();
   } else {
-    if (tabBar) { tabBar.style.display = 'none'; }
-    if (header) { header.style.display = 'none'; }
     var dash = document.getElementById('pageDashboard');
+    var dashTab = document.getElementById('tabDashboard');
     if (dash) { dash.classList.remove('hidden'); dash.classList.add('active'); }
+    if (dashTab) dashTab.classList.add('active');
+    if (typeof updateGreeting === 'function') updateGreeting();
+    if (typeof render === 'function') requestAnimationFrame(function() { requestAnimationFrame(render); });
   }
-}
-
-function onAuthSuccess() {
-  if (_initDone) {
-    if (typeof initDataStore === 'function') {
-      initDataStore().then(function() {
-        if (typeof recalcAll === 'function') recalcAll();
-        if (typeof render === 'function') render();
-        if (typeof renderCalendar === 'function') renderCalendar();
-      });
-    }
-    return;
-  }
-  _initDone = true;
-  var logoutSection = document.getElementById('logoutSection');
-  if (logoutSection) logoutSection.style.display = window.usingFirebaseStore ? '' : 'none';
-  initCore();
+  if (typeof updateMonthLabels === 'function') updateMonthLabels();
+  if (typeof recalcAll === 'function') recalcAll();
+  if (typeof render === 'function') render();
+  if (typeof renderCalendar === 'function') renderCalendar();
 }
 
 async function init() {
   try {
-    if (window.firebaseAuthApi && window.firebaseAuthApi.isReady()) {
-      try {
-        window.firebaseAuthUi && window.firebaseAuthUi.bindAuthEvents();
-        window.firebaseAuthApi.onAuthStateChanged(function(user) {
-          try {
-            isAdmin = !!(user && user.uid === 'gJNnlyMuSkcZKHw99hvvv6kWfOO2');
-            if (user) {
-              var phoneMasked = user.phoneNumber ? window.firebaseAuthApi.maskPhone(user.phoneNumber) : '***';
-              window.firebaseStore && window.firebaseStore.ensureUserMeta(phoneMasked).catch(function() {});
-              var checkMigration = window.firebaseAuthUi && window.firebaseAuthUi.shouldShowMigrationPromptAsync;
-              if (typeof checkMigration === 'function') {
-                checkMigration().then(function(needsMigration) {
-                  if (needsMigration) {
-                    window.usingFirebaseStore = false;
-                    showMainUIImmediately();
-                    var logoutSection = document.getElementById('logoutSection');
-                    if (logoutSection) logoutSection.style.display = '';
-                    if (!_initDone) { _initDone = true; initCore(); }
-                    window.firebaseAuthUi.showMigrationOverlay();
-                  } else {
-                    window.usingFirebaseStore = true;
-                    showMainUIImmediately();
-                    var logoutSection = document.getElementById('logoutSection');
-                    if (logoutSection) logoutSection.style.display = '';
-                    if (typeof updateAdminButtonLabel === 'function') updateAdminButtonLabel();
-                    if (!_initDone) { _initDone = true; initCore(); }
-                  }
-                });
-              } else {
-                window.usingFirebaseStore = true;
-                showMainUIImmediately();
-                var logoutSection = document.getElementById('logoutSection');
-                if (logoutSection) logoutSection.style.display = '';
-                if (typeof updateAdminButtonLabel === 'function') updateAdminButtonLabel();
-                if (!_initDone) { _initDone = true; initCore(); }
-              }
-            } else {
-              showMainUIImmediately();
-              window.firebaseAuthUi.showAuthOverlay();
-            }
-          } catch (cbErr) {
-            console.error('onAuthStateChanged error:', cbErr);
-            if (typeof showToast === 'function') showToast('שגיאה באימות: ' + (cbErr && cbErr.message ? cbErr.message : String(cbErr)));
-          }
-        });
-        var user = window.firebaseAuthApi.getCurrentUser();
-        if (user) {
-          isAdmin = !!(user.uid === 'gJNnlyMuSkcZKHw99hvvv6kWfOO2');
-          var checkMigrationSync = window.firebaseAuthUi && window.firebaseAuthUi.shouldShowMigrationPromptAsync;
-          if (typeof checkMigrationSync === 'function') {
-            checkMigrationSync().then(function(needsMigration) {
-              if (needsMigration) {
-                window.usingFirebaseStore = false;
-                showMainUIImmediately();
-                var logoutSection = document.getElementById('logoutSection');
-                if (logoutSection) logoutSection.style.display = '';
-                if (!_initDone) { _initDone = true; initCore(); }
-                window.firebaseAuthUi.showMigrationOverlay();
-              } else {
-                window.usingFirebaseStore = true;
-                showMainUIImmediately();
-                onAuthSuccess();
-              }
-            });
-          } else {
-            window.usingFirebaseStore = true;
-            showMainUIImmediately();
-            onAuthSuccess();
-          }
-        } else {
-          showMainUIImmediately();
-          if (!_initDone) { _initDone = true; initCore(); }
-          window.firebaseAuthUi.showAuthOverlay();
-        }
-      } catch (fbErr) {
-        console.error('Firebase init error:', fbErr);
-        if (typeof showToast === 'function') showToast('שגיאה בחיבור Firebase: ' + (fbErr && fbErr.message ? fbErr.message : String(fbErr)));
-        _initDone = true;
-        await initCore();
-      }
-    } else {
-      _initDone = true;
-      await initCore();
-    }
+    await initCore();
   } catch (e) {
     console.error('Init error:', e);
     if (typeof showToast === 'function') showToast('שגיאה בטעינה: ' + (e && e.message ? e.message : String(e)));
     var t = document.getElementById('toast');
     if (t) { t.textContent = 'שגיאה בטעינה – נסה לרענן'; t.classList.add('show'); }
-    _initDone = true;
     await initCore();
   }
 }
@@ -653,14 +559,11 @@ async function initCore() {
   showMainUIImmediately();
   if (typeof loadSettings === 'function') loadSettings();
   if (typeof initDataStore === 'function') {
-    initDataStore().then(function() {
-      _applyInitFromData();
-    }).catch(function(e) {
+    try {
+      await initDataStore();
+    } catch (e) {
       console.warn('initDataStore fallback:', e);
-      _applyInitFromData();
-    });
-  } else {
-    _applyInitFromData();
+    }
   }
   _applyInitFromData();
 }
@@ -729,7 +632,7 @@ function _applyInitFromData() {
   var btnAdd = document.getElementById('btnAddToHome');
   if (btnAdd && isStandalone) btnAdd.style.display = 'none';
 
-  if (window.usingFirebaseStore && typeof updateAdminButtonLabel === 'function') updateAdminButtonLabel();
+  if (typeof updateAdminButtonLabel === 'function') updateAdminButtonLabel();
 
   // Tutorial first (first-time only), then name onboarding if needed
   if (!isTutorialComplete()) {
