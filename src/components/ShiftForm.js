@@ -155,8 +155,17 @@ function addShift() {
   document.getElementById('bonusToggle').classList.remove('on');
 }
 
-function deleteShift(id) {
-  if (!confirm('למחוק משמרת?')) return;
+function deleteShift(id, options) {
+  var opts = options || {};
+  if (!opts.skipConfirm) {
+    if (typeof showConfirm === 'function') {
+      showConfirm('מחיקת משמרת', 'למחוק את המשמרת?', function() {
+        deleteShift(id, { skipConfirm: true });
+      }, 'מחק');
+      return;
+    }
+    if (!confirm('למחוק משמרת?')) return;
+  }
   haptic(true);
   const shifts = loadShifts();
   const removed = shifts.find(s => s.id === id);

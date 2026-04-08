@@ -107,8 +107,26 @@ function showDayDetail(day) {
       '<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;">' +
       '<span style="font-size:22px;font-weight:700;color:var(--green)">' + fmtNIS(s.result.totalPay) + '</span>' +
       '<span style="color:var(--text-dim);font-size:13px;">' + (s.result.flatRate ? 'קבוע' : s.result.totalHours + ' שעות') + '</span>' +
-      '</div></div>';
+      '</div>' +
+      '<div style="margin-top:10px;display:flex;justify-content:flex-end;">' +
+      '<button class="si-delete" onclick="confirmDeleteShiftFromCalendar(' + day + ',' + s.id + ')">🗑️ מחק משמרת</button>' +
+      '</div>' +
+      '</div>';
   }).join('');
+}
+
+function confirmDeleteShiftFromCalendar(day, shiftId) {
+  if (typeof showConfirm !== 'function') {
+    deleteShift(shiftId, { skipConfirm: true });
+    renderCalendar();
+    showDayDetail(day);
+    return;
+  }
+  showConfirm('מחיקת משמרת', 'למחוק את המשמרת?', function() {
+    deleteShift(shiftId, { skipConfirm: true });
+    renderCalendar();
+    showDayDetail(day);
+  }, 'מחק');
 }
 
 function openAddForDate(dateStr) {
