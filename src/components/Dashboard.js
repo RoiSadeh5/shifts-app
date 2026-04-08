@@ -182,10 +182,12 @@ function renderCore() {
   if (breakdownSection) breakdownSection.style.display = simple ? 'none' : '';
 
   var chartsEl = document.getElementById('chartsContainer');
+  var dashPageEl = document.getElementById('pageDashboard');
+  var dashboardTabActive = dashPageEl && dashPageEl.classList.contains('active');
   if (chartsEl) {
     if (showCharts && !simple) {
       chartsEl.style.display = 'block';
-      if (typeof initCharts === 'function') {
+      if (dashboardTabActive && typeof initCharts === 'function') {
         setTimeout(initCharts, 80);
       }
     } else {

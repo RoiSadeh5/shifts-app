@@ -38,20 +38,6 @@ function staggerEntrance(container, itemSelector, opts) {
   });
 }
 
-function transitionPage(outPage, inPage, onComplete) {
-  if (!outPage || !inPage) { if (onComplete) onComplete(); return; }
-  outPage.classList.add('page-out');
-  inPage.classList.add('page-in');
-  inPage.style.display = 'block';
-  setTimeout(function() {
-    outPage.classList.remove('active', 'page-out');
-    inPage.classList.add('active');
-    inPage.classList.remove('page-in');
-    outPage.style.display = '';
-    if (onComplete) onComplete();
-  }, 150);
-}
-
 /* ========== Notifications & Payment Date ========== */
 function getPaymentDateForMonth(month, year) {
   var payMonth = month + 2;

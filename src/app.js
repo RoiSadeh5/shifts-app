@@ -277,16 +277,6 @@ function saveUserNameSetting() {
 }
 
 // ===== Tab Navigation (SPA View Switcher) =====
-var VIEW_IDS = ['Dashboard', 'Add', 'Savings', 'Calendar', 'Annual', 'Settings'];
-window.switchView = function(viewId) {
-  var name = viewId;
-  if (typeof viewId === 'string' && viewId.indexOf('-') >= 0) {
-    var map = { 'dashboard-view': 'Dashboard', 'add-shift-view': 'Add', 'calendar-view': 'Calendar', 'savings-view': 'Savings', 'settings-view': 'Settings', 'annual-view': 'Annual' };
-    name = map[viewId] || viewId;
-  }
-  return switchTab(name);
-};
-
 function switchTab(name) {
   var targetPage = document.getElementById('page' + name);
   var targetTab = document.getElementById('tab' + name);
@@ -537,10 +527,6 @@ function showMainUIImmediately() {
     if (typeof updateGreeting === 'function') updateGreeting();
     if (typeof render === 'function') requestAnimationFrame(function() { requestAnimationFrame(render); });
   }
-  if (typeof updateMonthLabels === 'function') updateMonthLabels();
-  if (typeof recalcAll === 'function') recalcAll();
-  if (typeof render === 'function') render();
-  if (typeof renderCalendar === 'function') renderCalendar();
 }
 
 async function init() {
@@ -556,7 +542,6 @@ async function init() {
 }
 
 async function initCore() {
-  showMainUIImmediately();
   if (typeof loadSettings === 'function') loadSettings();
   if (typeof initDataStore === 'function') {
     try {
@@ -566,6 +551,7 @@ async function initCore() {
     }
   }
   _applyInitFromData();
+  showMainUIImmediately();
 }
 
 function _applyInitFromData() {
@@ -616,16 +602,16 @@ function _applyInitFromData() {
     updateBackupDisplay();
   }
   initOfflineIndicator();
-  if (typeof requestIdleCallback !== 'undefined') {
-    requestIdleCallback(function() {
-      initServiceWorker();
-      initInstallHint();
-    }, { timeout: 2000 });
-  } else {
+  function deferNonCriticalInit() {
     initServiceWorker();
     initInstallHint();
+    if (notificationsEnabled && typeof schedulePeriodicCheck === 'function') schedulePeriodicCheck();
   }
-  if (notificationsEnabled && typeof schedulePeriodicCheck === 'function') schedulePeriodicCheck();
+  if (typeof requestIdleCallback !== 'undefined') {
+    requestIdleCallback(deferNonCriticalInit, { timeout: 2000 });
+  } else {
+    setTimeout(deferNonCriticalInit, 0);
+  }
 
   // Hide Add to Home button in Settings when already installed
   var isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator.standalone === true);
