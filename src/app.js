@@ -532,6 +532,18 @@ function showMainUIImmediately() {
   }
 }
 
+// ===== Global Error Boundary =====
+window.addEventListener('unhandledrejection', function(e) {
+  console.error('Unhandled promise rejection:', e.reason);
+  if (typeof showToast === 'function') showToast('⚠️ שגיאה לא צפויה – נסה לרענן');
+});
+
+window.onerror = function(msg, src, line) {
+  console.error('Uncaught error:', msg, 'at', src + ':' + line);
+  if (typeof showToast === 'function') showToast('⚠️ שגיאה לא צפויה – נסה לרענן');
+  return false;
+};
+
 async function init() {
   try {
     await initCore();

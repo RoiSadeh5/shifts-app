@@ -639,7 +639,7 @@ input[type="number"],
 .tutorial-skip {
   position: absolute;
   top: 12px;
-  left: 16px;
+  right: 16px;
   background: none;
   border: none;
   color: var(--text-dim);

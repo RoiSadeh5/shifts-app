@@ -129,11 +129,6 @@ function renderCore() {
   if (dedStudy) dedStudy.textContent = '-' + fmtNIS(ded.employee.study);
   const niVal = ded.employee.nationalInsurance != null ? ded.employee.nationalInsurance : ded.employee.ni;
   const healthVal = ded.employee.healthInsurance != null ? ded.employee.healthInsurance : 0;
-  if (totalGross > 0 && healthVal === 0) {
-    console.warn('Health Insurance Debug: gross=' + totalGross + ', ni toggle=' + dedSettings.ni,
-      ', healthInsurance=' + ded.employee.healthInsurance,
-      ', full ded=', JSON.stringify(ded.employee));
-  }
   var dedNI = document.getElementById('dedNI');
   if (dedNI) dedNI.textContent = '-' + fmtNIS(niVal);
   var dedHealth = document.getElementById('dedHealth');
@@ -348,12 +343,6 @@ function renderMonthlyProjection(currentGross, monthShifts) {
     scanMonth--;
   }
 
-  console.log('Projection Debug:', {
-    currentGross, dayOfMonth, daysInMonth,
-    historyFound: monthlyGrossHistory.length,
-    historyValues: monthlyGrossHistory,
-  });
-
   const proj = SalaryEngine.getMonthlyProjection(
     currentGross, dayOfMonth, daysInMonth, creditPoints, dedSettings,
     { monthlyGrossHistory, baseRate: userRates.baseRate }
@@ -363,8 +352,6 @@ function renderMonthlyProjection(currentGross, monthShifts) {
     netProjEl.style.display = 'none';
     return;
   }
-
-  console.log('Projection Result:', proj);
 
   grossProjEl.textContent = `צפי לסוף חודש: ${fmtNIS(proj.projectedGross)} (דיוק: ${proj.precision}%)`;
   grossProjEl.style.display = '';

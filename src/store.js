@@ -391,7 +391,8 @@ function loadSettings() {
 }
 
 function saveDedSettings() {
-  var existing = JSON.parse(localStorage.getItem(_storageKey(SETTINGS_KEY)) || '{}');
+  var existing = {};
+  try { existing = JSON.parse(localStorage.getItem(_storageKey(SETTINGS_KEY)) || '{}'); } catch (e) {}
   existing.deductions = dedSettings;
   localStorage.setItem(_storageKey(SETTINGS_KEY), JSON.stringify(existing));
   render();

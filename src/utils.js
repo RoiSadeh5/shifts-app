@@ -72,8 +72,11 @@ function checkAndNotify() {
   }
 }
 
+var _notifyIntervalId = null;
+
 function schedulePeriodicCheck() {
   if (!notificationsEnabled) return;
   requestNotificationPermission(function(p) { if (p === 'granted') checkAndNotify(); });
-  setInterval(checkAndNotify, 24 * 60 * 60 * 1000);
+  if (_notifyIntervalId) clearInterval(_notifyIntervalId);
+  _notifyIntervalId = setInterval(checkAndNotify, 24 * 60 * 60 * 1000);
 }
