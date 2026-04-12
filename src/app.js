@@ -445,6 +445,9 @@ function initOfflineIndicator() {
 // ===== Recalculate All Shifts =====
 function recalcAll() {
   try {
+    if (typeof _cache !== 'undefined' && _cache && _cache.ready === false) {
+      return;
+    }
     var shifts = typeof loadShifts === 'function' ? loadShifts() : [];
     if (!Array.isArray(shifts)) return;
     for (var i = 0; i < shifts.length; i++) {

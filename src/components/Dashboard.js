@@ -279,18 +279,25 @@ function renderCore() {
   listEl.innerHTML = monthShifts.map(function(s) {
     const p = s.date.split('-');
     const d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+    const isHol = s.result && (s.result.isHoliday || s.result.isErevChag);
+    const holName = s.result && s.result.holidayName ? s.result.holidayName : '';
     return `
       <div class="shift-item">
         <div class="si-right">
-          <span class="type-badge ${badgeCls[s.type]}">${typeNames[s.type]}</span>
-          <span class="si-date">יום ${dayNamesFull[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}</span>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span class="type-badge ${badgeCls[s.type]}">${typeNames[s.type]}</span>
+            ${isHol ? `<span class="badge-chag" title="${holName}">🕍 חג</span>` : ''}
+          </div>
+          <span class="si-date">יום ${dayNamesFull[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}${isHol && holName ? ' · ' + holName : ''}</span>
+          ${s.note ? `<span class="si-notes">${s.note}</span>` : ''}
         </div>
         <div class="si-left">
           <div>
             <div class="si-pay">${fmtNIS(s.result.totalPay)}</div>
             <div class="si-hours">${s.result.flatRate ? 'קבוע' : s.result.totalHours + ' שעות'}</div>
           </div>
-          <button class="si-delete" onclick="deleteShift(${s.id})">✕</button>
+          <button class="si-edit" onclick="openEditShift(${s.id})" aria-label="ערוך משמרת">✏️</button>
+          <button class="si-delete" onclick="deleteShift(${s.id})" aria-label="מחק משמרת">✕</button>
         </div>
       </div>`;
   }).join('');
@@ -596,4 +603,106 @@ function shareWhatsApp() {
   });
 
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+}
+
+// ===== Edit Shift Modal =====
+
+var _editingShiftId = null;
+
+function openEditShift(id) {
+  var shifts = loadShifts();
+  var shift = shifts.find(function(s) { return s.id === id; });
+  if (!shift) return;
+  _editingShiftId = id;
+
+  document.getElementById('editShiftType').value = shift.type;
+  document.getElementById('editShiftDate').value = shift.date;
+  document.getElementById('editShiftNote').value = shift.note || '';
+
+  var minusFields = document.getElementById('editMinusFields');
+  if (shift.type === 'minus') {
+    minusFields.classList.remove('hidden');
+    document.getElementById('editStartTime').value = shift.startTime || '08:00';
+    document.getElementById('editEndTime').value = shift.endTime || '16:00';
+  } else {
+    minusFields.classList.add('hidden');
+  }
+
+  var overlay = document.getElementById('editShiftOverlay');
+  overlay.style.display = 'flex';
+  requestAnimationFrame(function() { overlay.classList.add('visible'); });
+}
+
+function closeEditShiftModal() {
+  var overlay = document.getElementById('editShiftOverlay');
+  overlay.classList.remove('visible');
+  setTimeout(function() { overlay.style.display = 'none'; }, 200);
+  _editingShiftId = null;
+}
+
+function onEditShiftTypeChange() {
+  var type = document.getElementById('editShiftType').value;
+  document.getElementById('editMinusFields').classList.toggle('hidden', type !== 'minus');
+}
+
+function saveEditShift() {
+  if (!_editingShiftId) return;
+  var newType = document.getElementById('editShiftType').value;
+  var newDate = document.getElementById('editShiftDate').value;
+  var newNote = (document.getElementById('editShiftNote').value || '').trim();
+
+  if (!newDate) { showToast('⚠️ בחר תאריך'); return; }
+
+  var shifts = loadShifts();
+  var idx = shifts.findIndex(function(s) { return s.id === _editingShiftId; });
+  if (idx === -1) { showToast('⚠️ משמרת לא נמצאה'); return; }
+  var oldShift = shifts[idx];
+
+  if (newDate !== oldShift.date) {
+    var dup = shifts.find(function(s) { return s.date === newDate && s.id !== _editingShiftId; });
+    if (dup) { showToast('⚠️ כבר קיימת משמרת בתאריך הזה'); return; }
+  }
+
+  // Update leave balances if type changed
+  var oldIsLeave = oldShift.type === 'vacation' || oldShift.type === 'sick';
+  var newIsLeave = newType === 'vacation' || newType === 'sick';
+  if (oldIsLeave || newIsLeave) {
+    var leave = loadLeaveBalances();
+    if (oldIsLeave) {
+      if (oldShift.type === 'vacation') leave.vacation++;
+      if (oldShift.type === 'sick') leave.sick++;
+    }
+    if (newIsLeave) {
+      var avail = newType === 'vacation' ? leave.vacation : leave.sick;
+      if (avail <= 0) {
+        showToast('⚠️ אין מספיק ימי ' + (newType === 'vacation' ? 'חופש' : 'מחלה'));
+        return;
+      }
+      if (newType === 'vacation') leave.vacation--;
+      if (newType === 'sick') leave.sick--;
+    }
+    saveLeaveBalances(leave);
+  }
+
+  var updatedShift = Object.assign({}, oldShift, {
+    type: newType,
+    date: newDate,
+    note: newNote || undefined,
+  });
+  if (newType === 'minus') {
+    updatedShift.startTime = document.getElementById('editStartTime').value;
+    updatedShift.endTime = document.getElementById('editEndTime').value;
+  } else {
+    delete updatedShift.startTime;
+    delete updatedShift.endTime;
+  }
+  updatedShift.result = calculateShiftPay(updatedShift);
+  shifts[idx] = updatedShift;
+
+  saveShifts(shifts);
+  closeEditShiftModal();
+  recalcAll();
+  if (typeof refreshCurrentView === 'function') refreshCurrentView();
+  haptic();
+  showToast('✅ המשמרת עודכנה');
 }

@@ -371,6 +371,11 @@
       <div class="toggle" id="bonusToggle" onclick="toggleBonus()"></div>
     </div>
 
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>הערה (אופציונלי)</label>
+      <input type="text" id="shiftNote" placeholder="הוסף הערה למשמרת..." inputmode="text" autocomplete="off">
+    </div>
+
     <button class="btn-add" onclick="addShift()">➕ הוסף משמרת</button>
 
     <div class="result-panel" id="resultPanel">
@@ -639,8 +644,57 @@
     </div>
   </div>
 
+  <!-- Edit Shift Modal -->
+  <div class="ps-overlay" id="editShiftOverlay" style="display:none" onclick="if(event.target===this)closeEditShiftModal()">
+    <div class="ps-box">
+      <div class="ps-title">עריכת משמרת</div>
+      <div class="ps-field">
+        <label>סוג משמרת</label>
+        <select id="editShiftType" onchange="onEditShiftTypeChange()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:14px;font-family:'Heebo',sans-serif;color:var(--text);direction:rtl;outline:none;">
+          <option value="plus">⚡ פלוס (06:00–06:00+)</option>
+          <option value="training">🎯 אימון (06:00–20:00)</option>
+          <option value="vacation">🏖️ חופש (1,750 ₪)</option>
+          <option value="sick">🏥 מחלה (1,750 ₪)</option>
+          <option value="minus">🕐 ידני</option>
+        </select>
+      </div>
+      <div class="ps-field">
+        <label>תאריך</label>
+        <input type="date" id="editShiftDate">
+      </div>
+      <div id="editMinusFields" class="hidden">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="ps-field">
+            <label>שעת התחלה</label>
+            <input type="time" id="editStartTime" value="08:00">
+          </div>
+          <div class="ps-field">
+            <label>שעת סיום</label>
+            <input type="time" id="editEndTime" value="16:00">
+          </div>
+        </div>
+      </div>
+      <div class="ps-field">
+        <label>הערה (אופציונלי)</label>
+        <input type="text" id="editShiftNote" placeholder="הוסף הערה..." inputmode="text" autocomplete="off">
+      </div>
+      <div class="ps-btns" style="flex-direction:column;">
+        <div style="display:flex;gap:10px;">
+          <button class="ps-cancel" onclick="closeEditShiftModal()">ביטול</button>
+          <button class="ps-save" onclick="saveEditShift()">💾 שמור</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div class="toast" id="toast"></div>
+
+  <!-- Undo Delete Toast -->
+  <div class="undo-toast" id="undoToast">
+    <span class="undo-toast-msg">🗑️ משמרת נמחקה</span>
+    <button class="undo-toast-btn" onclick="undoDelete()">בטל</button>
+  </div>
 
   <!-- General Savings Add/Edit Modal -->
   <div class="confirm-overlay" id="generalSavingsOverlay" style="display:none" onclick="if(event.target===this)closeGeneralSavingsModal()">
@@ -729,10 +783,13 @@
   <script defer src="./src/components/settings.js"></script>
   <script defer src="./src/admin.js"></script>
   <script>
+    function _runAppInit() {
+      if (typeof init === 'function') init();
+    }
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
+      document.addEventListener('DOMContentLoaded', _runAppInit);
     } else {
-      init();
+      _runAppInit();
     }
 
     // Pull-to-refresh: only when scroll at top, minimal interference with normal scroll

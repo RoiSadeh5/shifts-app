@@ -3,6 +3,43 @@
  * Depends on globals from app.js and dataManager.js.
  */
 
+var _pendingUndoShift = null;
+var _undoTimer = null;
+
+function showUndoToast(msg) {
+  var t = document.getElementById('undoToast');
+  if (!t) return;
+  var msgEl = t.querySelector('.undo-toast-msg');
+  if (msgEl) msgEl.textContent = msg;
+  t.classList.add('show');
+}
+
+function hideUndoToast() {
+  var t = document.getElementById('undoToast');
+  if (t) t.classList.remove('show');
+}
+
+function undoDelete() {
+  if (!_pendingUndoShift) return;
+  if (_undoTimer) { clearTimeout(_undoTimer); _undoTimer = null; }
+  var shift = _pendingUndoShift;
+  _pendingUndoShift = null;
+  hideUndoToast();
+  var shifts = loadShifts();
+  if (shift.type === 'vacation' || shift.type === 'sick') {
+    var leave = loadLeaveBalances();
+    if (shift.type === 'vacation') leave.vacation--;
+    if (shift.type === 'sick') leave.sick--;
+    saveLeaveBalances(leave);
+  }
+  shifts.push(shift);
+  saveShifts(shifts);
+  recalcAll();
+  if (typeof refreshCurrentView === 'function') refreshCurrentView();
+  showToast('↩️ המשמרת שוחזרה');
+  haptic();
+}
+
 function selectType(type) {
   selectedType = type;
   document.querySelectorAll('.type-btn').forEach(b =>
@@ -95,7 +132,8 @@ function addShift() {
       return;
     }
 
-    const shift = { id: Date.now() + idx, type: selectedType, date: dateStr, hasBonus: bonusOn && idx === 0 };
+    var shiftNote = (document.getElementById('shiftNote') || {}).value || '';
+    const shift = { id: Date.now() + idx, type: selectedType, date: dateStr, hasBonus: bonusOn && idx === 0, note: shiftNote.trim() || undefined };
 
     if (selectedType === 'minus') {
       shift.startTime = startTime;
@@ -153,25 +191,18 @@ function addShift() {
   if (typeof refreshCurrentView === 'function') refreshCurrentView();
   bonusOn = false;
   document.getElementById('bonusToggle').classList.remove('on');
+  var noteEl = document.getElementById('shiftNote');
+  if (noteEl) noteEl.value = '';
 }
 
-function deleteShift(id, options) {
-  var opts = options || {};
-  if (!opts.skipConfirm) {
-    if (typeof showConfirm === 'function') {
-      showConfirm('מחיקת משמרת', 'למחוק את המשמרת?', function() {
-        deleteShift(id, { skipConfirm: true });
-      }, 'מחק');
-      return;
-    }
-    if (!confirm('למחוק משמרת?')) return;
-  }
+function deleteShift(id) {
   haptic(true);
-  const shifts = loadShifts();
-  const removed = shifts.find(s => s.id === id);
-  saveShifts(shifts.filter(s => s.id !== id));
-  if (removed && (removed.type === 'vacation' || removed.type === 'sick')) {
-    const leave = loadLeaveBalances();
+  var shifts = loadShifts();
+  var removed = shifts.find(function(s) { return s.id === id; });
+  if (!removed) return;
+  saveShifts(shifts.filter(function(s) { return s.id !== id; }));
+  if (removed.type === 'vacation' || removed.type === 'sick') {
+    var leave = loadLeaveBalances();
     if (removed.type === 'vacation') leave.vacation++;
     if (removed.type === 'sick') leave.sick++;
     saveLeaveBalances(leave);
@@ -179,6 +210,14 @@ function deleteShift(id, options) {
   recalcAll();
   if (typeof refreshCurrentView === 'function') refreshCurrentView();
   else renderCalendar();
+  // Undo window
+  _pendingUndoShift = removed;
+  if (_undoTimer) clearTimeout(_undoTimer);
+  showUndoToast('🗑️ משמרת נמחקה');
+  _undoTimer = setTimeout(function() {
+    _pendingUndoShift = null;
+    hideUndoToast();
+  }, 5000);
 }
 
 function showResultPanel(r) {
@@ -193,7 +232,8 @@ function showResultPanel(r) {
       <div class="rp-item"><div class="rp-label">לילה (מנוחה)</div><div class="rp-val">₪${r.breakdown.rest}</div></div>
       <div class="rp-item"><div class="rp-label">סופ"ש + לילה</div><div class="rp-val">₪${r.breakdown.weekendRest}</div></div>
       ${r.bonusApplied ? `<div class="rp-item" style="grid-column:1/-1"><div class="rp-label">בונוס רבעוני</div><div class="rp-val" style="color:var(--green)">+₪${r.bonusApplied.toLocaleString()}</div></div>` : ''}
-      ${r.mealAllowance ? `<div class="rp-item" style="grid-column:1/-1"><div class="rp-label">אש״ל</div><div class="rp-val" style="color:var(--orange)">+₪${r.mealAllowance}</div></div>` : ''}`;
+      ${r.mealAllowance ? `<div class="rp-item" style="grid-column:1/-1"><div class="rp-label">אש״ל</div><div class="rp-val" style="color:var(--orange)">+₪${r.mealAllowance}</div></div>` : ''}
+      ${(r.isHoliday || r.isErevChag) ? `<div class="rp-item" style="grid-column:1/-1"><div class="rp-label">${r.isHoliday ? '🕍 יום חג' : '🕍 ערב חג'}</div><div class="rp-val" style="color:#fbbf24">${r.holidayName || 'חג'} · 150%</div></div>` : ''}`;
   } else { grid.innerHTML = ''; }
   panel.classList.add('show');
 }

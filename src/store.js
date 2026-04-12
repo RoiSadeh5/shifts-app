@@ -252,7 +252,10 @@ function initDataStore() {
       return;
     }
     window.dbReady.then(function() {
-      if (!window.db) {
+      // window.db always exists; dbInstance is null when IndexedDB failed / unavailable.
+      // Without this guard getShifts/getHistory resolve null and we set _cache to [] / {},
+      // then recalcAll persists empty data and wipes real localStorage/IDB (Phase 2 regression).
+      if (!dbInstance) {
         _loadFromLocalStorage();
         _cache.ready = true;
         resolve();
@@ -266,21 +269,29 @@ function initDataStore() {
         if (!hasIdbShifts && lsShifts.length > 0) {
           _cache.shifts = lsShifts;
           window.db.saveShifts(lsShifts).catch(function() {});
+        } else if (Array.isArray(arr)) {
+          _cache.shifts = arr;
         } else {
-          _cache.shifts = arr || [];
+          _loadFromLocalStorage();
         }
         touchUserActivity();
         return window.db.getHistory();
       }).then(function(h) {
-        var hasIdbHistory = h && Object.keys(h).length > 0;
+        var hasIdbHistory = h && typeof h === 'object' && Object.keys(h).length > 0;
         var hk = _storageKey(HISTORY_KEY);
         var lsHistory = {};
         try { lsHistory = JSON.parse(localStorage.getItem(hk)) || {}; } catch (e) {}
         if (!hasIdbHistory && Object.keys(lsHistory).length > 0) {
           _cache.history = lsHistory;
           window.db.saveHistory(lsHistory).catch(function() {});
+        } else if (h && typeof h === 'object') {
+          _cache.history = h;
         } else {
-          _cache.history = h || {};
+          try {
+            _cache.history = JSON.parse(localStorage.getItem(hk)) || {};
+          } catch (e) {
+            _cache.history = {};
+          }
         }
         _cache.ready = true;
         resolve();

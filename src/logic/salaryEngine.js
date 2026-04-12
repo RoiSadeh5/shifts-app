@@ -60,6 +60,45 @@
   };
 
   // ================================================================
+  //  ISRAELI HOLIDAYS 2026
+  // ================================================================
+
+  // chag = holiday day (150% rate); erev = holiday eve (150% rate)
+  const HOLIDAYS_2026 = [
+    { date: '2026-03-02', type: 'erev', name: 'ערב פורים' },
+    { date: '2026-03-03', type: 'chag', name: 'פורים' },
+    { date: '2026-04-01', type: 'erev', name: 'ערב פסח' },
+    { date: '2026-04-02', type: 'chag', name: 'פסח (יום א\')' },
+    { date: '2026-04-07', type: 'erev', name: 'ערב שביעי של פסח' },
+    { date: '2026-04-08', type: 'chag', name: 'שביעי של פסח' },
+    { date: '2026-04-21', type: 'erev', name: 'יום הזיכרון' },
+    { date: '2026-04-22', type: 'chag', name: 'יום העצמאות' },
+    { date: '2026-05-21', type: 'erev', name: 'ערב שבועות' },
+    { date: '2026-05-22', type: 'chag', name: 'שבועות' },
+    { date: '2026-09-11', type: 'erev', name: 'ערב ראש השנה' },
+    { date: '2026-09-12', type: 'chag', name: 'ראש השנה' },
+    { date: '2026-09-13', type: 'chag', name: 'ראש השנה (יום ב\')' },
+    { date: '2026-09-20', type: 'erev', name: 'ערב יום כיפור' },
+    { date: '2026-09-21', type: 'chag', name: 'יום כיפור' },
+    { date: '2026-09-25', type: 'erev', name: 'ערב סוכות' },
+    { date: '2026-09-26', type: 'chag', name: 'סוכות' },
+    { date: '2026-10-02', type: 'erev', name: 'ערב שמיני עצרת' },
+    { date: '2026-10-03', type: 'chag', name: 'שמיני עצרת / שמחת תורה' },
+  ];
+
+  /**
+   * Get holiday info for a given YYYY-MM-DD date string.
+   * @param {string} dateStr
+   * @returns {{ type: 'chag'|'erev', name: string } | null}
+   */
+  function getHolidayForDate(dateStr) {
+    for (var i = 0; i < HOLIDAYS_2026.length; i++) {
+      if (HOLIDAYS_2026[i].date === dateStr) return HOLIDAYS_2026[i];
+    }
+    return null;
+  }
+
+  // ================================================================
   //  SHIFT PAY
   // ================================================================
 
@@ -67,13 +106,14 @@
    * Hourly rate at a given moment.
    * Weekend: Fri 16:00 → Sun 06:00 (150%)
    * Rest:    00:00 → 06:00 daily (50% of applicable rate)
+   * Holiday: forceHoliday flag treats all hours as weekend rate (150%)
    */
   function getRateAt(date, rates) {
     const r = { ...DEFAULTS, ...rates };
     const day = date.getDay();
     const hour = date.getHours() + date.getMinutes() / 60;
 
-    const isWeekend = (day === 5 && hour >= 16) || (day === 6) || (day === 0 && hour < 6);
+    const isWeekend = r.forceHoliday || (day === 5 && hour >= 16) || (day === 6) || (day === 0 && hour < 6);
     const isRest = hour >= 0 && hour < 6;
 
     let rate = isWeekend ? r.baseRate * r.weekendMultiplier : r.baseRate;
@@ -125,8 +165,14 @@
     const r = { ...DEFAULTS, ...rates };
     const type = shift.type;
 
+    // Holiday detection
+    const holidayInfo = getHolidayForDate(shift.date);
+    const isHoliday = !!(holidayInfo && holidayInfo.type === 'chag');
+    const isErevChag = !!(holidayInfo && holidayInfo.type === 'erev');
+    const holidayName = holidayInfo ? holidayInfo.name : null;
+
     if (type === 'vacation' || type === 'sick') {
-      return { shiftType: type, totalPay: r.vacationDayRate, totalHours: 0, flatRate: true, mealAllowance: 0 };
+      return { shiftType: type, totalPay: r.vacationDayRate, totalHours: 0, flatRate: true, mealAllowance: 0, isHoliday, isErevChag, holidayName };
     }
 
     const parts = shift.date.split('-');
@@ -146,10 +192,12 @@
       end = new Date(year, month, day, eh, em, 0);
       if (end <= start) end.setDate(end.getDate() + 1);
     } else {
-      return { shiftType: type, error: true, totalPay: 0, totalHours: 0, mealAllowance: 0 };
+      return { shiftType: type, error: true, totalPay: 0, totalHours: 0, mealAllowance: 0, isHoliday, isErevChag, holidayName };
     }
 
-    const result = calculatePayForRange(start, end, rates);
+    // Apply holiday rate: treat all hours as weekend rate (150%)
+    const effectiveRates = (isHoliday || isErevChag) ? { ...rates, forceHoliday: true } : rates;
+    const result = calculatePayForRange(start, end, effectiveRates);
     const bonus = shift.hasBonus ? r.bonusQuarterly : 0;
     const mealAllowance = Math.floor(result.totalHours / 6) * MEAL_ALLOWANCE_PER_6H;
 
@@ -160,6 +208,9 @@
       breakdown: result.breakdown,
       bonusApplied: bonus,
       mealAllowance: mealAllowance,
+      isHoliday,
+      isErevChag,
+      holidayName,
     };
   }
 
@@ -535,6 +586,8 @@
   }
 
   // ===== Export =====
+  exports.HOLIDAYS_2026 = HOLIDAYS_2026;
+  exports.getHolidayForDate = getHolidayForDate;
   exports.DEFAULTS = DEFAULTS;
   exports.DEDUCTION_CONSTANTS = DEDUCTION_CONSTANTS;
   exports.TAX_BRACKETS_MONTHLY = TAX_BRACKETS_MONTHLY;
