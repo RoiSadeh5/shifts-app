@@ -14,6 +14,37 @@ const teamSizes = ["1–10", "11–50", "51–200", "200+"];
 export default function DemoForm() {
   const [submitted, setSubmitted] = useState(false);
   const [size, setSize] = useState(teamSizes[1]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    const form = new FormData(e.currentTarget);
+    try {
+      const res = await fetch("/api/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.get("name"),
+          email: form.get("email"),
+          company: form.get("company"),
+          title: form.get("title"),
+          teamSize: size,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "Something went wrong. Please try again.");
+      }
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   if (submitted) {
     return (
@@ -53,11 +84,7 @@ export default function DemoForm() {
 
   return (
     <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        // Demo only — no backend wired up yet.
-        setSubmitted(true);
-      }}
+      onSubmit={handleSubmit}
       className="p-8 rounded-3xl flex flex-col gap-5"
       style={{
         background: "var(--surface)",
@@ -128,18 +155,32 @@ export default function DemoForm() {
         </div>
       </div>
 
+      {error && (
+        <p
+          className="text-sm px-4 py-3 rounded-xl"
+          style={{
+            background: "rgba(239,68,68,0.1)",
+            border: "1px solid rgba(239,68,68,0.3)",
+            color: "#FCA5A5",
+          }}
+        >
+          {error}
+        </p>
+      )}
+
       <button
         type="submit"
-        className="glow-accent mt-2 px-7 py-3.5 rounded-xl font-semibold text-sm text-white transition-all"
+        disabled={submitting}
+        className="glow-accent mt-2 px-7 py-3.5 rounded-xl font-semibold text-sm text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
         style={{ background: "var(--accent)" }}
-        onMouseEnter={(e) =>
-          (e.currentTarget.style.background = "var(--accent-hover)")
-        }
+        onMouseEnter={(e) => {
+          if (!submitting) e.currentTarget.style.background = "var(--accent-hover)";
+        }}
         onMouseLeave={(e) =>
           (e.currentTarget.style.background = "var(--accent)")
         }
       >
-        Request my demo
+        {submitting ? "Sending…" : "Request my demo"}
       </button>
 
       <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>

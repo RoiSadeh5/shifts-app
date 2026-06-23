@@ -6,13 +6,14 @@ import Logo from "./Logo";
 const footerLinks: Record<string, { label: string; href: string }[]> = {
   Product: [
     { label: "Overview", href: "/product" },
+    { label: "How it works", href: "/how-it-works" },
     { label: "Integrations", href: "/integrations" },
     { label: "Pricing", href: "/pricing" },
     { label: "Request a Demo", href: "/demo" },
   ],
   Company: [
     { label: "About", href: "/company" },
-    { label: "Blog", href: "#" },
+    { label: "Blog", href: "/blog" },
     { label: "Careers", href: "#" },
     { label: "Security", href: "#" },
   ],

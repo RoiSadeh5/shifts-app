@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 
 const queueItems = [
   { id: "REQ-041", channel: "Slack", title: "Access request: prod DB — finance team", risk: "High", time: "2m ago", color: "#EF4444" },
@@ -102,13 +102,15 @@ function MockDashboard() {
 
           <div className="flex flex-col gap-2">
             {queueItems.map((item, i) => (
-              <div
+              <motion.div
                 key={item.id}
+                initial={{ opacity: 0, x: 24 }}
+                animate={{ opacity: i > 2 ? 0.55 : 1, x: 0 }}
+                transition={{ delay: 0.9 + i * 0.12, duration: 0.5, ease: "easeOut" }}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
                 style={{
                   background: i === 0 ? "var(--surface-raised)" : "transparent",
                   border: i === 0 ? "1px solid var(--border-bright)" : "1px solid transparent",
-                  opacity: i > 2 ? 0.55 : 1,
                 }}
               >
                 <span className="font-mono text-[10px] shrink-0" style={{ color: "var(--text-muted)" }}>{item.id}</span>
@@ -116,7 +118,7 @@ function MockDashboard() {
                 <span className="text-xs flex-1 truncate" style={{ color: "var(--text-secondary)" }}>{item.title}</span>
                 <RiskBadge risk={item.risk} color={item.color} />
                 <span className="text-[10px] shrink-0 hidden sm:block" style={{ color: "var(--text-muted)" }}>{item.time}</span>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -125,7 +127,21 @@ function MockDashboard() {
   );
 }
 
+const container = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.12, delayChildren: 0.1 },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] as const } },
+};
+
 export default function Hero() {
+  const reduce = useReducedMotion();
+
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center pt-28 pb-20 px-6 overflow-hidden">
       {/* Background glow */}
@@ -135,76 +151,95 @@ export default function Hero() {
       />
       <div className="bg-grid absolute inset-0 pointer-events-none opacity-100" />
 
-      {/* Badge */}
-      <div className="relative flex items-center gap-2 mb-8">
-        <div
-          className="flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium"
-          style={{
-            background: "rgba(99,102,241,0.1)",
-            border: "1px solid rgba(99,102,241,0.25)",
-            color: "#A5B4FC",
-          }}
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-[#6366F1] animate-pulse" />
-          AI-Native Cyber Service Management
-        </div>
-      </div>
-
-      {/* Headline */}
-      <h1
-        className="relative text-center text-5xl md:text-7xl font-bold tracking-tight max-w-4xl leading-[1.05]"
-        style={{ color: "var(--text-primary)" }}
+      <motion.div
+        className="relative flex flex-col items-center w-full"
+        variants={reduce ? undefined : container}
+        initial={reduce ? undefined : "hidden"}
+        animate={reduce ? undefined : "show"}
       >
-        Every security request.
-        <br />
-        <span className="text-gradient-accent">One unified queue.</span>
-      </h1>
+        {/* Badge */}
+        <motion.div variants={item} className="flex items-center gap-2 mb-8">
+          <div
+            className="flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium"
+            style={{
+              background: "rgba(99,102,241,0.1)",
+              border: "1px solid rgba(99,102,241,0.25)",
+              color: "#A5B4FC",
+            }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-[#6366F1] animate-pulse" />
+            AI-Native Cyber Service Management
+          </div>
+        </motion.div>
 
-      {/* Sub-headline */}
-      <p
-        className="relative mt-6 text-center text-lg md:text-xl max-w-2xl leading-relaxed"
-        style={{ color: "var(--text-secondary)" }}
-      >
-        Treat aggregates fragmented requests from Slack, Jira, email, and every
-        security tool into a single risk-aware stream — with AI agents that
-        surface context and run workflows automatically.
-      </p>
+        {/* Headline */}
+        <motion.h1
+          variants={item}
+          className="text-center text-5xl md:text-7xl font-bold tracking-tight max-w-4xl leading-[1.05]"
+          style={{ color: "var(--text-primary)" }}
+        >
+          Every security request.
+          <br />
+          <span className="text-gradient-accent">One unified queue.</span>
+        </motion.h1>
 
-      {/* CTAs */}
-      <div className="relative mt-10 flex flex-col sm:flex-row items-center gap-4">
-        <a
-          href="/demo"
-          className="glow-accent px-7 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 text-white"
-          style={{ background: "var(--accent)" }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "var(--accent-hover)")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "var(--accent)")}
+        {/* Sub-headline */}
+        <motion.p
+          variants={item}
+          className="mt-6 text-center text-lg md:text-xl max-w-2xl leading-relaxed"
+          style={{ color: "var(--text-secondary)" }}
         >
-          Request a Demo
-        </a>
-        <a
-          href="#how-it-works"
-          className="flex items-center gap-2 px-7 py-3.5 rounded-xl font-semibold text-sm transition-colors duration-200"
-          style={{
-            color: "var(--text-secondary)",
-            background: "var(--surface)",
-            border: "1px solid var(--border-bright)",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
-        >
-          See how it works →
-        </a>
-      </div>
+          Treat aggregates fragmented requests from Slack, Jira, email, and every
+          security tool into a single risk-aware stream — with AI agents that
+          surface context and run workflows automatically.
+        </motion.p>
+
+        {/* CTAs */}
+        <motion.div variants={item} className="mt-10 flex flex-col sm:flex-row items-center gap-4">
+          <a
+            href="/demo"
+            className="glow-accent px-7 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 text-white"
+            style={{ background: "var(--accent)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--accent-hover)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "var(--accent)")}
+          >
+            Request a Demo
+          </a>
+          <a
+            href="#how-it-works"
+            className="flex items-center gap-2 px-7 py-3.5 rounded-xl font-semibold text-sm transition-colors duration-200"
+            style={{
+              color: "var(--text-secondary)",
+              background: "var(--surface)",
+              border: "1px solid var(--border-bright)",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
+          >
+            See how it works →
+          </a>
+        </motion.div>
+      </motion.div>
 
       {/* Dashboard preview */}
-      <div className="relative mt-20 w-full max-w-4xl">
+      <motion.div
+        className="relative mt-20 w-full max-w-4xl"
+        initial={reduce ? { opacity: 0 } : { opacity: 0, y: 60, scale: 0.96 }}
+        animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+        transition={{ delay: 0.5, duration: 0.9, ease: [0.21, 0.47, 0.32, 0.98] }}
+      >
         {/* Glow under card */}
         <div
           className="absolute -inset-4 rounded-3xl opacity-30 pointer-events-none blur-2xl"
           style={{ background: "radial-gradient(ellipse at center, rgba(99,102,241,0.3), transparent 70%)" }}
         />
-        <MockDashboard />
-      </div>
+        <motion.div
+          animate={reduce ? undefined : { y: [0, -10, 0] }}
+          transition={reduce ? undefined : { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1.4 }}
+        >
+          <MockDashboard />
+        </motion.div>
+      </motion.div>
     </section>
   );
 }
