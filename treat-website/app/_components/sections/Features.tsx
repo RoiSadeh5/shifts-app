@@ -1,5 +1,7 @@
 "use client";
 
+import Reveal from "../Reveal";
+
 const features = [
   {
     icon: "⚡",
@@ -75,44 +77,45 @@ export default function Features() {
 
         {/* Feature grid */}
         <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {features.map((f) => (
-            <div
-              key={f.title}
-              className="group p-7 rounded-2xl transition-all duration-300"
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(99,102,241,0.3)";
-                (e.currentTarget as HTMLDivElement).style.background = "var(--surface-raised)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)";
-                (e.currentTarget as HTMLDivElement).style.background = "var(--surface)";
-              }}
-            >
-              <div className="text-2xl mb-4">{f.icon}</div>
+          {features.map((f, i) => (
+            <Reveal key={f.title} delay={(i % 3) * 0.08}>
               <div
-                className="inline-block text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full mb-3"
+                className="group p-7 rounded-2xl transition-all duration-300 h-full"
                 style={{
-                  background: "rgba(99,102,241,0.1)",
-                  color: "var(--accent)",
-                  border: "1px solid rgba(99,102,241,0.2)",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(99,102,241,0.3)";
+                  (e.currentTarget as HTMLDivElement).style.background = "var(--surface-raised)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)";
+                  (e.currentTarget as HTMLDivElement).style.background = "var(--surface)";
                 }}
               >
-                {f.highlight}
+                <div className="text-2xl mb-4">{f.icon}</div>
+                <div
+                  className="inline-block text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full mb-3"
+                  style={{
+                    background: "rgba(99,102,241,0.1)",
+                    color: "var(--accent)",
+                    border: "1px solid rgba(99,102,241,0.2)",
+                  }}
+                >
+                  {f.highlight}
+                </div>
+                <h3
+                  className="text-base font-semibold mb-2"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  {f.title}
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                  {f.description}
+                </p>
               </div>
-              <h3
-                className="text-base font-semibold mb-2"
-                style={{ color: "var(--text-primary)" }}
-              >
-                {f.title}
-              </h3>
-              <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                {f.description}
-              </p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>

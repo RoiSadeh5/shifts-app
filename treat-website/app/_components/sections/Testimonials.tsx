@@ -1,3 +1,5 @@
+import Reveal from "../Reveal";
+
 const testimonials = [
   {
     quote:
@@ -42,10 +44,10 @@ export default function Testimonials() {
         </h2>
 
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {testimonials.map((t) => (
+          {testimonials.map((t, i) => (
+            <Reveal key={t.name} delay={i * 0.1} className="h-full">
             <div
-              key={t.name}
-              className="p-7 rounded-2xl flex flex-col"
+              className="p-7 rounded-2xl flex flex-col h-full"
               style={{
                 background: "var(--surface)",
                 border: "1px solid var(--border)",
@@ -90,6 +92,7 @@ export default function Testimonials() {
                 </div>
               </div>
             </div>
+            </Reveal>
           ))}
         </div>
       </div>

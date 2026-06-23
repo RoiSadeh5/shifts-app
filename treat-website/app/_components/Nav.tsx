@@ -5,10 +5,10 @@ import { useState } from "react";
 import Logo from "./Logo";
 
 const links = [
-  { label: "Product", href: "#features" },
-  { label: "How it works", href: "#how-it-works" },
-  { label: "Integrations", href: "#integrations" },
-  { label: "Company", href: "#company" },
+  { label: "Product", href: "/product" },
+  { label: "Integrations", href: "/integrations" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Company", href: "/company" },
 ];
 
 export default function Nav() {
@@ -33,7 +33,7 @@ export default function Nav() {
         <ul className="hidden md:flex items-center gap-1">
           {links.map((l) => (
             <li key={l.label}>
-              <a
+              <Link
                 href={l.href}
                 className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                 style={{ color: "var(--text-secondary)" }}
@@ -45,15 +45,15 @@ export default function Nav() {
                 }
               >
                 {l.label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
 
         {/* CTA */}
         <div className="hidden md:flex items-center gap-3">
-          <a
-            href="#demo"
+          <Link
+            href="/demo"
             className="text-sm font-medium px-5 py-2 rounded-lg transition-all duration-200"
             style={{
               background: "var(--accent)",
@@ -67,7 +67,7 @@ export default function Nav() {
             }
           >
             Request Demo
-          </a>
+          </Link>
         </div>
 
         {/* Mobile hamburger */}
@@ -112,25 +112,25 @@ export default function Nav() {
           <ul className="flex flex-col gap-1">
             {links.map((l) => (
               <li key={l.label}>
-                <a
+                <Link
                   href={l.href}
                   className="block px-4 py-3 rounded-lg text-sm font-medium"
                   style={{ color: "var(--text-secondary)" }}
                   onClick={() => setOpen(false)}
                 >
                   {l.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
-          <a
-            href="#demo"
+          <Link
+            href="/demo"
             className="mt-3 block text-center text-sm font-medium px-5 py-3 rounded-lg"
             style={{ background: "var(--accent)", color: "#fff" }}
             onClick={() => setOpen(false)}
           >
             Request Demo
-          </a>
+          </Link>
         </div>
       )}
     </header>

@@ -1,12 +1,32 @@
 "use client";
 
+import Link from "next/link";
 import Logo from "./Logo";
 
-const footerLinks = {
-  Product: ["Features", "How it works", "Integrations", "Changelog"],
-  Company: ["About", "Blog", "Careers", "Security"],
-  Resources: ["Documentation", "API Reference", "Status", "Support"],
-  Legal: ["Privacy Policy", "Terms of Service", "Cookie Policy"],
+const footerLinks: Record<string, { label: string; href: string }[]> = {
+  Product: [
+    { label: "Overview", href: "/product" },
+    { label: "Integrations", href: "/integrations" },
+    { label: "Pricing", href: "/pricing" },
+    { label: "Request a Demo", href: "/demo" },
+  ],
+  Company: [
+    { label: "About", href: "/company" },
+    { label: "Blog", href: "#" },
+    { label: "Careers", href: "#" },
+    { label: "Security", href: "#" },
+  ],
+  Resources: [
+    { label: "Documentation", href: "#" },
+    { label: "API Reference", href: "#" },
+    { label: "Status", href: "#" },
+    { label: "Support", href: "#" },
+  ],
+  Legal: [
+    { label: "Privacy Policy", href: "#" },
+    { label: "Terms of Service", href: "#" },
+    { label: "Cookie Policy", href: "#" },
+  ],
 };
 
 export default function Footer() {
@@ -40,9 +60,9 @@ export default function Footer() {
               </p>
               <ul className="flex flex-col gap-2.5">
                 {items.map((item) => (
-                  <li key={item}>
-                    <a
-                      href="#"
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
                       className="text-sm transition-colors duration-150"
                       style={{ color: "var(--text-secondary)" }}
                       onMouseEnter={(e) =>
@@ -52,8 +72,8 @@ export default function Footer() {
                         (e.currentTarget.style.color = "var(--text-secondary)")
                       }
                     >
-                      {item}
-                    </a>
+                      {item.label}
+                    </Link>
                   </li>
                 ))}
               </ul>

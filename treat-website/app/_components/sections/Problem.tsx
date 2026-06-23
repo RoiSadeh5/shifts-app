@@ -1,3 +1,5 @@
+import Reveal from "../Reveal";
+
 const stats = [
   {
     value: "73%",
@@ -45,27 +47,28 @@ export default function Problem() {
 
         {/* Stat grid */}
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {stats.map((s) => (
-            <div
-              key={s.value}
-              className="p-8 rounded-2xl"
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-              }}
-            >
-              <p
-                className="text-5xl font-bold tracking-tight text-gradient-accent"
+          {stats.map((s, i) => (
+            <Reveal key={s.value} delay={i * 0.1}>
+              <div
+                className="p-8 rounded-2xl h-full"
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                }}
               >
-                {s.value}
-              </p>
-              <p
-                className="mt-3 text-sm leading-relaxed"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                {s.label}
-              </p>
-            </div>
+                <p
+                  className="text-5xl font-bold tracking-tight text-gradient-accent"
+                >
+                  {s.value}
+                </p>
+                <p
+                  className="mt-3 text-sm leading-relaxed"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  {s.label}
+                </p>
+              </div>
+            </Reveal>
           ))}
         </div>
       </div>

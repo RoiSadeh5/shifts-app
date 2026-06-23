@@ -46,7 +46,7 @@ export default function FinalCTA() {
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <a
-                href="mailto:hello@treat.security"
+                href="/demo"
                 className="glow-accent px-8 py-4 rounded-xl font-semibold text-base transition-all duration-200 text-white"
                 style={{ background: "var(--accent)" }}
                 onMouseEnter={(e) =>
@@ -59,7 +59,7 @@ export default function FinalCTA() {
                 Request a Demo
               </a>
               <a
-                href="mailto:hello@treat.security"
+                href="/demo"
                 className="px-8 py-4 rounded-xl font-semibold text-base transition-colors duration-200"
                 style={{
                   color: "var(--text-secondary)",

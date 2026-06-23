@@ -173,7 +173,7 @@ export default function Hero() {
       {/* CTAs */}
       <div className="relative mt-10 flex flex-col sm:flex-row items-center gap-4">
         <a
-          href="#demo"
+          href="/demo"
           className="glow-accent px-7 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 text-white"
           style={{ background: "var(--accent)" }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "var(--accent-hover)")}
