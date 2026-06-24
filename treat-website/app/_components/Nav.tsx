@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import Logo from "./Logo";
 
@@ -15,6 +16,12 @@ const links = [
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+
+  function isActive(href: string) {
+    if (href === "/") return pathname === "/";
+    return pathname.startsWith(href);
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 flex justify-center px-6 pt-5">
@@ -38,13 +45,17 @@ export default function Nav() {
               <Link
                 href={l.href}
                 className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                style={{ color: "var(--text-secondary)" }}
+                style={{
+                  color: isActive(l.href) ? "var(--text-primary)" : "var(--text-secondary)",
+                  background: isActive(l.href) ? "var(--surface)" : "transparent",
+                }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.color = "var(--text-primary)")
                 }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.color = "var(--text-secondary)")
-                }
+                onMouseLeave={(e) => {
+                  if (!isActive(l.href))
+                    e.currentTarget.style.color = "var(--text-secondary)";
+                }}
               >
                 {l.label}
               </Link>

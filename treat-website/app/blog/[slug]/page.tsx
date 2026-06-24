@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { posts, getPost } from "../posts";
 import Reveal from "../../_components/Reveal";
 import Button from "../../_components/ui/Button";
+import ScrollProgress from "../../_components/ScrollProgress";
 
 export function generateStaticParams() {
   return posts.map((p) => ({ slug: p.slug }));
@@ -34,6 +35,7 @@ export default async function ArticlePage({
 
   return (
     <article className="relative pt-40 pb-12 px-6 overflow-hidden">
+      <ScrollProgress />
       <div className="absolute inset-0 pointer-events-none" style={{ background: "var(--gradient-hero)" }} />
       <div className="bg-grid absolute inset-0 pointer-events-none" />
 

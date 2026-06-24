@@ -3,6 +3,7 @@ import Link from "next/link";
 import { posts } from "./posts";
 import PageHero from "../_components/ui/PageHero";
 import Reveal from "../_components/Reveal";
+import Newsletter from "../_components/sections/Newsletter";
 
 export const metadata: Metadata = {
   title: "Blog — Treat",
@@ -108,6 +109,7 @@ export default function BlogPage() {
           </div>
         </div>
       </section>
+      <Newsletter />
     </>
   );
 }
