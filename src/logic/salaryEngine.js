@@ -568,7 +568,7 @@
     const fmt = n => '₪' + Math.round(n).toLocaleString();
 
     const lines = [
-      'סיכום שכר חודשי - אפליקציית שכ״ש 💰',
+      'סיכום שכר חודשי, שכ״ש',
       'חודש: ' + monthName,
       'סה״כ שעות: ' + Math.round(data.hours),
     ];

@@ -415,6 +415,20 @@
   transition: border-color 0.15s;
 }
 .setting-item input:focus { border-color: var(--accent); }
+.setting-item input[type="text"],
+.setting-item select {
+  width: 148px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  text-align: right;
+  direction: rtl;
+  font-size: 16px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  font-family: var(--font);
+}
 
 /* ===== BREAKDOWN ===== */
 .breakdown-section { margin-bottom: 18px; contain: layout style; }

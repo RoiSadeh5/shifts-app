@@ -381,7 +381,7 @@
       <div class="setting-item">
         <span class="si-label">ערכת צבע</span>
         <div>
-          <select id="settingTheme" onchange="saveThemeSetting()" style="font-size:1rem;min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);color:var(--text);font-family:'Heebo',sans-serif;">
+          <select id="settingTheme" onchange="saveThemeSetting()">
             <option value="system">לפי המכשיר</option>
             <option value="light">נייר</option>
             <option value="dark">דיו</option>
@@ -405,7 +405,7 @@
     <div class="setting-group">
       <div class="setting-item">
         <span class="si-label">שם</span>
-        <div><input type="text" id="settingUserName" value="" inputmode="text" placeholder="הזן את שמך" onchange="saveUserNameSetting()" style="font-size:1rem;min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);color:var(--text);font-family:'Heebo',sans-serif;"></div>
+        <div><input type="text" id="settingUserName" value="" inputmode="text" placeholder="הזן את שמך" onchange="saveUserNameSetting()"></div>
       </div>
     </div>
 

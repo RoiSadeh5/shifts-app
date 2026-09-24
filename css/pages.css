@@ -110,10 +110,20 @@
   transition: background 0.15s;
 }
 .cal-day:active { background: var(--border); }
-.cal-day.has-shift { color: var(--text); background: var(--card); font-weight: 700; }
-.cal-day.today { border: 1.5px solid var(--accent); }
-.cal-dots { display: flex; gap: 3px; }
-.cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+.cal-day.has-shift { color: var(--text); font-weight: 600; }
+.cal-day.today { border: none; }
+.cal-day.today > span {
+  background: var(--accent);
+  color: var(--on-accent);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cal-dots { display: flex; justify-content: center; min-height: 6px; }
+.cal-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
 .cal-day.empty { visibility: hidden; }
 
 .cal-day-detail {
