@@ -1,10 +1,10 @@
 /**
  * Regression tests for the calculation engine.
- * Run: npm test  or  node test-regression.js
+ * Run: npm test
  *
  * Engine includes: meal allowance (30 ₪ per 6h), NI+Health split (2026 rates).
  */
-const Calc = require('./shiftCalculator.js');
+const Calc = require('../shiftCalculator.js');
 
 let passed = 0, failed = 0;
 
