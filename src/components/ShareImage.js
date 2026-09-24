@@ -22,28 +22,30 @@ function generateSummaryImage() {
   canvas.height = hImg;
   var ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = '#0f172a';
+  ctx.fillStyle = '#f4f1ea';
   ctx.fillRect(0, 0, w, hImg);
 
-  ctx.fillStyle = '#10b981';
-  ctx.font = 'bold 72px Arial';
+  ctx.fillStyle = '#1c1915';
+  ctx.font = '700 72px Heebo, Arial';
   ctx.textAlign = 'center';
-  ctx.fillText('Sachash', w/2, 200);
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '36px Arial';
-  ctx.fillText(h + ' ' + currentYear, w/2, 280);
+  ctx.fillText('שכ״ש', w/2, 220);
+  ctx.fillStyle = '#6f6a62';
+  ctx.font = '400 40px Heebo, Arial';
+  ctx.fillText(h + ' ' + currentYear, w/2, 290);
 
-  ctx.fillStyle = '#10b981';
-  ctx.font = 'bold 120px Arial';
-  ctx.fillText('₪' + Math.round(net).toLocaleString(), w/2, 500);
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '32px Arial';
-  ctx.fillText('Net', w/2, 560);
+  ctx.fillStyle = '#6f6a62';
+  ctx.font = '600 36px Heebo, Arial';
+  ctx.fillText('נטו לבנק', w/2, 460);
+  ctx.fillStyle = '#1f6b4a';
+  ctx.font = '700 120px Heebo, Arial';
+  ctx.fillText('₪' + Math.round(net).toLocaleString(), w/2, 590);
 
-  ctx.fillStyle = '#818cf8';
-  ctx.font = '48px Arial';
-  ctx.fillText('Gross: ₪' + Math.round(gross).toLocaleString(), w/2, 680);
-  ctx.fillText(monthShifts.length + ' shifts · ' + totalH.toFixed(1) + ' hours', w/2, 740);
+  ctx.fillStyle = '#1c1915';
+  ctx.font = '600 42px Heebo, Arial';
+  ctx.fillText('ברוטו ₪' + Math.round(gross).toLocaleString(), w/2, 720);
+  ctx.fillStyle = '#6f6a62';
+  ctx.font = '400 36px Heebo, Arial';
+  ctx.fillText(monthShifts.length + ' משמרות · ' + Math.round(totalH) + ' שעות', w/2, 780);
 
   return canvas.toDataURL('image/png');
 }

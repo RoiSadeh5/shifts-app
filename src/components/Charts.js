@@ -79,13 +79,12 @@ function getMonthlyChartData() {
 
 function getShiftTypeData() {
   var shifts = typeof loadShifts === 'function' ? loadShifts() : [];
-  var typeNames = typeof typeNames !== 'undefined' ? typeNames : { plus: 'פלוס', training: 'אימון', vacation: 'חופש', sick: 'מחלה', minus: 'ידני' };
-  var now = new Date();
-  var currentYear = now.getFullYear();
-  var currentMonth = now.getMonth();
+  var names = window.typeNames || { plus: 'פלוס', training: 'אימון', vacation: 'חופש', sick: 'מחלה', minus: 'ידני' };
+  var year = typeof currentYear === 'number' ? currentYear : new Date().getFullYear();
+  var month = typeof currentMonth === 'number' ? currentMonth : new Date().getMonth();
   var monthShifts = shifts.filter(function(s) {
     var p = s.date.split('-');
-    return parseInt(p[0]) === currentYear && parseInt(p[1]) - 1 === currentMonth;
+    return parseInt(p[0]) === year && parseInt(p[1]) - 1 === month;
   });
   var totals = {};
   monthShifts.forEach(function(s) {
@@ -93,12 +92,12 @@ function getShiftTypeData() {
     totals[t] = (totals[t] || 0) + (s.result && s.result.totalPay ? s.result.totalPay : 0);
   });
   if (Object.keys(totals).length === 0) return null;
-  var colors = ['#818cf8', '#f59e0b', '#10b981', '#ef4444', '#38bdf8'];
+  var colors = ['#1f6b4a', '#1c1915', '#6f6a62', '#a39e94', '#d7b07a'];
   var labels = [];
   var data = [];
   var backgroundColors = [];
   Object.keys(totals).forEach(function(t, i) {
-    labels.push(typeNames[t] || t);
+    labels.push(names[t] || t);
     data.push(totals[t]);
     backgroundColors.push(colors[i % colors.length]);
   });
@@ -132,8 +131,8 @@ function initChartsCore() {
       data: {
         labels: monthlyData.labels,
         datasets: [
-          { label: 'ברוטו', data: monthlyData.gross, backgroundColor: 'rgba(129,140,248,0.85)' },
-          { label: 'נטו', data: monthlyData.net, backgroundColor: 'rgba(16,185,129,0.85)' }
+          { label: 'ברוטו', data: monthlyData.gross, backgroundColor: 'rgba(28,25,21,0.55)' },
+          { label: 'נטו', data: monthlyData.net, backgroundColor: 'rgba(31,107,74,0.85)' }
         ]
       },
       options: Object.assign({}, getChartDefaults(), {
@@ -164,7 +163,7 @@ function initChartsCore() {
       type: 'doughnut',
       data: {
         labels: donutData.labels,
-        datasets: [{ data: donutData.data, backgroundColor: donutData.backgroundColor, borderWidth: 2, borderColor: '#1e293b' }]
+        datasets: [{ data: donutData.data, backgroundColor: donutData.backgroundColor, borderWidth: 2, borderColor: '#f4f1ea' }]
       },
       options: Object.assign({}, getChartDefaults(), {
         cutout: '60%',
@@ -180,7 +179,7 @@ function initChartsCore() {
       type: 'line',
       data: {
         labels: monthlyData.labels,
-        datasets: [{ label: 'נטו', data: monthlyData.net, borderColor: '#10b981', borderWidth: 2, fill: true, backgroundColor: 'rgba(16,185,129,0.12)', tension: 0.3 }]
+        datasets: [{ label: 'נטו', data: monthlyData.net, borderColor: '#1f6b4a', borderWidth: 2, fill: true, backgroundColor: 'rgba(31,107,74,0.12)', tension: 0.3 }]
       },
       options: Object.assign({}, getChartDefaults(), {
         scales: {
