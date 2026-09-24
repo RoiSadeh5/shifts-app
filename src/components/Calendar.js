@@ -96,7 +96,7 @@ function showDayDetail(day) {
     details.innerHTML = '<div class="cal-day-detail">' +
       '<div class="cdd-date">' + day + ' ' + hebrewMonths[currentMonth] + '</div>' +
       '<div style="color:var(--text-dim);font-size:13px;margin-bottom:12px;">אין משמרות</div>' +
-      '<button class="btn-add" onclick="openAddForDate(\'' + dateVal + '\')">➕ הוסף משמרת ליום זה</button>' +
+      '<button class="btn-add" onclick="openAddForDate(\'' + dateVal + '\')">הוסף משמרת ליום זה</button>' +
       '</div>';
     return;
   }
@@ -109,7 +109,7 @@ function showDayDetail(day) {
       '<span style="color:var(--text-dim);font-size:13px;">' + (s.result.flatRate ? 'קבוע' : s.result.totalHours + ' שעות') + '</span>' +
       '</div>' +
       '<div style="margin-top:10px;display:flex;justify-content:flex-end;">' +
-      '<button class="si-delete" onclick="confirmDeleteShiftFromCalendar(' + day + ',' + s.id + ')">🗑️ מחק משמרת</button>' +
+      '<button class="si-delete" onclick="confirmDeleteShiftFromCalendar(' + day + ',' + s.id + ')">מחק משמרת</button>' +
       '</div>' +
       '</div>';
   }).join('');

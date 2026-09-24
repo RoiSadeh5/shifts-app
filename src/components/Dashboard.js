@@ -258,7 +258,7 @@ function renderCore() {
         <div class="empty-state">
           <div class="empty-text">${isFirstEver ? 'שלום ' + name + '. אין עדיין משמרות.' : 'אין משמרות ב' + hebrewMonths[currentMonth]}</div>
           <div class="empty-hint">הוספה נמצאת בטאב משמרת</div>
-          <button class="empty-state-btn" onclick="switchTab('Add')">➕ הוסף משמרת</button>
+          <button class="empty-state-btn" onclick="switchTab('Add')">הוסף משמרת</button>
         </div>`;
     }
     return;
@@ -275,7 +275,7 @@ function renderCore() {
         <div class="si-right">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
             <span class="type-badge ${badgeCls[s.type]}">${typeNames[s.type]}</span>
-            ${isHol ? `<span class="badge-chag" title="${holName}">🕍 חג</span>` : ''}
+            ${isHol ? `<span class="badge-chag" title="${holName}">חג</span>` : ''}
           </div>
           <span class="si-date">יום ${dayNamesFull[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}${isHol && holName ? ' · ' + holName : ''}</span>
           ${s.note ? `<span class="si-notes">${s.note}</span>` : ''}
@@ -285,7 +285,7 @@ function renderCore() {
             <div class="si-pay">${fmtNIS(s.result.totalPay)}</div>
             <div class="si-hours">${s.result.flatRate ? 'קבוע' : s.result.totalHours + ' שעות'}</div>
           </div>
-          <button class="si-edit" onclick="openEditShift(${s.id})" aria-label="ערוך משמרת">✏️</button>
+          <button class="si-edit" onclick="openEditShift(${s.id})" aria-label="ערוך משמרת">עריכה</button>
           <button class="si-delete" onclick="deleteShift(${s.id})" aria-label="מחק משמרת">✕</button>
         </div>
       </div>`;

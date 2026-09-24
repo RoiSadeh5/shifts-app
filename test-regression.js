@@ -92,9 +92,14 @@ assert('Employer Study', d1.employer.study, 750);
 // =============================
 // TEST 7: Deductions – no cap on Keren Hishtalmut
 // =============================
-console.log('\n--- Test 7: Deductions (Gross=20000, no study cap) ---');
+console.log('\n--- Test 7: Deductions (Gross=20000, study wage ceiling 15712) ---');
 const d2 = Calc.calcDeductions(20000, { pension: true, study: true, ni: true });
-assert('Study Emp (full gross, no cap)', d2.employee.study, 20000 * 0.025, 0.1);
+assert('Study Emp (capped)', d2.employee.study, 15712 * 0.025, 0.1);
+assert('Study Employer (capped)', d2.employer.study, 15712 * 0.075, 0.1);
+const h25 = Calc.getHolidayForDate('2025-04-13');
+assert('Pesach 2025 flagged', h25 && h25.type === 'chag' ? 1 : 0, 1);
+const h27 = Calc.getHolidayForDate('2027-10-11');
+assert('Yom Kippur 2027 flagged', h27 && h27.type === 'chag' ? 1 : 0, 1);
 
 // =============================
 // TEST 8: Plus with bonus – base+meal+3500

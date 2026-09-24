@@ -132,7 +132,7 @@ function setTutorialComplete() {
 }
 
 var tutorialSlide = 0;
-var TUTORIAL_TOTAL = 5;
+var TUTORIAL_TOTAL = 1;
 
 function initTutorialDots() {
   var container = document.getElementById('tutorialDots');

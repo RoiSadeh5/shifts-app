@@ -32,6 +32,7 @@
     PENSION_EMPLOYER: 0.125,
     STUDY_EMPLOYEE: 0.025,
     STUDY_EMPLOYER: 0.075,
+    STUDY_WAGE_CEILING: 15712,
   };
 
   // ===== 2025 Israel Deduction Constants =====
@@ -48,6 +49,7 @@
     PENSION_EMPLOYER: 0.125,
     STUDY_EMPLOYEE: 0.025,
     STUDY_EMPLOYER: 0.075,
+    STUDY_WAGE_CEILING: 15712,
   };
 
   // ===== Meal Allowance & Fixed Monthly Additions =====
@@ -64,6 +66,28 @@
   // ================================================================
 
   // chag = holiday day (150% rate); erev = holiday eve (150% rate)
+  const HOLIDAYS_2025 = [
+    { date: '2025-03-13', type: 'erev', name: 'ערב פורים' },
+    { date: '2025-03-14', type: 'chag', name: 'פורים' },
+    { date: '2025-04-12', type: 'erev', name: 'ערב פסח' },
+    { date: '2025-04-13', type: 'chag', name: 'פסח (יום א\')' },
+    { date: '2025-04-18', type: 'erev', name: 'ערב שביעי של פסח' },
+    { date: '2025-04-19', type: 'chag', name: 'שביעי של פסח' },
+    { date: '2025-04-30', type: 'erev', name: 'יום הזיכרון' },
+    { date: '2025-05-01', type: 'chag', name: 'יום העצמאות' },
+    { date: '2025-06-01', type: 'erev', name: 'ערב שבועות' },
+    { date: '2025-06-02', type: 'chag', name: 'שבועות' },
+    { date: '2025-09-22', type: 'erev', name: 'ערב ראש השנה' },
+    { date: '2025-09-23', type: 'chag', name: 'ראש השנה' },
+    { date: '2025-09-24', type: 'chag', name: 'ראש השנה (יום ב\')' },
+    { date: '2025-10-01', type: 'erev', name: 'ערב יום כיפור' },
+    { date: '2025-10-02', type: 'chag', name: 'יום כיפור' },
+    { date: '2025-10-06', type: 'erev', name: 'ערב סוכות' },
+    { date: '2025-10-07', type: 'chag', name: 'סוכות' },
+    { date: '2025-10-13', type: 'erev', name: 'ערב שמיני עצרת' },
+    { date: '2025-10-14', type: 'chag', name: 'שמיני עצרת / שמחת תורה' },
+  ];
+
   const HOLIDAYS_2026 = [
     { date: '2026-03-02', type: 'erev', name: 'ערב פורים' },
     { date: '2026-03-03', type: 'chag', name: 'פורים' },
@@ -86,14 +110,38 @@
     { date: '2026-10-03', type: 'chag', name: 'שמיני עצרת / שמחת תורה' },
   ];
 
+  const HOLIDAYS_2027 = [
+    { date: '2027-03-22', type: 'erev', name: 'ערב פורים' },
+    { date: '2027-03-23', type: 'chag', name: 'פורים' },
+    { date: '2027-04-21', type: 'erev', name: 'ערב פסח' },
+    { date: '2027-04-22', type: 'chag', name: 'פסח (יום א\')' },
+    { date: '2027-04-27', type: 'erev', name: 'ערב שביעי של פסח' },
+    { date: '2027-04-28', type: 'chag', name: 'שביעי של פסח' },
+    { date: '2027-05-11', type: 'erev', name: 'יום הזיכרון' },
+    { date: '2027-05-12', type: 'chag', name: 'יום העצמאות' },
+    { date: '2027-06-10', type: 'erev', name: 'ערב שבועות' },
+    { date: '2027-06-11', type: 'chag', name: 'שבועות' },
+    { date: '2027-10-01', type: 'erev', name: 'ערב ראש השנה' },
+    { date: '2027-10-02', type: 'chag', name: 'ראש השנה' },
+    { date: '2027-10-03', type: 'chag', name: 'ראש השנה (יום ב\')' },
+    { date: '2027-10-10', type: 'erev', name: 'ערב יום כיפור' },
+    { date: '2027-10-11', type: 'chag', name: 'יום כיפור' },
+    { date: '2027-10-15', type: 'erev', name: 'ערב סוכות' },
+    { date: '2027-10-16', type: 'chag', name: 'סוכות' },
+    { date: '2027-10-22', type: 'erev', name: 'ערב שמיני עצרת' },
+    { date: '2027-10-23', type: 'chag', name: 'שמיני עצרת / שמחת תורה' },
+  ];
+
+  const HOLIDAYS = HOLIDAYS_2025.concat(HOLIDAYS_2026, HOLIDAYS_2027);
+
   /**
    * Get holiday info for a given YYYY-MM-DD date string.
    * @param {string} dateStr
    * @returns {{ type: 'chag'|'erev', name: string } | null}
    */
   function getHolidayForDate(dateStr) {
-    for (var i = 0; i < HOLIDAYS_2026.length; i++) {
-      if (HOLIDAYS_2026[i].date === dateStr) return HOLIDAYS_2026[i];
+    for (var i = 0; i < HOLIDAYS.length; i++) {
+      if (HOLIDAYS[i].date === dateStr) return HOLIDAYS[i];
     }
     return null;
   }
@@ -258,7 +306,7 @@
 
   /**
    * Monthly deductions (2026 Israel).
-   * Pension and Keren Hishtalmut: no ceiling/cap.
+   * Pension: no ceiling. Keren Hishtalmut: wage ceiling (15,712 ₪ in 2025–2026).
    * Bituach Leumi and Health Tax: separate calculations.
    * @param {number} grossMonthly
    * @param {{ pension: boolean, study: boolean, ni: boolean }} toggles
@@ -275,8 +323,9 @@
     }
 
     if (t.study) {
-      ded.study = grossMonthly * C.STUDY_EMPLOYEE;
-      emp.study = grossMonthly * C.STUDY_EMPLOYER;
+      const studyBase = Math.min(grossMonthly, C.STUDY_WAGE_CEILING || grossMonthly);
+      ded.study = studyBase * C.STUDY_EMPLOYEE;
+      emp.study = studyBase * C.STUDY_EMPLOYER;
     }
 
     let bituachLeumi = { tier1: 0, tier2: 0, total: 0 };
@@ -587,6 +636,7 @@
 
   // ===== Export =====
   exports.HOLIDAYS_2026 = HOLIDAYS_2026;
+  exports.HOLIDAYS = HOLIDAYS;
   exports.getHolidayForDate = getHolidayForDate;
   exports.DEFAULTS = DEFAULTS;
   exports.DEDUCTION_CONSTANTS = DEDUCTION_CONSTANTS;

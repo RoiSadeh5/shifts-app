@@ -616,8 +616,10 @@
 .si-edit {
   background: none;
   border: none;
-  color: var(--accent-light);
+  color: var(--accent);
+  font-family: var(--font);
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   padding: 8px;
   opacity: 0.5;

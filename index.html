@@ -31,29 +31,8 @@
       <button class="tutorial-skip" onclick="skipTutorial()" aria-label="דלג">דלג</button>
       <div class="tutorial-slides">
         <div class="tutorial-slide active" data-slide="0">
-          <div class="tutorial-emoji">👋</div>
-          <h2 class="tutorial-title">ברוך הבא</h2>
-          <p class="tutorial-desc">שכ״ש – אפליקציה לחישוב שכר ומשכורת לעובדי משמרות. עקוב אחרי הברוטו והנטו, צפה בניכויים, ושמור על החסכון הפנסיוני שלך.</p>
-        </div>
-        <div class="tutorial-slide" data-slide="1">
-          <div class="tutorial-emoji">📊</div>
-          <h2 class="tutorial-title">עמוד הבית</h2>
-          <p class="tutorial-desc">כאן תראה את סיכום החודש – נטו לבנק, סה״כ ברוטו, פירוט ניכויים (ביטוח לאומי, מס בריאות, פנסיה וכו׳). גלול לראות את המשמרות האחרונות.</p>
-        </div>
-        <div class="tutorial-slide" data-slide="2">
-          <div class="tutorial-emoji">💰</div>
-          <h2 class="tutorial-title">חישוב משכורת</h2>
-          <p class="tutorial-desc">הוסף משמרות מהלשונית הוספה. הזן תלוש בפועל להשוואה. צפה בניכויי עובד (ביטוח לאומי, מס בריאות, פנסיה, קרן השתלמות) ובהפרשות המעסיק.</p>
-        </div>
-        <div class="tutorial-slide" data-slide="3">
-          <div class="tutorial-emoji">🏦</div>
-          <h2 class="tutorial-title">חסכון פנסיוני</h2>
-          <p class="tutorial-desc">בדף חסכון פנסיוני – קרן פנסיה, קרן השתלמות וחסכונות כלליים. הזן יתרות וצפה בתחזיות לטווח ארוך.</p>
-        </div>
-        <div class="tutorial-slide" data-slide="4">
-          <div class="tutorial-emoji">⚙️</div>
-          <h2 class="tutorial-title">הגדרות</h2>
-          <p class="tutorial-desc">קבע תעריפים, נקודות זיכוי, יתרות חופש ומחלה, ושם. ייצא גיבוי, PDF או CSV.</p>
+          <h2 class="tutorial-title">שכ״ש</h2>
+          <p class="tutorial-desc">חישוב שכר למשמרות. בבית רואים כמה נטו נכנס ומתי. משמרת חדשה נרשמת בטאב משמרת. חסכון, סיכום שנתי והגדרות נמצאים בעוד.</p>
         </div>
       </div>
       <div class="tutorial-dots" id="tutorialDots"></div>
@@ -68,8 +47,7 @@
   <!-- Onboarding modal (name - first-time only) -->
   <div class="onboarding-overlay" id="onboardingOverlay">
     <div class="onboarding-card">
-      <div class="onboarding-emoji">👋</div>
-      <div class="onboarding-title">ברוכים הבאים לשכ״ש!</div>
+      <div class="onboarding-title">ברוכים הבאים לשכ״ש</div>
       <div class="onboarding-subtitle">איך לקרוא לך?</div>
       <input class="onboarding-input" id="onboardingName" type="text" inputmode="text" placeholder="השם שלך" autocomplete="given-name" autofocus>
       <button class="onboarding-btn" onclick="completeOnboarding()">יאללה, בוא נתחיל</button>
@@ -82,7 +60,7 @@
 
   <!-- Offline indicator -->
   <div class="offline-banner" id="offlineBanner">
-    <span>📡 אין חיבור לאינטרנט – האפליקציה פועלת במצב לא מקוון</span>
+    <span>אין חיבור לאינטרנט – האפליקציה פועלת במצב לא מקוון</span>
   </div>
 
   <!-- Update available banner -->
@@ -94,7 +72,7 @@
   <!-- Install hint (Add to Home Screen – pressable) -->
   <div class="install-hint" id="installHint">
     <button type="button" class="install-hint-btn" onclick="triggerAddToHomeScreen()">
-      📱 הוסף למסך הבית
+      הוסף למסך הבית
     </button>
     <button type="button" class="install-hint-close" onclick="dismissInstallHint()" aria-label="סגור">×</button>
   </div>
@@ -196,7 +174,7 @@
           <span class="ded-arrow" id="cmpArrow">▼</span>
           <span class="ded-title" style="color:var(--accent-light)">השוואה לתלוש</span>
         </div>
-        <span class="ded-total" style="color:var(--accent-light);font-size:12px">📋</span>
+        <span class="ded-total" style="color:var(--accent-light);font-size:12px"></span>
       </div>
       <div class="ded-body" id="cmpBody">
         <div class="cmp-header-row">
@@ -264,10 +242,10 @@
         <span>חסכון פנסיוני</span>
       </div>
       <div id="savingsEmptyState" class="savings-empty-state" style="display:none">
-        <div class="savings-empty-icon">🏦</div>
+        <div class="savings-empty-icon"></div>
         <div class="savings-empty-text">אין עדיין חסכון פנסיוני</div>
         <div class="savings-empty-hint">הזן יתרות בקרן פנסיה וקרן השתלמות בהגדרות, או הוסף חסכונות כלליים</div>
-        <button class="btn-savings-add" onclick="openGeneralSavingsModal()">➕ הוסף חסכון</button>
+        <button class="btn-savings-add" onclick="openGeneralSavingsModal()">הוסף חסכון</button>
       </div>
       <div id="savingsContentArea" style="display:none">
         <div class="savings-total-card" id="savingsTotalCard" style="margin-bottom:16px;">
@@ -279,7 +257,7 @@
         <div class="savings-general-section">
           <div class="section-label" style="margin-top:4px;">חסכונות כלליים</div>
           <div id="savingsGeneralList"></div>
-          <button class="btn-savings-add" onclick="openGeneralSavingsModal()">➕ הוסף חסכון</button>
+          <button class="btn-savings-add" onclick="openGeneralSavingsModal()">הוסף חסכון</button>
         </div>
         <div class="chart-box" dir="ltr" style="height:180px;margin-top:12px;">
           <canvas id="savingsChartCanvas"></canvas>
@@ -372,7 +350,7 @@
       <input type="text" id="shiftNote" placeholder="הוסף הערה למשמרת..." inputmode="text" autocomplete="off" maxlength="200">
     </div>
 
-    <button class="btn-add" onclick="addShift()">➕ הוסף משמרת</button>
+    <button class="btn-add" onclick="addShift()">הוסף משמרת</button>
 
     <div class="result-panel" id="resultPanel">
       <div class="rp-header">חישוב המשמרת</div>
@@ -420,7 +398,7 @@
       <div class="toggle" id="toggleNotifications" onclick="toggleNotifications()"></div>
     </div>
     <button class="btn-install-settings" id="btnAddToHome" onclick="triggerAddToHomeScreen()">
-      📱 הוסף למסך הבית
+      הוסף למסך הבית
     </button>
 
     <div class="section-label" style="margin-bottom:14px;">פרופיל</div>
@@ -513,7 +491,7 @@
     </div>
 
     <button class="btn-secondary" onclick="switchTab('Savings')" style="margin-bottom:14px;">
-      🏦 חסכון פנסיוני – צפייה והזנת יתרות
+      חסכון פנסיוני – צפייה והזנת יתרות
     </button>
     <div class="section-label" style="margin-bottom:14px;">יתרות חופש ומחלה</div>
     <div class="setting-group">
@@ -529,12 +507,12 @@
 
     <div class="section-label" style="margin-bottom:14px;">גיבוי ושחזור</div>
     <div class="backup-info" id="lastBackupInfo">לא בוצע גיבוי עדיין</div>
-    <button class="btn-secondary" onclick="exportData()">📤 ייצוא גיבוי</button>
-    <button class="btn-secondary" onclick="exportShiftsCSV()">📊 ייצוא CSV (חודש נוכחי)</button>
-    <button class="btn-secondary" onclick="downloadMonthlyPdf()">📄 ייצוא PDF</button>
-    <button class="btn-secondary" onclick="document.getElementById('importFile').click()">📥 ייבוא גיבוי</button>
+    <button class="btn-secondary" onclick="exportData()">ייצוא גיבוי</button>
+    <button class="btn-secondary" onclick="exportShiftsCSV()">ייצוא CSV (חודש נוכחי)</button>
+    <button class="btn-secondary" onclick="downloadMonthlyPdf()">ייצוא PDF</button>
+    <button class="btn-secondary" onclick="document.getElementById('importFile').click()">ייבוא גיבוי</button>
     <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
-    <button class="btn-danger" onclick="clearAllData()" style="margin-top:10px;">🗑️ מחק את כל הנתונים</button>
+    <button class="btn-danger" onclick="clearAllData()" style="margin-top:10px;">מחק את כל הנתונים</button>
 
     <div id="adminPanelSection" style="margin-top:20px;">
       <button class="btn-secondary" id="adminPanelBtn" onclick="openAdminPrompt()" style="font-size:12px;color:var(--text-dim);">
@@ -564,7 +542,7 @@
 
     <!-- Form 106 Summary -->
     <div id="annualSummaryView">
-      <button class="btn-secondary" onclick="exportAnnualCSV()" style="margin-bottom:14px;">📊 ייצוא שנתי CSV</button>
+      <button class="btn-secondary" onclick="exportAnnualCSV()" style="margin-bottom:14px;">ייצוא שנתי CSV</button>
       <div class="f106-hero">
         <div class="f106-label">נטו שנתי (אומדן)</div>
         <div class="f106-val" id="f106Net">₪0</div>
@@ -662,11 +640,11 @@
       <div class="ps-field">
         <label>סוג משמרת</label>
         <select id="editShiftType" onchange="onEditShiftTypeChange()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:14px;font-family:'Heebo',sans-serif;color:var(--text);direction:rtl;outline:none;">
-          <option value="plus">⚡ פלוס (06:00–06:00+)</option>
-          <option value="training">🎯 אימון (06:00–20:00)</option>
-          <option value="vacation">🏖️ חופש (1,750 ₪)</option>
-          <option value="sick">🏥 מחלה (1,750 ₪)</option>
-          <option value="minus">🕐 ידני</option>
+          <option value="plus">פלוס (06:00–06:00+)</option>
+          <option value="training">אימון (06:00–20:00)</option>
+          <option value="vacation">חופש (1,750 ₪)</option>
+          <option value="sick">מחלה (1,750 ₪)</option>
+          <option value="minus">ידני</option>
         </select>
       </div>
       <div class="ps-field">
@@ -692,7 +670,7 @@
       <div class="ps-btns" style="flex-direction:column;">
         <div style="display:flex;gap:10px;">
           <button class="ps-cancel" onclick="closeEditShiftModal()">ביטול</button>
-          <button class="ps-save" onclick="saveEditShift()">💾 שמור</button>
+          <button class="ps-save" onclick="saveEditShift()">שמור</button>
         </div>
       </div>
     </div>
@@ -703,7 +681,7 @@
 
   <!-- Undo Delete Toast -->
   <div class="undo-toast" id="undoToast">
-    <span class="undo-toast-msg">🗑️ משמרת נמחקה</span>
+    <span class="undo-toast-msg">משמרת נמחקה</span>
     <button class="undo-toast-btn" onclick="undoDelete()">בטל</button>
   </div>
 
