@@ -82,13 +82,8 @@ function renderCore() {
 
   var heroNetEl = document.getElementById('heroNet');
   var heroGrossEl = document.getElementById('heroGross');
-  if (typeof countUp === 'function') {
-    if (heroNetEl) countUp(heroNetEl, displayNet, { formatter: fmtNIS });
-    if (heroGrossEl) countUp(heroGrossEl, displayGross, { formatter: fmtNIS });
-  } else {
-    if (heroNetEl) heroNetEl.textContent = fmtNIS(displayNet);
-    if (heroGrossEl) heroGrossEl.textContent = fmtNIS(displayGross);
-  }
+  if (heroNetEl) heroNetEl.textContent = fmtNIS(displayNet);
+  if (heroGrossEl) heroGrossEl.textContent = fmtNIS(displayGross);
   var heroNetSub = document.getElementById('heroNetSub');
   if (heroNetSub) heroNetSub.textContent = netSubText;
   var heroSub = document.getElementById('heroSub');
@@ -163,7 +158,7 @@ function renderCore() {
   if (employerPanel) employerPanel.style.display = (hasGross && !simple) ? '' : 'none';
   var shareEl = document.getElementById('shareButtons');
   if (shareEl) {
-    shareEl.style.display = hasAnyData ? 'grid' : 'none';
+    shareEl.style.display = hasAnyData ? 'flex' : 'none';
   }
   var forecastCard = document.getElementById('forecastCard');
   if (forecastCard) forecastCard.style.display = 'none';
@@ -261,9 +256,8 @@ function renderCore() {
     if (listEl) {
       listEl.innerHTML = `
         <div class="empty-state">
-          <div class="empty-icon">${isFirstEver ? '👋' : '📭'}</div>
-          <div class="empty-text">${isFirstEver ? 'ברוך הבא ' + name + '! אין משמרות להצגה, לחץ על + כדי להוסיף את המשמרת הראשונה.' : 'אין משמרות ב' + hebrewMonths[currentMonth]}</div>
-          <div class="empty-hint">${isFirstEver ? 'לחץ למטה להתחיל' : 'לחץ למטה להוסיף משמרת'}</div>
+          <div class="empty-text">${isFirstEver ? 'שלום ' + name + '. אין עדיין משמרות.' : 'אין משמרות ב' + hebrewMonths[currentMonth]}</div>
+          <div class="empty-hint">הוספה נמצאת בטאב משמרת</div>
           <button class="empty-state-btn" onclick="switchTab('Add')">➕ הוסף משמרת</button>
         </div>`;
     }

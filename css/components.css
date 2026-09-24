@@ -81,26 +81,26 @@
 .type-btn.selected {
   border-color: var(--accent);
   background: var(--accent-dim);
-  box-shadow: 0 0 20px rgba(99,102,241,0.1);
+  box-shadow: none;
 }
 .type-btn .t-icon { font-size: 26px; margin-bottom: 4px; }
-.type-btn .t-name { font-size: 14px; font-weight: 800; }
+.type-btn .t-name { font-size: 14px; font-weight: 700; }
 .type-btn .t-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; font-weight: 400; }
 
 /* ===== BUTTONS ===== */
 .btn-add {
   width: 100%;
-  background: linear-gradient(135deg, var(--accent), #4f46e5);
-  color: #fff;
+  background: var(--accent);
+  color: var(--on-accent);
   border: none;
   border-radius: 14px;
   padding: 16px;
   font-size: 16px;
   font-family: 'Heebo', sans-serif;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.15s;
-  box-shadow: 0 4px 16px rgba(99,102,241,0.25);
+  box-shadow: none;
 }
 .btn-add:active { transform: scale(0.97); opacity: 0.9; }
 
@@ -134,7 +134,7 @@
 
 .btn-install-settings {
   width: 100%;
-  background: linear-gradient(135deg, var(--accent) 0%, #818cf8 100%);
+  background: var(--accent); color: var(--on-accent);
   color: #fff;
   border: none;
   border-radius: 14px;
@@ -167,7 +167,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, #25d366, #128c7e);
+  background: var(--card); color: var(--text); border: 1px solid var(--border);
   color: #fff;
   border: none;
   border-radius: 14px;
@@ -178,7 +178,7 @@
   cursor: pointer;
   margin-bottom: 14px;
   transition: all 0.15s;
-  box-shadow: 0 4px 16px rgba(37,211,102,0.2);
+  box-shadow: none;
 }
 .btn-share:active { transform: scale(0.97); opacity: 0.9; }
 
@@ -191,7 +191,7 @@
   top: -80px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: var(--ink); color: var(--bg);
   color: #fff;
   padding: 14px 24px;
   border-radius: 14px;
@@ -199,7 +199,7 @@
   font-weight: 700;
   z-index: 999;
   transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 8px 30px rgba(16,185,129,0.3);
+  box-shadow: none;
   direction: rtl;
   text-align: center;
   max-width: 90%;
@@ -264,11 +264,9 @@
 .badge-sick { background: var(--red-dim); color: var(--red); }
 .badge-minus { background: var(--blue-dim); color: var(--blue); }
 
-.dot-plus { background: var(--accent-light); }
-.dot-training { background: var(--orange); }
-.dot-vacation { background: var(--green); }
-.dot-sick { background: var(--red); }
-.dot-minus { background: var(--blue); }
+.dot-plus, .dot-training, .dot-vacation, .dot-sick, .dot-minus { background: var(--accent); }
+.ded-val.red, .f106-amount.red, .forecast-val.red { color: var(--text); }
+.ded-val.green, .f106-amount.green { color: var(--accent); }
 
 /* ===== SHIFT LIST ITEM ===== */
 .shift-item {
@@ -287,7 +285,7 @@
 .shift-item .si-right { display: flex; flex-direction: column; gap: 4px; }
 .si-date { font-size: 12px; color: var(--text-dim); font-weight: 400; }
 .si-left { text-align: left; display: flex; align-items: center; gap: 10px; }
-.si-pay { font-size: 17px; font-weight: 800; color: var(--green); font-variant-numeric: tabular-nums; }
+.si-pay { font-size: 17px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
 .si-hours { font-size: 11px; color: var(--text-dim); }
 .si-delete {
   background: none;
@@ -313,7 +311,7 @@
 .empty-state-btn {
   margin-top: 16px;
   padding: 14px 24px;
-  background: linear-gradient(135deg, var(--accent), #4f46e5);
+  background: var(--accent); color: var(--on-accent);
   color: #fff;
   border: none;
   border-radius: 12px;
@@ -321,7 +319,7 @@
   font-family: 'Heebo', sans-serif;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(99,102,241,0.25);
+  box-shadow: none;
 }
 .empty-state-btn:active { opacity: 0.9; }
 
@@ -335,8 +333,7 @@
   transition: border-color 0.2s ease;
   contain: layout style;
 }
-.deductions-panel { border-color: rgba(239,68,68,0.15); }
-.employer-panel { border-color: rgba(16,185,129,0.15); }
+.deductions-panel, .employer-panel { border-color: var(--border); }
 
 .ded-header {
   display: flex;
@@ -346,7 +343,7 @@
   cursor: pointer;
 }
 .ded-header .ded-title { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
-.ded-header .ded-total { font-size: 15px; font-weight: 800; }
+.ded-header .ded-total { font-size: 15px; font-weight: 700; }
 .ded-header .ded-arrow {
   font-size: 10px;
   color: var(--text-dim);
@@ -441,11 +438,11 @@
 .bd-row .bd-dot { width: 8px; height: 8px; border-radius: 50%; }
 .bd-row .bd-name { font-size: 13px; font-weight: 600; }
 .bd-row .bd-count { font-size: 11px; color: var(--text-dim); }
-.bd-row .bd-pay { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.bd-row .bd-pay { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* ===== RESULT PANEL ===== */
 .result-panel {
-  background: linear-gradient(135deg, var(--card), var(--card-alt));
+  background: var(--card);
   border: 1px solid rgba(99,102,241,0.2);
   border-radius: 18px;
   padding: 20px;
@@ -454,7 +451,7 @@
 }
 .result-panel.show { display: block; animation: fadeIn 0.3s ease; }
 .rp-header { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; font-weight: 500; }
-.rp-total { font-size: 34px; font-weight: 900; color: var(--green); direction: ltr; text-align: right; letter-spacing: -1px; }
+.rp-total { font-size: 34px; font-weight: 700; color: var(--green); direction: ltr; text-align: right; letter-spacing: -1px; }
 .rp-hours { font-size: 13px; color: var(--text-dim); margin-bottom: 14px; }
 .rp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .rp-item {
@@ -471,9 +468,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  z-index: 1000;
+    z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -497,7 +492,7 @@
   transform: scale(1);
   opacity: 1;
 }
-.confirm-title { font-size: 18px; font-weight: 800; margin-bottom: 10px; }
+.confirm-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
 .confirm-msg { font-size: 14px; color: var(--text-secondary); margin-bottom: 22px; line-height: 1.5; }
 .confirm-btns { display: flex; gap: 10px; }
 .confirm-cancel {
@@ -543,7 +538,7 @@
 .install-hint.visible { display: flex !important; }
 .install-hint-btn {
   flex: 1;
-  background: linear-gradient(135deg, var(--accent) 0%, #818cf8 100%);
+  background: var(--accent); color: var(--on-accent);
   border: none;
   border-radius: 12px;
   color: #fff;

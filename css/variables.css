@@ -1,24 +1,90 @@
-/* שכ״ש – Design tokens */
+/* שכ״ש – נייר ודיו. מצב כהה הוא אותם תפקידים, לא פלטה אחרת. */
 :root {
-  --bg: #0f172a;
-  --card: #1e293b;
-  --card-alt: #1a2332;
-  --accent: #6366f1;
-  --accent-light: #818cf8;
-  --green: #10b981;
-  --green-dim: rgba(16,185,129,0.12);
-  --orange: #f59e0b;
-  --orange-dim: rgba(245,158,11,0.12);
-  --red: #ef4444;
-  --red-dim: rgba(239,68,68,0.10);
-  --blue: #38bdf8;
-  --blue-dim: rgba(56,189,248,0.12);
-  --accent-dim: rgba(99,102,241,0.12);
-  --text: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-dim: #64748b;
-  --border: rgba(148,163,184,0.1);
-  --border-strong: rgba(148,163,184,0.15);
+  --bg: #f4f1ea;
+  --card: #fffcf7;
+  --card-alt: #ebe6dc;
+  --ink: #1c1915;
+  --muted: #6f6a62;
+  --faint: #8a847b;
+  --accent: #1f6b4a;
+  --accent-light: #1f6b4a;
+  --on-accent: #fffcf7;
+  --green: #1f6b4a;
+  --green-dim: rgba(31, 107, 74, 0.1);
+  --orange: #6f6a62;
+  --orange-dim: rgba(28, 25, 21, 0.06);
+  --red: #9b3a2f;
+  --red-dim: rgba(155, 58, 47, 0.1);
+  --blue: #1c1915;
+  --blue-dim: rgba(28, 25, 21, 0.06);
+  --accent-dim: rgba(31, 107, 74, 0.1);
+  --text: #1c1915;
+  --text-secondary: #6f6a62;
+  --text-dim: #8a847b;
+  --border: rgba(28, 25, 21, 0.1);
+  --border-strong: rgba(28, 25, 21, 0.16);
   --radius: 16px;
+  --radius-control: 12px;
+  --shadow: 0 1px 0 rgba(28, 25, 21, 0.04);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --font: 'Heebo', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #141311;
+  --card: #1e1c18;
+  --card-alt: #2a2722;
+  --ink: #f3efe6;
+  --muted: #a39e94;
+  --faint: #8a847b;
+  --accent: #d7b07a;
+  --accent-light: #d7b07a;
+  --on-accent: #141311;
+  --green: #d7b07a;
+  --green-dim: rgba(215, 176, 122, 0.12);
+  --orange: #a39e94;
+  --orange-dim: rgba(243, 239, 230, 0.06);
+  --red: #e3a196;
+  --red-dim: rgba(227, 161, 150, 0.12);
+  --blue: #f3efe6;
+  --blue-dim: rgba(243, 239, 230, 0.06);
+  --accent-dim: rgba(215, 176, 122, 0.12);
+  --text: #f3efe6;
+  --text-secondary: #a39e94;
+  --text-dim: #8a847b;
+  --border: rgba(243, 239, 230, 0.1);
+  --border-strong: rgba(243, 239, 230, 0.16);
+  --shadow: none;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141311;
+    --card: #1e1c18;
+    --card-alt: #2a2722;
+    --ink: #f3efe6;
+    --muted: #a39e94;
+    --faint: #8a847b;
+    --accent: #d7b07a;
+    --accent-light: #d7b07a;
+    --on-accent: #141311;
+    --green: #d7b07a;
+    --green-dim: rgba(215, 176, 122, 0.12);
+    --orange: #a39e94;
+    --orange-dim: rgba(243, 239, 230, 0.06);
+    --red: #e3a196;
+    --red-dim: rgba(227, 161, 150, 0.12);
+    --blue: #f3efe6;
+    --blue-dim: rgba(243, 239, 230, 0.06);
+    --accent-dim: rgba(215, 176, 122, 0.12);
+    --text: #f3efe6;
+    --text-secondary: #a39e94;
+    --text-dim: #8a847b;
+    --border: rgba(243, 239, 230, 0.1);
+    --border-strong: rgba(243, 239, 230, 0.16);
+    --shadow: none;
+    color-scheme: dark;
+  }
 }
