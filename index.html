@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#f4f1ea">
   <title>שכ״ש</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
@@ -31,29 +31,8 @@
       <button class="tutorial-skip" onclick="skipTutorial()" aria-label="דלג">דלג</button>
       <div class="tutorial-slides">
         <div class="tutorial-slide active" data-slide="0">
-          <div class="tutorial-emoji">👋</div>
-          <h2 class="tutorial-title">ברוך הבא</h2>
-          <p class="tutorial-desc">שכ״ש – אפליקציה לחישוב שכר ומשכורת לעובדי משמרות. עקוב אחרי הברוטו והנטו, צפה בניכויים, ושמור על החסכון הפנסיוני שלך.</p>
-        </div>
-        <div class="tutorial-slide" data-slide="1">
-          <div class="tutorial-emoji">📊</div>
-          <h2 class="tutorial-title">עמוד הבית</h2>
-          <p class="tutorial-desc">כאן תראה את סיכום החודש – נטו לבנק, סה״כ ברוטו, פירוט ניכויים (ביטוח לאומי, מס בריאות, פנסיה וכו׳). גלול לראות את המשמרות האחרונות.</p>
-        </div>
-        <div class="tutorial-slide" data-slide="2">
-          <div class="tutorial-emoji">💰</div>
-          <h2 class="tutorial-title">חישוב משכורת</h2>
-          <p class="tutorial-desc">הוסף משמרות מהלשונית הוספה. הזן תלוש בפועל להשוואה. צפה בניכויי עובד (ביטוח לאומי, מס בריאות, פנסיה, קרן השתלמות) ובהפרשות המעסיק.</p>
-        </div>
-        <div class="tutorial-slide" data-slide="3">
-          <div class="tutorial-emoji">🏦</div>
-          <h2 class="tutorial-title">חסכון פנסיוני</h2>
-          <p class="tutorial-desc">בדף חסכון פנסיוני – קרן פנסיה, קרן השתלמות וחסכונות כלליים. הזן יתרות וצפה בתחזיות לטווח ארוך.</p>
-        </div>
-        <div class="tutorial-slide" data-slide="4">
-          <div class="tutorial-emoji">⚙️</div>
-          <h2 class="tutorial-title">הגדרות</h2>
-          <p class="tutorial-desc">קבע תעריפים, נקודות זיכוי, יתרות חופש ומחלה, ושם. ייצא גיבוי, PDF או CSV.</p>
+          <h2 class="tutorial-title">שכ״ש</h2>
+          <p class="tutorial-desc">חישוב שכר למשמרות. בבית רואים כמה נטו נכנס ומתי. משמרת חדשה נרשמת בטאב משמרת. חסכון, סיכום שנתי והגדרות נמצאים בעוד.</p>
         </div>
       </div>
       <div class="tutorial-dots" id="tutorialDots"></div>
@@ -68,8 +47,7 @@
   <!-- Onboarding modal (name - first-time only) -->
   <div class="onboarding-overlay" id="onboardingOverlay">
     <div class="onboarding-card">
-      <div class="onboarding-emoji">👋</div>
-      <div class="onboarding-title">ברוכים הבאים לשכ״ש!</div>
+      <div class="onboarding-title">ברוכים הבאים לשכ״ש</div>
       <div class="onboarding-subtitle">איך לקרוא לך?</div>
       <input class="onboarding-input" id="onboardingName" type="text" inputmode="text" placeholder="השם שלך" autocomplete="given-name" autofocus>
       <button class="onboarding-btn" onclick="completeOnboarding()">יאללה, בוא נתחיל</button>
@@ -82,7 +60,7 @@
 
   <!-- Offline indicator -->
   <div class="offline-banner" id="offlineBanner">
-    <span>📡 אין חיבור לאינטרנט – האפליקציה פועלת במצב לא מקוון</span>
+    <span>אין חיבור לאינטרנט – האפליקציה פועלת במצב לא מקוון</span>
   </div>
 
   <!-- Update available banner -->
@@ -94,7 +72,7 @@
   <!-- Install hint (Add to Home Screen – pressable) -->
   <div class="install-hint" id="installHint">
     <button type="button" class="install-hint-btn" onclick="triggerAddToHomeScreen()">
-      📱 הוסף למסך הבית
+      הוסף למסך הבית
     </button>
     <button type="button" class="install-hint-close" onclick="dismissInstallHint()" aria-label="סגור">×</button>
   </div>
@@ -106,40 +84,32 @@
       <span class="label" id="monthLabel"></span>
       <button onclick="changeMonth(1)">‹</button>
     </div>
-    <div style="text-align:center;margin-bottom:14px;">
-      <button class="btn-payslip" onclick="openPayslipModal()">📋 הזנת תלוש בפועל</button>
+    <div class="pay-figure">
+      <div class="pay-when" id="heroPaymentDate"></div>
+      <div class="pay-label">נטו לבנק</div>
+      <div class="pay-value" id="heroNet">₪0</div>
+      <p class="pay-meta"><span id="heroSub">0 משמרות · 0 שעות</span> · ברוטו <span id="heroGross">₪0</span></p>
+      <p class="pay-note" id="heroNetSub"></p>
+      <div class="pay-proj" id="heroNetProj" style="display:none"></div>
+      <div class="pay-proj" id="heroGrossProj" style="display:none"></div>
     </div>
 
-    <div class="dual-hero">
-      <div class="hero-card net-card">
-        <div class="hero-glow"></div>
-        <div class="hero-label">נטו לבנק</div>
-        <div class="hero-value" id="heroNet">₪0</div>
-        <div class="hero-sub" id="heroNetSub"></div>
-        <div class="hero-payment-date" id="heroPaymentDate"></div>
-        <div class="hero-projection" id="heroNetProj" style="display:none"></div>
+    <div class="home-actions">
+      <button type="button" onclick="openPayslipModal()">הזנת תלוש</button>
+      <button type="button" onclick="openDetailSheet()">פירוט</button>
+    </div>
+    <div class="home-actions" id="shareButtons" style="display:none">
+      <button type="button" id="shareBtn" onclick="shareWhatsApp()">שיתוף</button>
+      <button type="button" onclick="shareImage()">תמונה</button>
+    </div>
+
+    <div class="sheet-overlay" id="detailSheet" hidden onclick="if(event.target===this)closeDetailSheet()">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="sheet-head">
+        <h2>פירוט החודש</h2>
+        <button type="button" class="sheet-close" onclick="closeDetailSheet()">סגור</button>
       </div>
-      <div class="hero-card gross-card">
-        <div class="hero-glow"></div>
-        <div class="hero-label">סה"כ ברוטו</div>
-        <div class="hero-value" id="heroGross">₪0</div>
-        <div class="hero-sub" id="heroSub">0 משמרות · 0 שעות</div>
-        <div class="hero-projection" id="heroGrossProj" style="display:none"></div>
-      </div>
-    </div>
-
-    <!-- Share buttons -->
-    <div id="shareButtons" style="display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-      <button class="btn-share" id="shareBtn" onclick="shareWhatsApp()" style="margin-bottom:0;">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-        <span>WhatsApp</span>
-      </button>
-      <button class="btn-share" onclick="shareImage()" style="margin-bottom:0;background:linear-gradient(135deg,#6366f1,#818cf8);">
-        <span>📷 תמונה</span>
-      </button>
-    </div>
-
-    <!-- Deductions breakdown (collapsible) -->
     <div class="deductions-panel" id="deductionsPanel">
       <div class="ded-header" onclick="toggleDeductions()">
         <div style="display:flex;align-items:center;gap:6px;">
@@ -204,7 +174,7 @@
           <span class="ded-arrow" id="cmpArrow">▼</span>
           <span class="ded-title" style="color:var(--accent-light)">השוואה לתלוש</span>
         </div>
-        <span class="ded-total" style="color:var(--accent-light);font-size:12px">📋</span>
+        <span class="ded-total" style="color:var(--accent-light);font-size:12px"></span>
       </div>
       <div class="ded-body" id="cmpBody">
         <div class="cmp-header-row">
@@ -257,21 +227,25 @@
       </div>
     </div>
 
-    <div class="section-label">משמרות אחרונות</div>
+    </div>
+    </div>
+
+    <div class="section-label">משמרות</div>
     <div id="recentShifts"></div>
   </div>
 
   <!-- ==================== SAVINGS (חסכון פנסיוני) ==================== -->
   <div class="page view-container hidden" id="pageSavings">
+    <button type="button" class="subpage-back" onclick="switchTab('More')">עוד</button>
     <div id="savingsSection" class="savings-section">
       <div class="section-label" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
         <span>חסכון פנסיוני</span>
       </div>
       <div id="savingsEmptyState" class="savings-empty-state" style="display:none">
-        <div class="savings-empty-icon">🏦</div>
+        <div class="savings-empty-icon"></div>
         <div class="savings-empty-text">אין עדיין חסכון פנסיוני</div>
         <div class="savings-empty-hint">הזן יתרות בקרן פנסיה וקרן השתלמות בהגדרות, או הוסף חסכונות כלליים</div>
-        <button class="btn-savings-add" onclick="openGeneralSavingsModal()">➕ הוסף חסכון</button>
+        <button class="btn-savings-add" onclick="openGeneralSavingsModal()">הוסף חסכון</button>
       </div>
       <div id="savingsContentArea" style="display:none">
         <div class="savings-total-card" id="savingsTotalCard" style="margin-bottom:16px;">
@@ -283,7 +257,7 @@
         <div class="savings-general-section">
           <div class="section-label" style="margin-top:4px;">חסכונות כלליים</div>
           <div id="savingsGeneralList"></div>
-          <button class="btn-savings-add" onclick="openGeneralSavingsModal()">➕ הוסף חסכון</button>
+          <button class="btn-savings-add" onclick="openGeneralSavingsModal()">הוסף חסכון</button>
         </div>
         <div class="chart-box" dir="ltr" style="height:180px;margin-top:12px;">
           <canvas id="savingsChartCanvas"></canvas>
@@ -300,29 +274,29 @@
 
     <div class="type-grid">
       <div class="type-btn selected" data-type="plus" onclick="selectType('plus')">
-        <div class="t-icon">⚡</div>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
         <div class="t-name">פלוס</div>
-        <div class="t-desc">06:00 → 06:00+</div>
+        <div class="t-desc">06:00 עד 06:00</div>
       </div>
       <div class="type-btn" data-type="training" onclick="selectType('training')">
-        <div class="t-icon">🎯</div>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75"><path d="M4 18V6M4 6h10l2 3-2 3H4"/></svg>
         <div class="t-name">אימון</div>
-        <div class="t-desc">06:00 → 20:00</div>
+        <div class="t-desc">06:00 עד 20:00</div>
       </div>
       <div class="type-btn" data-type="vacation" onclick="selectType('vacation')">
-        <div class="t-icon">🏖️</div>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg>
         <div class="t-name">חופש</div>
-        <div class="t-desc">1,750 ₪</div>
+        <div class="t-desc">יום קבוע</div>
       </div>
       <div class="type-btn" data-type="sick" onclick="selectType('sick')">
-        <div class="t-icon">🏥</div>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75"><path d="M12 7v10M7 12h10"/><rect x="4" y="4" width="16" height="16" rx="3"/></svg>
         <div class="t-name">מחלה</div>
-        <div class="t-desc">1,750 ₪</div>
+        <div class="t-desc">יום קבוע</div>
       </div>
       <div class="type-btn" data-type="minus" onclick="selectType('minus')" style="grid-column:1/-1">
-        <div class="t-icon">🕐</div>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75"><circle cx="12" cy="12" r="8"/><path d="M12 8v5"/></svg>
         <div class="t-name">ידני</div>
-        <div class="t-desc">בחר שעות</div>
+        <div class="t-desc">בחירת שעות</div>
       </div>
     </div>
 
@@ -376,7 +350,7 @@
       <input type="text" id="shiftNote" placeholder="הוסף הערה למשמרת..." inputmode="text" autocomplete="off" maxlength="200">
     </div>
 
-    <button class="btn-add" onclick="addShift()">➕ הוסף משמרת</button>
+    <button class="btn-add" onclick="addShift()">הוסף משמרת</button>
 
     <div class="result-panel" id="resultPanel">
       <div class="rp-header">חישוב המשמרת</div>
@@ -401,6 +375,20 @@
 
   <!-- ==================== SETTINGS ==================== -->
   <div class="page view-container hidden" id="pageSettings">
+    <button type="button" class="subpage-back" onclick="switchTab('More')">עוד</button>
+    <div class="section-label" style="margin-bottom:14px;">מראה</div>
+    <div class="setting-group">
+      <div class="setting-item">
+        <span class="si-label">ערכת צבע</span>
+        <div>
+          <select id="settingTheme" onchange="saveThemeSetting()">
+            <option value="system">לפי המכשיר</option>
+            <option value="light">נייר</option>
+            <option value="dark">דיו</option>
+          </select>
+        </div>
+      </div>
+    </div>
     <div class="section-label" style="margin-bottom:14px;">אפליקציה</div>
     <div class="setting-toggle">
       <div class="st-right">
@@ -410,14 +398,14 @@
       <div class="toggle" id="toggleNotifications" onclick="toggleNotifications()"></div>
     </div>
     <button class="btn-install-settings" id="btnAddToHome" onclick="triggerAddToHomeScreen()">
-      📱 הוסף למסך הבית
+      הוסף למסך הבית
     </button>
 
     <div class="section-label" style="margin-bottom:14px;">פרופיל</div>
     <div class="setting-group">
       <div class="setting-item">
         <span class="si-label">שם</span>
-        <div><input type="text" id="settingUserName" value="" inputmode="text" placeholder="הזן את שמך" onchange="saveUserNameSetting()" style="font-size:1rem;min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);color:var(--text);font-family:'Heebo',sans-serif;"></div>
+        <div><input type="text" id="settingUserName" value="" inputmode="text" placeholder="הזן את שמך" onchange="saveUserNameSetting()"></div>
       </div>
     </div>
 
@@ -503,7 +491,7 @@
     </div>
 
     <button class="btn-secondary" onclick="switchTab('Savings')" style="margin-bottom:14px;">
-      🏦 חסכון פנסיוני – צפייה והזנת יתרות
+      חסכון פנסיוני – צפייה והזנת יתרות
     </button>
     <div class="section-label" style="margin-bottom:14px;">יתרות חופש ומחלה</div>
     <div class="setting-group">
@@ -519,12 +507,12 @@
 
     <div class="section-label" style="margin-bottom:14px;">גיבוי ושחזור</div>
     <div class="backup-info" id="lastBackupInfo">לא בוצע גיבוי עדיין</div>
-    <button class="btn-secondary" onclick="exportData()">📤 ייצוא גיבוי</button>
-    <button class="btn-secondary" onclick="exportShiftsCSV()">📊 ייצוא CSV (חודש נוכחי)</button>
-    <button class="btn-secondary" onclick="downloadMonthlyPdf()">📄 ייצוא PDF</button>
-    <button class="btn-secondary" onclick="document.getElementById('importFile').click()">📥 ייבוא גיבוי</button>
+    <button class="btn-secondary" onclick="exportData()">ייצוא גיבוי</button>
+    <button class="btn-secondary" onclick="exportShiftsCSV()">ייצוא CSV (חודש נוכחי)</button>
+    <button class="btn-secondary" onclick="downloadMonthlyPdf()">ייצוא PDF</button>
+    <button class="btn-secondary" onclick="document.getElementById('importFile').click()">ייבוא גיבוי</button>
     <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
-    <button class="btn-danger" onclick="clearAllData()" style="margin-top:10px;">🗑️ מחק את כל הנתונים</button>
+    <button class="btn-danger" onclick="clearAllData()" style="margin-top:10px;">מחק את כל הנתונים</button>
 
     <div id="adminPanelSection" style="margin-top:20px;">
       <button class="btn-secondary" id="adminPanelBtn" onclick="openAdminPrompt()" style="font-size:12px;color:var(--text-dim);">
@@ -540,6 +528,7 @@
 
   <!-- ==================== ANNUAL / FORM 106 ==================== -->
   <div class="page view-container hidden" id="pageAnnual">
+    <button type="button" class="subpage-back" onclick="switchTab('More')">עוד</button>
     <div class="annual-year-nav">
       <button onclick="changeAnnualYear(-1)">›</button>
       <span class="label" id="annualYearLabel"></span>
@@ -553,7 +542,7 @@
 
     <!-- Form 106 Summary -->
     <div id="annualSummaryView">
-      <button class="btn-secondary" onclick="exportAnnualCSV()" style="margin-bottom:14px;">📊 ייצוא שנתי CSV</button>
+      <button class="btn-secondary" onclick="exportAnnualCSV()" style="margin-bottom:14px;">ייצוא שנתי CSV</button>
       <div class="f106-hero">
         <div class="f106-label">נטו שנתי (אומדן)</div>
         <div class="f106-val" id="f106Net">₪0</div>
@@ -651,11 +640,11 @@
       <div class="ps-field">
         <label>סוג משמרת</label>
         <select id="editShiftType" onchange="onEditShiftTypeChange()" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:14px;font-family:'Heebo',sans-serif;color:var(--text);direction:rtl;outline:none;">
-          <option value="plus">⚡ פלוס (06:00–06:00+)</option>
-          <option value="training">🎯 אימון (06:00–20:00)</option>
-          <option value="vacation">🏖️ חופש (1,750 ₪)</option>
-          <option value="sick">🏥 מחלה (1,750 ₪)</option>
-          <option value="minus">🕐 ידני</option>
+          <option value="plus">פלוס (06:00–06:00+)</option>
+          <option value="training">אימון (06:00–20:00)</option>
+          <option value="vacation">חופש (1,750 ₪)</option>
+          <option value="sick">מחלה (1,750 ₪)</option>
+          <option value="minus">ידני</option>
         </select>
       </div>
       <div class="ps-field">
@@ -681,7 +670,7 @@
       <div class="ps-btns" style="flex-direction:column;">
         <div style="display:flex;gap:10px;">
           <button class="ps-cancel" onclick="closeEditShiftModal()">ביטול</button>
-          <button class="ps-save" onclick="saveEditShift()">💾 שמור</button>
+          <button class="ps-save" onclick="saveEditShift()">שמור</button>
         </div>
       </div>
     </div>
@@ -692,7 +681,7 @@
 
   <!-- Undo Delete Toast -->
   <div class="undo-toast" id="undoToast">
-    <span class="undo-toast-msg">🗑️ משמרת נמחקה</span>
+    <span class="undo-toast-msg">משמרת נמחקה</span>
     <button class="undo-toast-btn" onclick="undoDelete()">בטל</button>
   </div>
 
@@ -737,30 +726,30 @@
   </div>
 
   <!-- ==================== BOTTOM TAB BAR ==================== -->
+  <div class="page view-container hidden" id="pageMore">
+    <div class="more-list">
+      <button type="button" class="more-row" onclick="switchTab('Savings')">חסכון פנסיוני <span>‹</span></button>
+      <button type="button" class="more-row" onclick="switchTab('Annual')">סיכום שנתי <span>‹</span></button>
+      <button type="button" class="more-row" onclick="switchTab('Settings')">הגדרות <span>‹</span></button>
+    </div>
+  </div>
+
   <nav class="tab-bar" role="navigation" aria-label="ניווט ראשי">
-    <button class="tab active" onclick="switchTab('Dashboard')" id="tabDashboard" aria-label="דף ראשי">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      <span>ראשי</span>
+    <button class="tab active" onclick="switchTab('Dashboard')" id="tabDashboard" aria-label="בית">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
+      <span>בית</span>
     </button>
-    <button class="tab" onclick="switchTab('Add')" id="tabAdd" aria-label="הוספת משמרת">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      <span>הוספה</span>
+    <button class="tab" onclick="switchTab('Add')" id="tabAdd" aria-label="משמרת">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      <span>משמרת</span>
     </button>
-    <button class="tab" onclick="switchTab('Savings')" id="tabSavings" aria-label="חסכון פנסיוני">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      <span>חסכון</span>
+    <button class="tab" onclick="switchTab('Calendar')" id="tabCalendar" aria-label="לוח">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="4" y1="11" x2="20" y2="11"/></svg>
+      <span>לוח</span>
     </button>
-    <button class="tab" onclick="switchTab('Calendar')" id="tabCalendar" aria-label="לוח שנה">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <span>לוח שנה</span>
-    </button>
-    <button class="tab" onclick="switchTab('Annual')" id="tabAnnual" aria-label="סיכום שנתי">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      <span>שנתי</span>
-    </button>
-    <button class="tab" onclick="switchTab('Settings')" id="tabSettings" aria-label="הגדרות">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-      <span>הגדרות</span>
+    <button class="tab" onclick="switchTab('More')" id="tabMore" aria-label="עוד">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><line x1="5" y1="7" x2="19" y2="7"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="17" x2="19" y2="17"/></svg>
+      <span>עוד</span>
     </button>
   </nav>
 

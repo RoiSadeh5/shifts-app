@@ -1,5 +1,9 @@
 # שכ״ש Upgrade Plan
 
+המבנה החי של הפרויקט מתואר ב-[README](../README.md). המסמך הזה הוא תוכנית השדרוג המקורית, לא מפת התיקיות הנוכחית.
+
+
+
 PWA salary calculator for Israeli government shift workers. Pay is "shotef+30" (January salary on March 1st).
 
 **Status: All phases implemented ✓**

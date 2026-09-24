@@ -44,11 +44,11 @@ function renderTemplates() {
     if (list.length === 0) {
       container.innerHTML = '<div class="section-label" style="margin-bottom:8px;">תבניות משמרות</div>' +
         '<div class="empty-state" style="padding:24px;"><div class="empty-hint">אין תבניות. צלם את השבוע הנוכחי או צור תבנית חדשה.</div>' +
-        '<button class="btn-secondary" style="margin-top:12px;" onclick="captureCurrentWeek()">📸 צלם שבוע נוכחי</button></div>';
+        '<button class="btn-secondary" style="margin-top:12px;" onclick="captureCurrentWeek()">שמור את השבוע הנוכחי</button></div>';
       return;
     }
     var html = '<div class="section-label" style="margin-bottom:8px;">תבניות משמרות</div>' +
-      '<button class="btn-secondary" style="margin-bottom:10px;" onclick="captureCurrentWeek()">📸 צלם שבוע נוכחי</button>' +
+      '<button class="btn-secondary" style="margin-bottom:10px;" onclick="captureCurrentWeek()">שמור את השבוע הנוכחי</button>' +
       list.map(function(t) {
         var summary = (t.pattern || []).map(function(p) {
           var d = ['א\'','ב\'','ג\'','ד\'','ה\'','ו\'','ש\''][p.dayOfWeek] || '';

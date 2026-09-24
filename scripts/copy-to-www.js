@@ -9,11 +9,10 @@ const ROOT = path.join(__dirname, '..');
 const WWW = path.join(ROOT, 'www');
 
 const FILES = [
-  'index.html', 'manifest.json', 'sw.js', 'privacy.html',
-  'icon-192.png', 'icon-512.png',
-  'shiftCalculator.js', 'demo.js', 'test-regression.js'
+  'index.html', 'manifest.json', 'sw.js', 'privacy.html', 'config.example.js',
+  'icon-192.png', 'icon-512.png'
 ];
-const DIRS = ['src'];
+const DIRS = ['src', 'css'];
 
 function copyFile(src, dest) {
   const dir = path.dirname(dest);
