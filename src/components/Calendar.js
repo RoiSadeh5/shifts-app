@@ -47,7 +47,7 @@ function renderCalendarCore() {
         var shifts = shiftsByDay[d] || [];
         var isToday = d === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
         var cls = 'cal-day' + (shifts.length ? ' has-shift' : '') + (isToday ? ' today' : '');
-        var dots = shifts.map(function(s) { return '<div class="cal-dot ' + dotCls[s.type] + '"></div>'; }).join('');
+        var dots = shifts.length ? '<div class="cal-dot"></div>' : '';
         html += '<div class="' + cls + '" onclick="showDayDetail(' + d + ')"><span>' + d + '</span>' + (dots ? '<div class="cal-dots">' + dots + '</div>' : '') + '</div>';
       }
     }
@@ -58,7 +58,7 @@ function renderCalendarCore() {
       var shifts = shiftsByDay[d] || [];
       var isToday = d === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
       var cls = 'cal-day' + (shifts.length ? ' has-shift' : '') + (isToday ? ' today' : '');
-      var dots = shifts.map(function(s) { return '<div class="cal-dot ' + dotCls[s.type] + '"></div>'; }).join('');
+      var dots = shifts.length ? '<div class="cal-dot"></div>' : '';
       html += '<div class="' + cls + '" onclick="showDayDetail(' + d + ')"><span>' + d + '</span>' + (dots ? '<div class="cal-dots">' + dots + '</div>' : '') + '</div>';
     }
   }
@@ -96,7 +96,7 @@ function showDayDetail(day) {
     details.innerHTML = '<div class="cal-day-detail">' +
       '<div class="cdd-date">' + day + ' ' + hebrewMonths[currentMonth] + '</div>' +
       '<div style="color:var(--text-dim);font-size:13px;margin-bottom:12px;">אין משמרות</div>' +
-      '<button class="btn-add" onclick="openAddForDate(\'' + dateVal + '\')">➕ הוסף משמרת ליום זה</button>' +
+      '<button class="btn-add" onclick="openAddForDate(\'' + dateVal + '\')">הוסף משמרת ליום זה</button>' +
       '</div>';
     return;
   }
@@ -109,7 +109,7 @@ function showDayDetail(day) {
       '<span style="color:var(--text-dim);font-size:13px;">' + (s.result.flatRate ? 'קבוע' : s.result.totalHours + ' שעות') + '</span>' +
       '</div>' +
       '<div style="margin-top:10px;display:flex;justify-content:flex-end;">' +
-      '<button class="si-delete" onclick="confirmDeleteShiftFromCalendar(' + day + ',' + s.id + ')">🗑️ מחק משמרת</button>' +
+      '<button class="si-delete" onclick="confirmDeleteShiftFromCalendar(' + day + ',' + s.id + ')">מחק משמרת</button>' +
       '</div>' +
       '</div>';
   }).join('');

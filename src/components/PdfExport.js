@@ -24,13 +24,17 @@ function generateMonthlyPdf() {
 
   var h = typeof hebrewMonths !== 'undefined' ? hebrewMonths[currentMonth] : (currentMonth + 1);
   var title = 'Sachash - ' + h + ' ' + currentYear;
+  doc.setTextColor(28, 25, 21);
   doc.setFontSize(18);
   doc.text(title, 14, 20);
 
+  doc.setTextColor(31, 107, 74);
+  doc.setFontSize(14);
+  doc.text('Net: ' + Math.round(net).toLocaleString(), 14, 32);
+  doc.setTextColor(28, 25, 21);
   doc.setFontSize(11);
-  doc.text('Gross: ' + gross.toFixed(0), 14, 30);
-  doc.text('Net: ' + net.toFixed(0), 14, 37);
-  doc.text('Shifts: ' + monthShifts.length + ' | Hours: ' + totalH.toFixed(1), 14, 44);
+  doc.text('Gross: ' + Math.round(gross).toLocaleString(), 14, 40);
+  doc.text('Shifts: ' + monthShifts.length + ' | Hours: ' + totalH.toFixed(1), 14, 47);
 
   if (typeof doc.autoTable === 'function' && monthShifts.length > 0) {
     var rows = monthShifts.map(function(s) {
@@ -38,10 +42,13 @@ function generateMonthlyPdf() {
       return [s.date, tn, (s.result && s.result.totalHours) ? s.result.totalHours.toFixed(1) : '-', (s.result && s.result.totalPay) ? s.result.totalPay.toFixed(0) : '0'];
     });
     doc.autoTable({
-      startY: 52,
+      startY: 56,
       head: [['Date', 'Type', 'Hours', 'Pay']],
       body: rows,
-      theme: 'grid'
+      theme: 'plain',
+      styles: { textColor: [28, 25, 21], fontSize: 10 },
+      headStyles: { fillColor: [28, 25, 21], textColor: [255, 252, 247], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [244, 241, 234] }
     });
   }
   return doc;

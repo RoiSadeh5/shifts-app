@@ -132,7 +132,7 @@ function setTutorialComplete() {
 }
 
 var tutorialSlide = 0;
-var TUTORIAL_TOTAL = 5;
+var TUTORIAL_TOTAL = 1;
 
 function initTutorialDots() {
   var container = document.getElementById('tutorialDots');
@@ -237,7 +237,7 @@ function updateGreeting() {
   if (!titleEl) return;
   if (name) {
     titleEl.textContent = '';
-    titleEl.innerHTML = `שלום, ${name} 👋`;
+    titleEl.textContent = 'שלום, ' + name;
     titleEl.classList.add('greeting-animated');
   } else {
     titleEl.textContent = 'שכ״ש';
@@ -277,9 +277,48 @@ function saveUserNameSetting() {
 }
 
 // ===== Tab Navigation (SPA View Switcher) =====
+function tabForPage(name) {
+  if (name === 'Savings' || name === 'Annual' || name === 'Settings') return 'More';
+  return name;
+}
+
+function openDetailSheet() {
+  var sheet = document.getElementById('detailSheet');
+  if (!sheet) return;
+  sheet.hidden = false;
+}
+
+function closeDetailSheet() {
+  var sheet = document.getElementById('detailSheet');
+  if (!sheet) return;
+  sheet.hidden = true;
+}
+
+var THEME_KEY = 'shifter_theme';
+function applyTheme(mode) {
+  var root = document.documentElement;
+  if (mode === 'light' || mode === 'dark') root.setAttribute('data-theme', mode);
+  else root.removeAttribute('data-theme');
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    var dark = mode === 'dark' || (mode !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    meta.setAttribute('content', dark ? '#141311' : '#f4f1ea');
+  }
+  var sel = document.getElementById('settingTheme');
+  if (sel && sel.value !== mode) sel.value = mode || 'system';
+}
+
+function saveThemeSetting() {
+  var sel = document.getElementById('settingTheme');
+  var mode = sel ? sel.value : 'system';
+  try { localStorage.setItem(THEME_KEY, mode); } catch (e) {}
+  applyTheme(mode);
+}
+
 function switchTab(name) {
   var targetPage = document.getElementById('page' + name);
-  var targetTab = document.getElementById('tab' + name);
+  var tabName = tabForPage(name);
+  var targetTab = document.getElementById('tab' + tabName);
   if (!targetPage || !targetTab) return;
   if (targetPage.classList.contains('active') && !targetPage.classList.contains('hidden')) return;
   haptic(true);
@@ -310,7 +349,7 @@ function switchTab(name) {
     if (typeof initSettingsView === 'function') initSettingsView();
   }
   if (name !== 'Dashboard') {
-    var titles = { Add: 'הוספת משמרת', Calendar: 'לוח שנה', Annual: 'סיכום שנתי', Settings: 'הגדרות', Savings: 'חסכון פנסיוני' };
+    var titles = { Add: 'משמרת', Calendar: 'לוח', Annual: 'סיכום שנתי', Settings: 'הגדרות', Savings: 'חסכון', More: 'עוד' };
     var titleEl = document.getElementById('pageTitle');
     if (titleEl) {
       titleEl.classList.remove('greeting-animated');
@@ -499,10 +538,10 @@ function showMainUIImmediately() {
   });
   var currentTab = '';
   try { currentTab = localStorage.getItem('shifter_current_tab') || 'Dashboard'; } catch (e) { currentTab = 'Dashboard'; }
-  var validTabs = ['Dashboard', 'Calendar', 'Savings', 'Settings', 'Add', 'Annual'];
+  var validTabs = ['Dashboard', 'Calendar', 'Savings', 'Settings', 'Add', 'Annual', 'More'];
   if (validTabs.indexOf(currentTab) === -1) currentTab = 'Dashboard';
   var targetPage = document.getElementById('page' + currentTab);
-  var targetTab = document.getElementById('tab' + currentTab);
+  var targetTab = document.getElementById('tab' + tabForPage(currentTab));
   if (targetPage && targetTab) {
     targetPage.classList.remove('hidden');
     targetPage.classList.add('active');
@@ -608,6 +647,10 @@ function _applyInitFromData() {
   try { savedName = loadUserName(); } catch (e) {}
   const nameInput = document.getElementById('settingUserName');
   if (nameInput && savedName) nameInput.value = savedName;
+
+  var savedTheme = 'system';
+  try { savedTheme = localStorage.getItem(THEME_KEY) || 'system'; } catch (e) {}
+  applyTheme(savedTheme);
 
   updateMonthLabels();
   recalcAll();

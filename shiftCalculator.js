@@ -17,4 +17,5 @@ module.exports = {
   calcDeductions: SalaryEngine.calcDeductions,
   calcIncomeTax: SalaryEngine.calcIncomeTax,
   calcAnnualSummary: SalaryEngine.calcAnnualSummary,
+  getHolidayForDate: SalaryEngine.getHolidayForDate,
 };

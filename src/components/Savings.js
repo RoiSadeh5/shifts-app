@@ -269,8 +269,8 @@ function renderSavingsChart() {
     data: {
       labels: data.labels,
       datasets: [
-        { label: 'פנסיה', data: data.pension, borderColor: '#818cf8', backgroundColor: 'rgba(129,140,248,0.12)', fill: true, tension: 0.3 },
-        { label: 'קרן השתלמות', data: data.study, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.12)', fill: true, tension: 0.3 }
+        { label: 'פנסיה', data: data.pension, borderColor: '#1c1915', backgroundColor: 'rgba(28,25,21,0.08)', fill: true, tension: 0.3 },
+        { label: 'קרן השתלמות', data: data.study, borderColor: '#1f6b4a', backgroundColor: 'rgba(31,107,74,0.12)', fill: true, tension: 0.3 }
       ]
     },
     options: Object.assign({}, defaults, {

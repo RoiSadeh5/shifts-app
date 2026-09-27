@@ -213,7 +213,7 @@ function deleteShift(id) {
   // Undo window
   _pendingUndoShift = removed;
   if (_undoTimer) clearTimeout(_undoTimer);
-  showUndoToast('🗑️ משמרת נמחקה');
+  showUndoToast('משמרת נמחקה');
   _undoTimer = setTimeout(function() {
     _pendingUndoShift = null;
     hideUndoToast();
@@ -233,7 +233,7 @@ function showResultPanel(r) {
       <div class="rp-item"><div class="rp-label">סופ"ש + לילה</div><div class="rp-val">₪${r.breakdown.weekendRest}</div></div>
       ${r.bonusApplied ? `<div class="rp-item" style="grid-column:1/-1"><div class="rp-label">בונוס רבעוני</div><div class="rp-val" style="color:var(--green)">+₪${r.bonusApplied.toLocaleString()}</div></div>` : ''}
       ${r.mealAllowance ? `<div class="rp-item" style="grid-column:1/-1"><div class="rp-label">אש״ל</div><div class="rp-val" style="color:var(--orange)">+₪${r.mealAllowance}</div></div>` : ''}
-      ${(r.isHoliday || r.isErevChag) ? `<div class="rp-item" style="grid-column:1/-1"><div class="rp-label">${r.isHoliday ? '🕍 יום חג' : '🕍 ערב חג'}</div><div class="rp-val" style="color:#fbbf24">${r.holidayName || 'חג'} · 150%</div></div>` : ''}`;
+      ${(r.isHoliday || r.isErevChag) ? `<div class="rp-item" style="grid-column:1/-1"><div class="rp-label">${r.isHoliday ? 'יום חג' : 'ערב חג'}</div><div class="rp-val">${r.holidayName || 'חג'} · 150%</div></div>` : ''}`;
   } else { grid.innerHTML = ''; }
   panel.classList.add('show');
 }

@@ -333,12 +333,9 @@ function loadShifts() {
 
 function saveShifts(list) {
   _cache.shifts = list || [];
+  _writeLocalStorageSafely(SHIFTS_KEY, _cache.shifts);
   if (typeof window !== 'undefined' && window.db) {
-    window.db.saveShifts(_cache.shifts).catch(function() {
-      try { localStorage.setItem(_storageKey(SHIFTS_KEY), JSON.stringify(list)); } catch (e) {}
-    });
-  } else {
-    try { localStorage.setItem(_storageKey(SHIFTS_KEY), JSON.stringify(list)); } catch (e) {}
+    window.db.saveShifts(_cache.shifts).catch(function() {});
   }
 }
 
@@ -351,12 +348,9 @@ function loadHistory() {
 
 function saveHistory(h) {
   _cache.history = h || {};
+  _writeLocalStorageSafely(HISTORY_KEY, _cache.history);
   if (typeof window !== 'undefined' && window.db) {
-    window.db.saveHistory(_cache.history).catch(function() {
-      try { localStorage.setItem(_storageKey(HISTORY_KEY), JSON.stringify(h)); } catch (e) {}
-    });
-  } else {
-    try { localStorage.setItem(_storageKey(HISTORY_KEY), JSON.stringify(h)); } catch (e) {}
+    window.db.saveHistory(_cache.history).catch(function() {});
   }
 }
 

@@ -1,70 +1,42 @@
 # שכ״ש – Shift Pay Calculator
 
-Hebrew (RTL) PWA for tracking work shifts and calculating gross/net salary.
-
-## App Store (iOS)
-
-The app is wrapped with **Capacitor** for native iOS distribution. See [APP_STORE.md](APP_STORE.md) for the full submission guide.
+Hebrew (RTL) PWA for tracking work shifts and calculating gross and net salary. Data stays on the device. The iOS app is a Capacitor wrapper. See [docs/APP_STORE.md](docs/APP_STORE.md).
 
 ```bash
-npm run cap:sync   # Build + sync to iOS
-npm run ios       # Open in Xcode
+npm run dev      # http://localhost:8000
+npm test         # salary engine regression tests
+npm run cap:sync # copy the web app into www/ and sync iOS
+npm run ios      # open Xcode
 ```
 
-## File Structure
+## Layout
 
-| Path | Purpose |
+| Path | What it is |
 |---|---|
-| `src/logic/salaryEngine.js` | **Salary engine** – shift pay, tax brackets, deductions, annual summary. Pure math. |
-| `src/store.js` | **Data store** – IndexedDB + localStorage for shifts, history, settings, savings. Export/import. |
-| `src/utils.js` | **Utils** – animations (countUp, staggerEntrance), notifications, payment date helpers. |
-| `src/app.js` | **Main app** – shared state, navigation, init. |
-| `src/components/Dashboard.js` | Dashboard – monthly summary, deductions, shift list, payslip. |
-| `src/components/Charts.js` | Charts – monthly bar, donut, trend (Chart.js). |
-| `src/components/Savings.js` | Savings – pension, study fund, general savings, projections. |
-| `src/components/Calendar.js` | Calendar – month grid, swipe, day detail. |
-| `src/components/ShiftForm.js` | Add shift form – type, date range, result. |
-| `src/components/Templates.js` | Shift templates – apply to week/month. |
-| `src/components/AnnualSummary.js` | Annual – Form 106, history. |
-| `src/components/settings.js` | Settings – rates, toggles, backup. |
-| `src/components/PdfExport.js` | PDF export. |
-| `src/components/ShareImage.js` | Share image (Web Share). |
-| `shiftCalculator.js` | Node.js compatibility wrapper – re-exports from `src/logic/salaryEngine.js` for tests & demo. |
-| `index.html` | UI layout + CSS + script imports. |
-| `sw.js` | Service worker – network-first with offline fallback. |
-| `manifest.json` | PWA manifest for "Add to Home Screen". |
-| `icon-192.png` / `icon-512.png` | App icons. |
-| `test-regression.js` | Node.js regression tests (36 assertions across 11 test groups). |
-| `demo.js` | Demo script for quick shift calculations. |
+| `index.html` | Screens, tab bar, script tags |
+| `css/` | Tokens, base, components, pages |
+| `src/logic/salaryEngine.js` | Shift pay, tax, deductions. No DOM. |
+| `src/app.js` | State, navigation, startup |
+| `src/store.js` | IndexedDB and localStorage |
+| `src/utils.js` | Count-up, payment date, notifications |
+| `src/components/` | Dashboard, shift form, calendar, savings, annual, settings, charts, PDF, share |
+| `src/admin.js` | Local admin list on this device |
+| `config.example.js` | Admin password placeholder. A real `config.js` is gitignored. |
+| `shiftCalculator.js` | Node wrapper around the salary engine |
+| `test/regression.js` | Engine tests |
+| `sw.js` | Service worker, network first |
+| `manifest.json` | PWA manifest |
+| `privacy.html` | Privacy policy |
+| `scripts/copy-to-www.js` | Copies the web app into `www/` for Capacitor |
+| `ios/` | Xcode project |
+| `docs/` | App Store guide and the original upgrade plan |
 
-## Run Locally
+The app does not talk to Firebase or any other backend.
 
-```bash
-cd shifts-app
-npm run dev
-# or: python3 -m http.server 8000
-```
-Open `http://localhost:8000` on your phone/browser.
+## Tabs
 
-## Run Tests
+בית, משמרת, לוח, עוד. Savings, the annual summary, and settings open from עוד.
 
-```bash
-npm test
-# or: node test-regression.js
-```
+## Storage
 
-## Data Storage
-
-The app is **local-only** (no cloud account or sync). Shifts and settings are stored on the device via **localStorage** and **IndexedDB**. Use **Export** in Settings for a JSON backup.
-
-Core keys in **localStorage** include:
-- `shifter_shifts` – array of shift objects (type, date, result, etc.)
-- `shifter_settings` – user rates + deduction toggles
-- `shifter_history` – past paycheck data for annual summary
-
-Data persists across page refreshes, browser restarts, and PWA reopens.
-Use **Export** (Settings tab) to back up to a JSON file.
-
----
-
-כל הזכויות שמורות ל-Roi Sadeh - מוענק באהבה לכל עובדי השכ״ש
+IndexedDB database `sachash-db` holds shifts, payslip history, templates, and the local user list. Settings, name, leave balances, and savings stay in `localStorage`, keyed per device user (`shifter_shifts_<userId>` and the same pattern for settings, history, leave, username, and savings). A save writes both IndexedDB and `localStorage`. Export from settings writes a JSON backup.
