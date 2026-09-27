@@ -17,6 +17,7 @@ function switchAnnualView(view) {
 
 function getShiftGrossForMonth(year, month) {
   const shifts = loadShifts().filter(s => {
+    if (s.type === 'sick' && typeof isSickWeekendDate === 'function' && isSickWeekendDate(s.date)) return false;
     const p = s.date.split('-');
     return parseInt(p[0]) === year && parseInt(p[1]) - 1 === month;
   });

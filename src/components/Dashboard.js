@@ -11,6 +11,7 @@ function getMonthShifts() {
   if (!Array.isArray(raw)) return [];
   return raw.filter(function(s) {
     if (!s || typeof s.date !== 'string') return false;
+    if (s.type === 'sick' && typeof isSickWeekendDate === 'function' && isSickWeekendDate(s.date)) return false;
     var p = s.date.split('-');
     return parseInt(p[1], 10) - 1 === currentMonth && parseInt(p[0], 10) === currentYear;
   }).sort(function(a, b) { return b.date.localeCompare(a.date); });
@@ -633,6 +634,10 @@ function saveEditShift() {
   var newNote = (document.getElementById('editShiftNote').value || '').trim();
 
   if (!newDate) { showToast('⚠️ בחר תאריך'); return; }
+  if (newType === 'sick' && typeof isSickWeekendDate === 'function' && isSickWeekendDate(newDate)) {
+    showToast('שישי ושבת לא נספרים ביום מחלה');
+    return;
+  }
 
   var shifts = loadShifts();
   var idx = shifts.findIndex(function(s) { return s.id === _editingShiftId; });
