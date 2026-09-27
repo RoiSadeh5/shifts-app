@@ -279,7 +279,7 @@ function saveUserNameSetting() {
 
 // ===== Tab Navigation (SPA View Switcher) =====
 function tabForPage(name) {
-  if (name === 'Savings' || name === 'Annual' || name === 'Settings') return 'More';
+  if (name === 'Annual' || name === 'Settings') return 'More';
   return name;
 }
 
