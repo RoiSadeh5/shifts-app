@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#f4f1ea">
@@ -12,6 +12,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700&display=swap" rel="stylesheet">
+  <script>
+    (function () {
+      try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
+      var vv = window.visualViewport;
+      var h = vv ? vv.height : window.innerHeight;
+      var standalone = window.navigator.standalone === true ||
+        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+      var keyboard = vv && (window.innerHeight - vv.height) > 120;
+      if (standalone && !keyboard && window.screen && window.screen.height - h > 1 && window.screen.height - h < 120) {
+        h = window.screen.height;
+      }
+      document.documentElement.style.setProperty('--app-height', Math.round(h) + 'px');
+    })();
+  </script>
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
@@ -49,7 +63,7 @@
     <div class="onboarding-card">
       <div class="onboarding-title">ברוכים הבאים לשכ״ש</div>
       <div class="onboarding-subtitle">איך לקרוא לך?</div>
-      <input class="onboarding-input" id="onboardingName" type="text" inputmode="text" placeholder="השם שלך" autocomplete="given-name" autofocus>
+      <input class="onboarding-input" id="onboardingName" type="text" inputmode="text" placeholder="השם שלך" autocomplete="given-name">
       <button class="onboarding-btn" onclick="completeOnboarding()">יאללה, בוא נתחיל</button>
     </div>
   </div>
@@ -103,7 +117,11 @@
       <button type="button" onclick="shareImage()">תמונה</button>
     </div>
 
-    <div class="sheet-overlay" id="detailSheet" hidden onclick="if(event.target===this)closeDetailSheet()">
+    <div class="section-label">משמרות</div>
+    <div id="recentShifts"></div>
+  </div>
+
+  <div class="sheet-overlay" id="detailSheet" hidden onclick="if(event.target===this)closeDetailSheet()">
     <div class="sheet" onclick="event.stopPropagation()">
       <div class="sheet-handle"></div>
       <div class="sheet-head">
@@ -229,10 +247,6 @@
 
     </div>
     </div>
-
-    <div class="section-label">משמרות</div>
-    <div id="recentShifts"></div>
-  </div>
 
   <!-- ==================== SAVINGS (חסכון פנסיוני) ==================== -->
   <div class="page view-container hidden" id="pageSavings">
@@ -790,6 +804,8 @@
       var ptrIndicator = document.getElementById('ptrIndicator');
 
       function getScrollTop() {
+        var page = document.querySelector('.page.active');
+        if (page) return page.scrollTop || 0;
         var s = window.scrollY;
         if (typeof s !== 'number') s = document.documentElement.scrollTop || document.body.scrollTop || 0;
         return s;

@@ -815,11 +815,11 @@ input[type="number"],
 
 /* ===== ONBOARDING (name) ===== */
 .onboarding-overlay {
+  display: none;
   position: fixed;
   inset: 0;
   z-index: 9999;
   background: rgba(15,23,42,0.92);
-    display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
@@ -986,7 +986,7 @@ input[type="number"],
 /* ===== PULL-TO-REFRESH ===== */
 .ptr-indicator {
   position: fixed;
-  top: 0;
+  top: var(--safe-top);
   left: 50%;
   transform: translate(-50%, -100%);
   z-index: 300;
