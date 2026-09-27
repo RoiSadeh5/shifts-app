@@ -74,6 +74,21 @@ const r5 = Calc.calculateShiftPay({ type: 'vacation', date: '2026-03-04' });
 assert('Total Pay', r5.totalPay, 1750);
 assert('Flat Rate', r5.flatRate ? 1 : 0, 1);
 
+// Sick on Sun–Thu stays the flat daily rate. Fri/Sat are the missed plus shift.
+console.log('\n--- Test 5b: Sick weekday vs Friday/Saturday ---');
+const sickWed = Calc.calculateShiftPay({ type: 'sick', date: '2026-03-04' });
+const sickFri = Calc.calculateShiftPay({ type: 'sick', date: '2026-03-06' });
+const sickSat = Calc.calculateShiftPay({ type: 'sick', date: '2026-03-07' });
+const plusFri = Calc.calculateShiftPay({ type: 'plus', date: '2026-03-06' });
+const plusSat = Calc.calculateShiftPay({ type: 'plus', date: '2026-03-07' });
+const vacSat = Calc.calculateShiftPay({ type: 'vacation', date: '2026-03-07' });
+assert('Sick weekday flat', sickWed.totalPay, 1750);
+assert('Sick Friday equals plus', sickFri.totalPay, plusFri.totalPay);
+assert('Sick Saturday equals plus', sickSat.totalPay, plusSat.totalPay);
+assert('Sick Friday above flat', sickFri.totalPay > 1750 ? 1 : 0, 1);
+assert('Sick Saturday above flat', sickSat.totalPay > 1750 ? 1 : 0, 1);
+assert('Vacation Saturday stays flat', vacSat.totalPay, 1750);
+
 // =============================
 // TEST 6: Deductions (2026 NI+Health split)
 // NI: 0.4% on 7703, 7% on rest | Health: 3.1% on 7703, 5% on rest
