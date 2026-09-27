@@ -220,6 +220,7 @@ function maybeShowNameOnboarding() {
       requestAnimationFrame(function() { overlay.classList.add('visible'); });
       var nameField = document.getElementById('onboardingName');
       if (nameField) {
+        nameField.focus();
         nameField.addEventListener('keydown', function(e) {
           if (e.key === 'Enter') completeOnboarding();
         });
@@ -332,6 +333,7 @@ function switchTab(name) {
   });
   targetPage.classList.remove('hidden');
   targetPage.classList.add('active');
+  targetPage.scrollTop = 0;
   window.scrollTo(0, 0);
   if (name === 'Dashboard') {
     updateGreeting();
@@ -545,6 +547,7 @@ function showMainUIImmediately() {
   if (targetPage && targetTab) {
     targetPage.classList.remove('hidden');
     targetPage.classList.add('active');
+    targetPage.scrollTop = 0;
     targetTab.classList.add('active');
     if (currentTab === 'Dashboard') {
       if (typeof updateGreeting === 'function') updateGreeting();
@@ -595,7 +598,29 @@ async function init() {
   }
 }
 
+function fitViewport() {
+  var vv = window.visualViewport;
+  var h = vv ? vv.height : window.innerHeight;
+  var standalone = window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  var keyboard = vv && (window.innerHeight - vv.height) > 120;
+  if (standalone && !keyboard && window.screen && window.screen.height - h > 1 && window.screen.height - h < 120) {
+    h = window.screen.height;
+  }
+  document.documentElement.style.setProperty('--app-height', Math.round(h) + 'px');
+}
+
 async function initCore() {
+  fitViewport();
+  if (!window.__viewportBound) {
+    window.__viewportBound = true;
+    window.addEventListener('resize', fitViewport);
+    window.addEventListener('orientationchange', fitViewport);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', fitViewport);
+      window.visualViewport.addEventListener('scroll', fitViewport);
+    }
+  }
   if (typeof loadSettings === 'function') loadSettings();
   if (typeof initDataStore === 'function') {
     try {
@@ -688,6 +713,7 @@ function _applyInitFromData() {
       requestAnimationFrame(function() { overlay.classList.add('visible'); });
       var nameField = document.getElementById('onboardingName');
       if (nameField) {
+        nameField.focus();
         nameField.addEventListener('keydown', function(e) {
           if (e.key === 'Enter') completeOnboarding();
         });

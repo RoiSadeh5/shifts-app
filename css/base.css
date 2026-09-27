@@ -2,6 +2,9 @@
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 html {
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
   scroll-behavior: smooth;
 }
 
@@ -9,19 +12,19 @@ body {
   font-family: 'Heebo', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: var(--app-height);
+  max-height: var(--app-height);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-  padding-bottom: calc(80px + var(--safe-bottom));
-  -webkit-overflow-scrolling: touch;
 }
 
 /* ===== HEADER ===== */
 .header {
-  padding: 54px 20px 12px;
-  position: sticky;
-  top: 0;
+  flex: none;
+  padding: 12px 20px 8px;
+  padding-top: calc(var(--safe-top) + 14px);
   z-index: 100;
   background: var(--bg);
 }
@@ -34,15 +37,12 @@ body {
 
 /* ===== BOTTOM TABS ===== */
 .tab-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  flex: none;
   background: var(--card);
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: space-around;
-  padding: 8px 8px calc(8px + var(--safe-bottom));
+  padding: 6px 8px calc(6px + var(--safe-bottom));
   z-index: 200;
 }
 .tab {
@@ -79,16 +79,31 @@ body {
 /* ===== PAGES ===== */
 .page {
   display: none;
-  padding: 0 16px 20px;
+  padding: 0 16px 12px;
   max-width: 500px;
   margin: 0 auto;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 500px;
+  width: 100%;
 }
 .page.active {
   display: block !important;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   animation: fadeIn 0.22s cubic-bezier(0.33, 1, 0.68, 1) forwards;
-  content-visibility: visible;
+}
+#pageDashboard.active {
+  display: flex !important;
+  flex-direction: column;
+}
+#pageDashboard.active #recentShifts:has(.empty-state) {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
 }
 
 /* ===== MONTH SELECTOR ===== */
@@ -124,8 +139,8 @@ body {
 
 /* ===== Animations ===== */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @keyframes staggerIn {
   from { opacity: 0; transform: translateY(10px); }
@@ -145,8 +160,8 @@ body {
 .page.page-out { animation: pageOut 0.15s ease-out forwards; display: block !important; }
 .page.page-in { animation: pageIn 0.15s ease-out forwards; display: block !important; }
 @keyframes greetFadeIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .greeting-animated {
   animation: greetFadeIn 0.5s cubic-bezier(0.33, 1, 0.68, 1) both;

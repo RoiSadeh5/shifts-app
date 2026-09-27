@@ -26,7 +26,9 @@
   --radius: 16px;
   --radius-control: 12px;
   --shadow: 0 1px 0 rgba(28, 25, 21, 0.04);
+  --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --app-height: 100dvh;
   --font: 'Heebo', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   color-scheme: light;
 }
