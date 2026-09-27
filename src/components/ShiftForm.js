@@ -67,6 +67,17 @@ function syncRangeDates() {
   if (end?.value) start.setAttribute('max', end.value);
 }
 
+function isSickWeekendDate(dateStr) {
+  if (window.SalaryEngine && typeof SalaryEngine.isFridayOrSaturday === 'function') {
+    return SalaryEngine.isFridayOrSaturday(dateStr);
+  }
+  var parts = String(dateStr || '').split('-');
+  if (parts.length < 3) return false;
+  var dt = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+  var day = dt.getDay();
+  return day === 5 || day === 6;
+}
+
 function getDatesInRange(startStr, endStr) {
   const dates = [];
   const start = new Date(startStr + 'T00:00:00');
@@ -83,6 +94,7 @@ function getDatesInRange(startStr, endStr) {
 
 function addShift() {
   let datesToAdd = [];
+  let skippedWeekends = [];
 
   if (rangeOn) {
     const rs = document.getElementById('rangeStart').value;
@@ -101,6 +113,19 @@ function addShift() {
     const dateVal = document.getElementById('shiftDate').value;
     if (!dateVal) { showToast('⚠️ בחר תאריך'); return; }
     datesToAdd = [dateVal];
+  }
+
+  if (selectedType === 'sick') {
+    var payable = [];
+    datesToAdd.forEach(function(dateStr) {
+      if (isSickWeekendDate(dateStr)) skippedWeekends.push(dateStr);
+      else payable.push(dateStr);
+    });
+    datesToAdd = payable;
+    if (datesToAdd.length === 0) {
+      showToast('שישי ושבת לא נספרים ביום מחלה');
+      return;
+    }
   }
 
   if (selectedType === 'vacation' || selectedType === 'sick') {
@@ -182,6 +207,7 @@ function addShift() {
       breakdown: null, bonusApplied: 0, mealAllowance: 0,
     });
     let msg = `✅ נוספו ${added.length} משמרות · ₪${Math.round(totalPay).toLocaleString()}`;
+    if (skippedWeekends.length > 0) msg += ` · ${skippedWeekends.length} ימי שישי–שבת לא נספרים`;
     if (skipped.length > 0) msg += ` (${skipped.length} דולגו)`;
     haptic();
     showToast(msg);

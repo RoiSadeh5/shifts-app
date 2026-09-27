@@ -228,25 +228,13 @@
     const isErevChag = !!(holidayInfo && holidayInfo.type === 'erev');
     const holidayName = holidayInfo ? holidayInfo.name : null;
 
-    if (type === 'vacation' || (type === 'sick' && !isFridayOrSaturday(shift.date))) {
-      return { shiftType: type, totalPay: r.vacationDayRate, totalHours: 0, flatRate: true, mealAllowance: 0, isHoliday, isErevChag, holidayName };
+    // Sick pay is the flat daily rate on Sunday–Thursday only. Friday and Saturday are not paid.
+    if (type === 'sick' && isFridayOrSaturday(shift.date)) {
+      return { shiftType: type, totalPay: 0, totalHours: 0, flatRate: true, mealAllowance: 0, isHoliday, isErevChag, holidayName, unpaidWeekend: true };
     }
 
-    // A sick Friday or Saturday is the plus shift that was missed, including 150% weekend pay.
-    if (type === 'sick') {
-      const worked = calculateShiftPay({ type: 'plus', date: shift.date, hasBonus: false }, rates);
-      return {
-        shiftType: 'sick',
-        totalPay: worked.totalPay,
-        totalHours: worked.totalHours,
-        breakdown: worked.breakdown,
-        bonusApplied: 0,
-        mealAllowance: worked.mealAllowance,
-        flatRate: false,
-        isHoliday: worked.isHoliday,
-        isErevChag: worked.isErevChag,
-        holidayName: worked.holidayName,
-      };
+    if (type === 'vacation' || type === 'sick') {
+      return { shiftType: type, totalPay: r.vacationDayRate, totalHours: 0, flatRate: true, mealAllowance: 0, isHoliday, isErevChag, holidayName };
     }
 
     const parts = shift.date.split('-');
@@ -664,6 +652,7 @@
   exports.HOLIDAYS_2026 = HOLIDAYS_2026;
   exports.HOLIDAYS = HOLIDAYS;
   exports.getHolidayForDate = getHolidayForDate;
+  exports.isFridayOrSaturday = isFridayOrSaturday;
   exports.DEFAULTS = DEFAULTS;
   exports.DEDUCTION_CONSTANTS = DEDUCTION_CONSTANTS;
   exports.TAX_BRACKETS_MONTHLY = TAX_BRACKETS_MONTHLY;

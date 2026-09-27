@@ -74,20 +74,26 @@ const r5 = Calc.calculateShiftPay({ type: 'vacation', date: '2026-03-04' });
 assert('Total Pay', r5.totalPay, 1750);
 assert('Flat Rate', r5.flatRate ? 1 : 0, 1);
 
-// Sick on Sun–Thu stays the flat daily rate. Fri/Sat are the missed plus shift.
-console.log('\n--- Test 5b: Sick weekday vs Friday/Saturday ---');
+// Sick pay is Sunday–Thursday only. A 3-week range is 15 paid days.
+console.log('\n--- Test 5b: Sick weekdays paid, Friday/Saturday unpaid ---');
 const sickWed = Calc.calculateShiftPay({ type: 'sick', date: '2026-03-04' });
 const sickFri = Calc.calculateShiftPay({ type: 'sick', date: '2026-03-06' });
 const sickSat = Calc.calculateShiftPay({ type: 'sick', date: '2026-03-07' });
-const plusFri = Calc.calculateShiftPay({ type: 'plus', date: '2026-03-06' });
-const plusSat = Calc.calculateShiftPay({ type: 'plus', date: '2026-03-07' });
 const vacSat = Calc.calculateShiftPay({ type: 'vacation', date: '2026-03-07' });
 assert('Sick weekday flat', sickWed.totalPay, 1750);
-assert('Sick Friday equals plus', sickFri.totalPay, plusFri.totalPay);
-assert('Sick Saturday equals plus', sickSat.totalPay, plusSat.totalPay);
-assert('Sick Friday above flat', sickFri.totalPay > 1750 ? 1 : 0, 1);
-assert('Sick Saturday above flat', sickSat.totalPay > 1750 ? 1 : 0, 1);
+assert('Sick Friday unpaid', sickFri.totalPay, 0);
+assert('Sick Saturday unpaid', sickSat.totalPay, 0);
 assert('Vacation Saturday stays flat', vacSat.totalPay, 1750);
+let sickPaidDays = 0;
+let sickPaidSum = 0;
+for (let day = 1; day <= 21; day++) {
+  const date = '2026-03-' + String(day).padStart(2, '0');
+  const pay = Calc.calculateShiftPay({ type: 'sick', date: date }).totalPay;
+  if (pay > 0) sickPaidDays++;
+  sickPaidSum += pay;
+}
+assert('Three sick weeks paid days', sickPaidDays, 15);
+assert('Three sick weeks total', sickPaidSum, 15 * 1750);
 
 // =============================
 // TEST 6: Deductions (2026 NI+Health split)
