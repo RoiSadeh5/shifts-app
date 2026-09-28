@@ -1021,6 +1021,37 @@ input[type="number"],
   padding: 8px;
 }
 .auth-hint { font-size: 11px; color: var(--text-dim); margin-top: 12px; }
+.impersonation-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 0 16px 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 13px;
+  font-weight: 600;
+}
+.impersonation-banner[hidden] { display: none !important; }
+.impersonation-banner button {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.account-email {
+  font-size: 14px;
+  font-weight: 600;
+  direction: ltr;
+  text-align: right;
+  margin-bottom: 10px;
+  color: var(--text-dim);
+}
 .auth-btns-row { display: flex; gap: 10px; margin-top: 16px; }
 .auth-btns-row .auth-btn { flex: 1; margin-bottom: 0; }
 

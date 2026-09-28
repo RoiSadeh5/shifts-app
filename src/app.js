@@ -265,6 +265,16 @@ function completeOnboarding() {
 function updateAdminButtonLabel() {
   var btn = document.getElementById('adminPanelBtn');
   if (!btn) return;
+  if (typeof isRemoteConfigured === 'function' && isRemoteConfigured()) {
+    if (typeof remoteIsAdmin === 'function' && remoteIsAdmin()) {
+      btn.style.display = '';
+      btn.textContent = 'החברים';
+    } else {
+      btn.style.display = 'none';
+    }
+    return;
+  }
+  btn.style.display = '';
   var admin = typeof isAdminLoggedIn === 'function' && isAdminLoggedIn();
   btn.textContent = admin ? 'לוח מנהל' : 'כניסה כמנהל';
 }
@@ -624,6 +634,10 @@ async function initCore() {
       window.visualViewport.addEventListener('scroll', fitViewport);
     }
   }
+  if (typeof isRemoteConfigured === 'function' && isRemoteConfigured()) {
+    var remoteReady = await remotePrepareSession();
+    if (!remoteReady) return;
+  }
   if (typeof loadSettings === 'function') loadSettings();
   if (typeof initDataStore === 'function') {
     try {
@@ -631,6 +645,10 @@ async function initCore() {
     } catch (e) {
       console.warn('initDataStore fallback:', e);
     }
+  }
+  if (typeof reconcileRemote === 'function' && typeof isRemoteConfigured === 'function' && isRemoteConfigured()) {
+    try { await reconcileRemote(); } catch (e) { console.warn('reconcileRemote', e); }
+    if (typeof loadSettings === 'function') loadSettings();
   }
   _applyInitFromData();
   showMainUIImmediately();
@@ -705,11 +723,12 @@ function _applyInitFromData() {
   if (btnAdd && isStandalone) btnAdd.style.display = 'none';
 
   if (typeof updateAdminButtonLabel === 'function') updateAdminButtonLabel();
+  if (typeof updateAccountSection === 'function') updateAccountSection();
 
   // Tutorial first (first-time only), then name onboarding if needed
   if (!isTutorialComplete()) {
     showTutorial();
-  } else if (!savedName || savedName.trim() === '') {
+  } else if (!window.__viewUserId && (!savedName || savedName.trim() === '')) {
     var overlay = document.getElementById('onboardingOverlay');
     if (overlay) {
       overlay.style.display = 'flex';
