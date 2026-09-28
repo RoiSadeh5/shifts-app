@@ -41,6 +41,10 @@ function remoteClientOrNull() {
   return remoteClient;
 }
 
+function remoteDb() {
+  return remoteClient.schema('sachash');
+}
+
 async function remotePrepareSession() {
   if (!isRemoteConfigured()) return true;
   showAuthScreen();
@@ -68,7 +72,7 @@ async function adoptSession(session) {
   window.__remoteRole = 'user';
   window.__viewUserId = null;
   window.__viewUserName = '';
-  var prof = await remoteClient.from('profiles').select('role, name, email').eq('id', session.user.id).maybeSingle();
+  var prof = await remoteDb().from('profiles').select('role, name, email').eq('id', session.user.id).maybeSingle();
   if (prof && prof.data) {
     window.__remoteRole = prof.data.role || 'user';
     if (prof.data.name && typeof saveUserName === 'function' && !window.__remoteApplying) {
@@ -80,7 +84,7 @@ async function adoptSession(session) {
   try { view = sessionStorage.getItem('sachash_view_user') || ''; } catch (e) {}
   if (window.__remoteRole === 'admin' && view && view !== session.user.id) {
     window.__viewUserId = view;
-    var other = await remoteClient.from('profiles').select('name, email').eq('id', view).maybeSingle();
+    var other = await remoteDb().from('profiles').select('name, email').eq('id', view).maybeSingle();
     window.__viewUserName = (other && other.data && (other.data.name || other.data.email)) || 'חבר';
   } else {
     try { sessionStorage.removeItem('sachash_view_user'); } catch (e2) {}
@@ -165,7 +169,7 @@ async function submitAuth() {
       var created = await remoteClient.auth.signUp({
         email: email,
         password: password,
-        options: { data: { name: name, invite_code: code } }
+        options: { data: { sachash_name: name, sachash_invite_code: code } }
       });
       if (created.error) { setAuthError(authMessage(created.error)); return; }
       if (!created.data || !created.data.session) {
@@ -248,7 +252,7 @@ function applyRemotePayload(kind, payload) {
 }
 
 async function pullOwner(ownerId) {
-  var res = await remoteClient.from('user_data').select('kind, payload, updated_at').eq('user_id', ownerId);
+  var res = await remoteDb().from('user_data').select('kind, payload, updated_at').eq('user_id', ownerId);
   if (res.error) throw res.error;
   var map = {};
   (res.data || []).forEach(function(row) { map[row.kind] = row; });
@@ -261,7 +265,7 @@ async function pushKind(kind, payload, ownerId) {
   if (!owner) return;
   var updated = new Date().toISOString();
   try { localStorage.setItem('shifter_rev_' + owner + '_' + kind, updated); } catch (e) {}
-  var res = await remoteClient.from('user_data').upsert({
+  var res = await remoteDb().from('user_data').upsert({
     user_id: owner,
     kind: kind,
     payload: payload,
@@ -338,7 +342,7 @@ async function remoteCreateInvite() {
   var alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   var code = '';
   for (var i = 0; i < 8; i++) code += alphabet.charAt(Math.floor(Math.random() * alphabet.length));
-  var res = await remoteClient.from('invite_codes').insert({ code: code });
+  var res = await remoteDb().from('invite_codes').insert({ code: code });
   if (res.error) {
     if (typeof showToast === 'function') showToast('לא נוצר קוד');
     return '';
@@ -348,8 +352,8 @@ async function remoteCreateInvite() {
 
 async function remoteListPeople() {
   if (!remoteClient) return { people: [], codes: [] };
-  var peopleRes = await remoteClient.from('profiles').select('id, name, email, role, created_at').order('created_at', { ascending: true });
-  var codesRes = await remoteClient.from('invite_codes').select('code, used_by, created_at').is('used_by', null).order('created_at', { ascending: false });
+  var peopleRes = await remoteDb().from('profiles').select('id, name, email, role, created_at').order('created_at', { ascending: true });
+  var codesRes = await remoteDb().from('invite_codes').select('code, used_by, created_at').is('used_by', null).order('created_at', { ascending: false });
   return {
     people: (peopleRes && peopleRes.data) || [],
     codes: (codesRes && codesRes.data) || []
