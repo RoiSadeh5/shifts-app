@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sachash-v20';
+const CACHE_NAME = 'sachash-v21';
 const STATIC_ASSETS = [
   './',
   './index.html',
