@@ -71,6 +71,10 @@
   <div class="header">
     <h1 id="pageTitle">שכ״ש</h1>
   </div>
+  <div class="impersonation-banner" id="impersonationBanner" hidden>
+    <span id="impersonationLabel"></span>
+    <button type="button" onclick="remoteCloseUser()">חזרה לנתונים שלי</button>
+  </div>
 
   <!-- Offline indicator -->
   <div class="offline-banner" id="offlineBanner">
@@ -401,6 +405,11 @@
   <!-- ==================== SETTINGS ==================== -->
   <div class="page view-container hidden" id="pageSettings">
     <button type="button" class="subpage-back" onclick="switchTab('More')">עוד</button>
+    <div id="accountSection" style="display:none">
+      <div class="section-label" style="margin-bottom:14px;">חשבון</div>
+      <div class="account-email" id="accountEmail"></div>
+      <button type="button" class="btn-secondary" onclick="signOutAccount()">יציאה מהחשבון</button>
+    </div>
     <div class="section-label" style="margin-bottom:14px;">מראה</div>
     <div class="setting-group">
       <div class="setting-item">
@@ -648,7 +657,7 @@
       </div>
       <div class="admin-stats">
         <div class="admin-stat"><span class="admin-stat-val" id="adminTotalUsers">0</span><span class="admin-stat-label">סה״כ משתמשים</span></div>
-        <div class="admin-stat"><span class="admin-stat-val" id="adminActiveUsers">0</span><span class="admin-stat-label">פעילים (30 יום)</span></div>
+        <div class="admin-stat"><span class="admin-stat-val" id="adminActiveUsers">0</span><span class="admin-stat-label" id="adminActiveLabel">פעילים (30 יום)</span></div>
       </div>
       <div class="admin-section-label">רשימת משתמשים</div>
       <div class="admin-user-list" id="adminUserList"></div>
@@ -782,12 +791,29 @@
     </button>
   </nav>
 
+  <div class="auth-overlay" id="authOverlay" style="display:none" data-mode="login">
+    <div class="auth-card">
+      <div class="auth-title" id="authTitle">כניסה</div>
+      <p class="auth-desc" id="authDesc">נכנסים עם האימייל והסיסמה של החשבון שלך.</p>
+      <div id="authSignupFields" style="display:none">
+        <input class="auth-input" id="authName" type="text" placeholder="השם שלך" autocomplete="name">
+      </div>
+      <input class="auth-input" id="authEmail" type="email" dir="ltr" placeholder="אימייל" autocomplete="username">
+      <input class="auth-input" id="authPassword" type="password" dir="ltr" placeholder="סיסמה" autocomplete="current-password">
+      <input class="auth-input" id="authCode" type="text" dir="ltr" placeholder="קוד הצטרפות" autocomplete="off" style="display:none">
+      <div class="auth-hint" id="authError"></div>
+      <button type="button" class="auth-btn" id="authSubmit" onclick="submitAuth()">כניסה</button>
+      <button type="button" class="auth-back" id="authToggleMode" onclick="toggleAuthMode()">יש לי קוד הצטרפות</button>
+    </div>
+  </div>
+
   <!-- ==================== SCRIPTS ==================== -->
   <script>window.ADMIN_CONFIG=window.ADMIN_CONFIG||{};</script>
   <script defer src="./config.example.js"></script>
   <script defer src="./src/logic/salaryEngine.js"></script>
   <script defer src="./src/app.js"></script>
   <script defer src="./src/store.js"></script>
+  <script defer src="./src/remote.js"></script>
   <script defer src="./src/utils.js"></script>
   <script defer src="./src/components/Charts.js"></script>
   <script defer src="./src/components/Savings.js"></script>

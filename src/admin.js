@@ -17,6 +17,10 @@ function getAdminPassword() {
 
 function openAdminPrompt() {
   if (typeof haptic === 'function') haptic(true);
+  if (typeof remoteIsAdmin === 'function' && remoteIsAdmin()) {
+    showAdminPanel();
+    return;
+  }
   _openAdminWithPassword();
 }
 
@@ -57,7 +61,17 @@ function showAdminPanel() {
   renderAdminPanel();
 }
 
+function _esc(s) {
+  return String(s || '').replace(/[&<>"']/g, function(c) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+  });
+}
+
 function renderAdminPanel() {
+  if (typeof remoteIsAdmin === 'function' && remoteIsAdmin() && typeof remoteListPeople === 'function') {
+    renderCloudAdmin();
+    return;
+  }
   function render(reg) {
     reg = reg || [];
     var total = reg.length;
@@ -96,6 +110,56 @@ function renderAdminPanel() {
       return { userId: r.userId, firstSeen: r.firstSeen, lastActive: r.lastActive };
     });
     render(mapped);
+  });
+}
+
+function renderCloudAdmin() {
+  var listEl = document.getElementById('adminUserList');
+  var totalEl = document.getElementById('adminTotalUsers');
+  var activeEl = document.getElementById('adminActiveUsers');
+  var activeLabel = document.getElementById('adminActiveLabel');
+  if (activeLabel) activeLabel.textContent = 'קודים פנויים';
+  var footerBtn = document.querySelector('.admin-btn-logout');
+  if (footerBtn) {
+    footerBtn.textContent = 'סגור';
+    footerBtn.onclick = function() { closeAdminPanel(); };
+  }
+  if (listEl) listEl.innerHTML = '<div class="admin-empty">טוען…</div>';
+  remoteListPeople().then(function(data) {
+    var people = data.people || [];
+    var codes = data.codes || [];
+    if (totalEl) totalEl.textContent = people.length;
+    if (activeEl) activeEl.textContent = codes.length;
+    var codeHtml = '<button type="button" class="admin-btn-logout" style="margin-bottom:12px" onclick="adminCreateInviteUi()">קוד חדש לחבר</button>';
+    if (codes.length) {
+      codeHtml += codes.map(function(c) {
+        return '<div class="admin-user-dates">קוד פנוי: ' + _esc(c.code) + '</div>';
+      }).join('');
+    }
+    var rows = people.map(function(p) {
+      var name = p.name || p.email || 'בלי שם';
+      var mine = p.id === window.__remoteUserId ? ' (אני)' : '';
+      var role = p.role === 'admin' ? ' · מנהל' : '';
+      var openBtn = p.id === window.__remoteUserId
+        ? ''
+        : '<button type="button" class="admin-btn-view" onclick="remoteOpenUser(\'' + _esc(p.id) + '\')">פתח</button>';
+      return '<div class="admin-user-row"><div class="admin-user-info">' +
+        '<span class="admin-user-id">' + _esc(name) + mine + role + '</span>' +
+        '<span class="admin-user-dates">' + _esc(p.email || '') + '</span>' +
+        '</div><div class="admin-user-actions">' + openBtn + '</div></div>';
+    }).join('');
+    if (listEl) listEl.innerHTML = codeHtml + (rows || '<div class="admin-empty">אין עדיין חברים</div>');
+  }).catch(function() {
+    if (listEl) listEl.innerHTML = '<div class="admin-empty">לא הצלחתי לטעון</div>';
+  });
+}
+
+function adminCreateInviteUi() {
+  if (typeof remoteCreateInvite !== 'function') return;
+  remoteCreateInvite().then(function(code) {
+    if (!code) return;
+    if (typeof showToast === 'function') showToast('הקוד: ' + code);
+    renderCloudAdmin();
   });
 }
 

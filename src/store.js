@@ -4,14 +4,31 @@
 var USER_ID_KEY = 'shifter_user_id';
 
 function getCurrentUserId() {
+  if (window.__remoteUserId) return window.__remoteUserId;
   try {
     var id = localStorage.getItem(USER_ID_KEY);
-    if (id) return id;
+    if (id) {
+      if (!localStorage.getItem('shifter_legacy_owner')) localStorage.setItem('shifter_legacy_owner', id);
+      return id;
+    }
     id = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 15);
     localStorage.setItem(USER_ID_KEY, id);
+    if (!localStorage.getItem('shifter_legacy_owner')) localStorage.setItem('shifter_legacy_owner', id);
     _registerUser(id);
     return id;
   } catch (e) { return 'u_unknown'; }
+}
+
+function getDataOwnerId() {
+  if (window.__viewUserId) return window.__viewUserId;
+  return getCurrentUserId();
+}
+
+function _legacyAllowed() {
+  try {
+    var owner = localStorage.getItem('shifter_legacy_owner');
+    return !!(owner && owner === getDataOwnerId());
+  } catch (e) { return false; }
 }
 
 function _registerUser(userId) {
@@ -68,8 +85,8 @@ window.dbReady = new Promise(function(resolve) {
   };
 });
 
-function _shiftsKey() { return 'main_' + getCurrentUserId(); }
-function _historyKey() { return 'main_' + getCurrentUserId(); }
+function _shiftsKey() { return 'main_' + getDataOwnerId(); }
+function _historyKey() { return 'main_' + getDataOwnerId(); }
 
 function _shiftsKeyFor(userId) { return 'main_' + (userId || getCurrentUserId()); }
 function _historyKeyFor(userId) { return 'main_' + (userId || getCurrentUserId()); }
@@ -131,6 +148,7 @@ window.db = {
       req.onsuccess = function() {
         var arr = req.result ? req.result.v : null;
         if (Array.isArray(arr)) { resolve(arr); return; }
+        if (!_legacyAllowed()) { resolve([]); return; }
         var legReq = tx.objectStore('shifts').get('main');
         legReq.onsuccess = function() {
           var old = legReq.result ? legReq.result.v : null;
@@ -159,6 +177,7 @@ window.db = {
       req.onsuccess = function() {
         var h = req.result ? req.result.v : null;
         if (h && typeof h === 'object') { resolve(h); return; }
+        if (!_legacyAllowed()) { resolve({}); return; }
         var legReq = tx.objectStore('history').get('main');
         legReq.onsuccess = function() {
           var old = legReq.result ? legReq.result.v : null;
@@ -199,7 +218,7 @@ window.db = {
   getTemplates: function() {
     return new Promise(function(resolve) {
       if (!dbInstance) { resolve([]); return; }
-      var uid = getCurrentUserId();
+      var uid = getDataOwnerId();
       var tx = dbInstance.transaction('templates', 'readonly');
       var req = tx.objectStore('templates').getAll();
       req.onsuccess = function() {
@@ -214,7 +233,7 @@ window.db = {
   saveTemplate: function(tpl) {
     return new Promise(function(resolve, reject) {
       if (!dbInstance) { resolve(); return; }
-      var obj = Object.assign({}, tpl, { userId: getCurrentUserId() });
+      var obj = Object.assign({}, tpl, { userId: getDataOwnerId() });
       var tx = dbInstance.transaction('templates', 'readwrite');
       tx.objectStore('templates').put(obj);
       tx.oncomplete = function() { resolve(); };
@@ -233,7 +252,7 @@ window.db = {
 };
 
 /* ========== Data Manager ========== */
-function _storageKey(base) { return base + '_' + getCurrentUserId(); }
+function _storageKey(base) { return base + '_' + getDataOwnerId(); }
 var SHIFTS_KEY = 'shifter_shifts';
 var SETTINGS_KEY = 'shifter_settings';
 var HISTORY_KEY = 'shifter_history';
@@ -337,6 +356,7 @@ function saveShifts(list) {
   if (typeof window !== 'undefined' && window.db) {
     window.db.saveShifts(_cache.shifts).catch(function() {});
   }
+  if (typeof queueRemoteSync === 'function') queueRemoteSync('shifts');
 }
 
 function loadHistory() {
@@ -352,6 +372,7 @@ function saveHistory(h) {
   if (typeof window !== 'undefined' && window.db) {
     window.db.saveHistory(_cache.history).catch(function() {});
   }
+  if (typeof queueRemoteSync === 'function') queueRemoteSync('history');
 }
 
 function loadPayslip(year, month) {
@@ -389,11 +410,13 @@ function saveDedSettings() {
   try { existing = JSON.parse(localStorage.getItem(_storageKey(SETTINGS_KEY)) || '{}'); } catch (e) {}
   existing.deductions = dedSettings;
   localStorage.setItem(_storageKey(SETTINGS_KEY), JSON.stringify(existing));
+  if (typeof queueRemoteSync === 'function') queueRemoteSync('settings');
   render();
 }
 
 function persistSettings(obj) {
   try { localStorage.setItem(_storageKey(SETTINGS_KEY), JSON.stringify(obj)); } catch (e) {}
+  if (typeof queueRemoteSync === 'function') queueRemoteSync('settings');
 }
 function getSettingsData() {
   try { return JSON.parse(localStorage.getItem(_storageKey(SETTINGS_KEY)) || '{}'); } catch (e) { return {}; }
@@ -560,6 +583,7 @@ function loadLeaveBalances() {
 
 function saveLeaveBalances(balances) {
   try { localStorage.setItem(_storageKey(LEAVE_KEY), JSON.stringify(balances)); } catch (e) {}
+  if (typeof queueRemoteSync === 'function') queueRemoteSync('leave');
 }
 
 function loadUserName() {
@@ -568,6 +592,7 @@ function loadUserName() {
 
 function saveUserName(name) {
   try { localStorage.setItem(_storageKey(USERNAME_KEY), (name || '').trim()); } catch (e) {}
+  if (typeof queueRemoteSync === 'function') queueRemoteSync('profile');
 }
 
 /* ========== Savings ========== */
@@ -612,6 +637,7 @@ function loadSavings() {
 
 function saveSavings(savings) {
   try { localStorage.setItem(_storageKey(SAVINGS_KEY), JSON.stringify(savings)); } catch (e) {}
+  if (typeof queueRemoteSync === 'function') queueRemoteSync('savings');
 }
 
 function _shiftsGrossForMonth(year, monthIndex) {
