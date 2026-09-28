@@ -18,4 +18,12 @@ module.exports = {
   calcIncomeTax: SalaryEngine.calcIncomeTax,
   calcAnnualSummary: SalaryEngine.calcAnnualSummary,
   getHolidayForDate: SalaryEngine.getHolidayForDate,
+  SAVINGS_RETIREMENT_AGE: SalaryEngine.SAVINGS_RETIREMENT_AGE,
+  migrateSavingsFund: SalaryEngine.migrateSavingsFund,
+  fundDisplayBalance: SalaryEngine.fundDisplayBalance,
+  replaceMonthContribution: SalaryEngine.replaceMonthContribution,
+  buildFundDeposit: SalaryEngine.buildFundDeposit,
+  yearsUntilRetirement: SalaryEngine.yearsUntilRetirement,
+  projectSavingsBalance: SalaryEngine.projectSavingsBalance,
+  sumContributionLedger: SalaryEngine.sumContributionLedger,
 };

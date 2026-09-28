@@ -371,6 +371,7 @@ function changeMonth(delta) {
   updateMonthLabels();
   render();
   renderCalendar();
+  if (typeof renderSavings === 'function') renderSavings();
   requestAnimationFrame(function() {
     requestAnimationFrame(function() { changeMonthPending = false; });
   });
@@ -382,6 +383,8 @@ function updateMonthLabels() {
   if (ml) ml.textContent = lbl;
   var cml = document.getElementById('calMonthLabel');
   if (cml) cml.textContent = lbl;
+  var sml = document.getElementById('savingsMonthLabel');
+  if (sml) sml.textContent = lbl;
 }
 
 // ===== Service worker update prompt =====

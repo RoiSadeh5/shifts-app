@@ -254,19 +254,31 @@
       <div class="section-label" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
         <span>חסכון פנסיוני</span>
       </div>
+      <div class="month-nav">
+        <button type="button" onclick="changeMonth(-1)">›</button>
+        <span class="label" id="savingsMonthLabel"></span>
+        <button type="button" onclick="changeMonth(1)">‹</button>
+      </div>
+      <div class="savings-birth">
+        <label for="savingsBirthYear">שנת לידה</label>
+        <input type="number" id="savingsBirthYear" inputmode="numeric" min="1940" max="2015" placeholder="1994" onchange="saveSavingsBirthYear()">
+      </div>
+      <div class="savings-birth-hint" id="savingsRetirementHint">פרישה בגיל 67. הזן שנת לידה כדי לחשב כמה שנים נשארו.</div>
       <div id="savingsEmptyState" class="savings-empty-state" style="display:none">
         <div class="savings-empty-icon"></div>
         <div class="savings-empty-text">אין עדיין חסכון פנסיוני</div>
-        <div class="savings-empty-hint">הוסף חסכון כללי, או הפעל פנסיה וקרן השתלמות כדי לראות את ההפקדה מהשכר</div>
+        <div class="savings-empty-hint">הזן יתרת פתיחה בקרן, או רשום משמרות כדי לראות את ההפקדה החודשית</div>
         <button class="btn-savings-add" onclick="openGeneralSavingsModal()">הוסף חסכון</button>
       </div>
       <div id="savingsContentArea" style="display:none">
         <div class="savings-total-card" id="savingsTotalCard" style="margin-bottom:16px;">
-          <div class="savings-total-label">סה״כ חסכון פנסיוני</div>
+          <div class="savings-total-label">סה״כ פנסיה והשתלמות</div>
           <div class="savings-total-val" id="savingsTotalVal">₪0</div>
+          <div class="savings-note">יתרת פתיחה ועוד ההפקדות שנשמרו. חסכונות כלליים לא נכללים.</div>
         </div>
         <div id="savingsFundPension"></div>
         <div id="savingsFundStudy"></div>
+        <div id="savingsLedger" class="savings-ledger"></div>
         <div class="savings-general-section">
           <div class="section-label" style="margin-top:4px;">חסכונות כלליים</div>
           <div id="savingsGeneralList"></div>
@@ -724,9 +736,10 @@
       <div class="confirm-title" id="savingsEditLabel">עריכת יתרה</div>
       <input type="hidden" id="savingsEditFund" value="pension">
       <div class="form-group" style="margin-top:12px">
-        <label>יתרה נוכחית (₪)</label>
-        <input type="number" id="savingsEditBalance" placeholder="0" inputmode="decimal" step="0.01" min="0">
+        <label>יתרת פתיחה (₪)</label>
+        <input type="number" id="savingsEditBalance" placeholder="0" inputmode="decimal" step="0.01">
       </div>
+      <div class="savings-note">הסכום שהיה בקרן לפני ההפקדות שהאפליקציה שומרת. כל חודש מתווסף מעליו, ועריכת חודש מחליפה רק אותו.</div>
       <div class="form-group">
         <label>תשואה שנתית (%)</label>
         <input type="number" id="savingsEditRate" placeholder="7" inputmode="decimal" step="0.1" min="0" max="20" value="7">

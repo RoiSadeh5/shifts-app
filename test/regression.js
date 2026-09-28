@@ -158,6 +158,59 @@ assert('Gross Tax (50K)', t11.grossTax, expected_gross_tax, 1);
 assert('Final Tax (50K)', t11.finalTax, expected_gross_tax - 544.5, 1);
 
 // =============================
+// TEST 12: Savings ledger
+// Opening balance stays put. A month replaces only itself.
+// Study fund stops at the wage ceiling. Retirement uses birth year.
+// =============================
+console.log('\n--- Test 12: Savings ledger ---');
+let fund = Calc.migrateSavingsFund({ balance: 10000, returnRate: 7, contributions: { '2026-1': 1800 } });
+assert('Opening excludes baked-in deposit', fund.openingBalance, 8200);
+assert('Display keeps the old balance', Calc.fundDisplayBalance(fund), 10000);
+
+const pension10 = Calc.buildFundDeposit('pension', 10000, null, { pension: true, study: true });
+assert('Pension employee 6%', pension10.employee, 600);
+assert('Pension employer 12.5%', pension10.employer, 1250);
+assert('Pension deposit', pension10.total, 1850);
+assert('Pension has no ceiling', pension10.ceilingApplied ? 1 : 0, 0);
+
+fund = Calc.replaceMonthContribution(fund, 2026, 2, pension10);
+assert('March deposit added once', Calc.fundDisplayBalance(fund), 11850);
+fund = Calc.replaceMonthContribution(fund, 2026, 2, pension10);
+assert('Same month does not stack', Calc.fundDisplayBalance(fund), 11850);
+fund = Calc.replaceMonthContribution(fund, 2026, 2, { employee: 400, employer: 600, total: 1000, source: 'payslip' });
+assert('Replacing March leaves February', Calc.fundDisplayBalance(fund), 11000);
+assert('February still saved', Calc.sumContributionLedger(fund.contributions) - 1000, 1800);
+
+const study20 = Calc.buildFundDeposit('study', 20000, null, { pension: true, study: true });
+assert('Study employee on ceiling', study20.employee, 392.8);
+assert('Study employer on ceiling', study20.employer, 1178.4);
+assert('Study wage base', study20.wageBase, 15712);
+assert('Study ceiling flagged', study20.ceilingApplied ? 1 : 0, 1);
+
+const study10 = Calc.buildFundDeposit('study', 10000, null, { pension: true, study: true });
+assert('Study below ceiling', study10.employee, 250);
+assert('Study ceiling not flagged', study10.ceilingApplied ? 1 : 0, 0);
+
+const slipped = Calc.buildFundDeposit('pension', 10000, 500, { pension: true, study: true });
+assert('Payslip employee used', slipped.employee, 500);
+assert('Employer stays calculated', slipped.employer, 1250);
+assert('Mismatch flagged', slipped.mismatch ? 1 : 0, 1);
+assert('Slip deposit total', slipped.total, 1750);
+
+const off = Calc.buildFundDeposit('pension', 10000, null, { pension: false, study: true });
+assert('Pension toggle off', off.total, 0);
+
+assert('Years to 67 from 1994 in 2026', Calc.yearsUntilRetirement(1994, 2026), 35);
+assert('Already 67', Calc.yearsUntilRetirement(1959, 2026), 0);
+assert('Missing birth year', Calc.yearsUntilRetirement(null, 2026) == null ? 1 : 0, 1);
+assert('Flat projection 12 deposits', Calc.projectSavingsBalance(0, 100, 0, 12), 1200);
+assert('Zero months keeps balance', Calc.projectSavingsBalance(5000, 100, 7, 0), 5000);
+
+const kept = Calc.migrateSavingsFund({ openingBalance: 8200, contributions: { '2026-1': { total: 1800, employee: 600, employer: 1200 } } });
+assert('Saved opening is not reduced again', kept.openingBalance, 8200);
+assert('Saved opening display', Calc.fundDisplayBalance(kept), 10000);
+
+// =============================
 // SUMMARY
 // =============================
 console.log(`\n============================`);

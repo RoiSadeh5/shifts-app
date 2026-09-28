@@ -572,54 +572,137 @@ function saveUserName(name) {
 
 /* ========== Savings ========== */
 var SAVINGS_DEFAULT_RETURN = 7;
+
+function _emptySavingsFund() {
+  return { openingBalance: 0, returnRate: SAVINGS_DEFAULT_RETURN, contributions: {} };
+}
+
+function _normalizeBirthYear(y) {
+  var n = parseInt(y, 10);
+  if (!n || n < 1940 || n > 2015) return null;
+  return n;
+}
+
 function loadSavings() {
-  try {
-    var s = JSON.parse(localStorage.getItem(_storageKey(SAVINGS_KEY)));
-    if (s) {
-      var general = Array.isArray(s.general) ? s.general : [];
-      return {
-        pension: { balance: s.pension && s.pension.balance != null ? s.pension.balance : 0, returnRate: s.pension && s.pension.returnRate != null ? s.pension.returnRate : SAVINGS_DEFAULT_RETURN, contributions: (s.pension && s.pension.contributions) || {} },
-        study: { balance: s.study && s.study.balance != null ? s.study.balance : 0, returnRate: s.study && s.study.returnRate != null ? s.study.returnRate : SAVINGS_DEFAULT_RETURN, contributions: (s.study && s.study.contributions) || {} },
-        general: general
-      };
-    }
-  } catch (e) {}
-  return {
-    pension: { balance: 0, returnRate: SAVINGS_DEFAULT_RETURN, contributions: {} },
-    study: { balance: 0, returnRate: SAVINGS_DEFAULT_RETURN, contributions: {} },
+  var empty = {
+    birthYear: null,
+    pension: _emptySavingsFund(),
+    study: _emptySavingsFund(),
     general: []
   };
+  try {
+    var s = JSON.parse(localStorage.getItem(_storageKey(SAVINGS_KEY)));
+    if (!s) return empty;
+    var engine = typeof SalaryEngine !== 'undefined' ? SalaryEngine : null;
+    var pension = engine && engine.migrateSavingsFund ? engine.migrateSavingsFund(s.pension) : (s.pension || _emptySavingsFund());
+    var study = engine && engine.migrateSavingsFund ? engine.migrateSavingsFund(s.study) : (s.study || _emptySavingsFund());
+    var savings = {
+      birthYear: _normalizeBirthYear(s.birthYear),
+      pension: pension,
+      study: study,
+      general: Array.isArray(s.general) ? s.general : []
+    };
+    var pensionNeeds = !s.pension || s.pension.openingBalance == null;
+    var studyNeeds = !s.study || s.study.openingBalance == null;
+    if (pensionNeeds || studyNeeds) saveSavings(savings);
+    return savings;
+  } catch (e) {}
+  return empty;
 }
 
 function saveSavings(savings) {
   try { localStorage.setItem(_storageKey(SAVINGS_KEY), JSON.stringify(savings)); } catch (e) {}
 }
 
-function updateSavingsFromPayslip(year, month, slipData) {
+function _shiftsGrossForMonth(year, monthIndex) {
+  var raw = typeof loadShifts === 'function' ? loadShifts() : [];
+  if (!Array.isArray(raw)) return { gross: 0, count: 0 };
+  var count = 0;
+  var pay = 0;
+  raw.forEach(function(s) {
+    if (!s || typeof s.date !== 'string') return;
+    if (s.type === 'sick' && typeof SalaryEngine !== 'undefined' && SalaryEngine.isFridayOrSaturday && SalaryEngine.isFridayOrSaturday(s.date)) return;
+    var p = s.date.split('-');
+    if (parseInt(p[0], 10) !== year || parseInt(p[1], 10) - 1 !== monthIndex) return;
+    count++;
+    pay += (s.result && s.result.totalPay) || 0;
+  });
+  var gross = 0;
+  if (count > 0 && typeof SalaryEngine !== 'undefined' && SalaryEngine.calculateFixedMonthlyAdditions) {
+    var fixed = SalaryEngine.calculateFixedMonthlyAdditions();
+    gross = pay + ((fixed && fixed.total) || 0);
+  }
+  return { gross: gross, count: count };
+}
+
+function monthSavingsInput(year, monthIndex) {
+  var slip = typeof loadPayslip === 'function' ? loadPayslip(year, monthIndex) : null;
+  if (slip && Number(slip.gross) > 0) {
+    return {
+      gross: Number(slip.gross),
+      pensionSlip: slip.pension != null && slip.pension !== '' ? Number(slip.pension) || 0 : null,
+      studySlip: slip.study != null && slip.study !== '' ? Number(slip.study) || 0 : null,
+      source: 'payslip'
+    };
+  }
+  var fromShifts = _shiftsGrossForMonth(year, monthIndex);
+  return {
+    gross: fromShifts.gross,
+    pensionSlip: null,
+    studySlip: null,
+    source: fromShifts.count > 0 ? 'shifts' : 'none'
+  };
+}
+
+function _depositsMatch(a, b) {
+  if (!a || !b) return false;
+  function n(v) { return v == null ? null : Math.round(Number(v) * 100) / 100; }
+  return n(a.total) === n(b.total) && n(a.employee) === n(b.employee) && n(a.employer) === n(b.employer)
+    && (a.source || '') === (b.source || '') && !!a.mismatch === !!b.mismatch && !!a.ceilingApplied === !!b.ceilingApplied
+    && n(a.wageBase) === n(b.wageBase) && n(a.calculatedEmployee) === n(b.calculatedEmployee);
+}
+
+function syncSavingsMonth(year, monthIndex) {
+  if (typeof SalaryEngine === 'undefined' || !SalaryEngine.buildFundDeposit) return loadSavings();
+  var input = monthSavingsInput(year, monthIndex);
   var savings = loadSavings();
-  var ded = typeof calcDeductions === 'function' ? calcDeductions(slipData.gross || 0) : { employee: { pension: 0, study: 0 }, employer: { pension: 0, study: 0 } };
-  var empPension = ded.employer && ded.employer.pension != null ? ded.employer.pension : 0;
-  var empStudy = ded.employer && ded.employer.study != null ? ded.employer.study : 0;
-  var slipPension = slipData.pension != null ? slipData.pension : (ded.employee && ded.employee.pension) || 0;
-  var slipStudy = slipData.study != null ? slipData.study : (ded.employee && ded.employee.study) || 0;
-  var pensionContrib = (slipPension || 0) + (empPension || 0);
-  var studyContrib = (slipStudy || 0) + (empStudy || 0);
-  if (dedSettings && !dedSettings.pension) pensionContrib = 0;
-  if (dedSettings && !dedSettings.study) studyContrib = 0;
-  var ym = year + '-' + month;
-  var prevPension = savings.pension.contributions[ym] || 0;
-  var prevStudy = savings.study.contributions[ym] || 0;
-  savings.pension.balance = (savings.pension.balance || 0) - prevPension + pensionContrib;
-  savings.study.balance = (savings.study.balance || 0) - prevStudy + studyContrib;
-  savings.pension.contributions[ym] = pensionContrib;
-  savings.study.contributions[ym] = studyContrib;
-  saveSavings(savings);
+  var toggles = typeof dedSettings !== 'undefined' ? dedSettings : { pension: true, study: true, ni: true };
+  var changed = false;
+  ['pension', 'study'].forEach(function(fund) {
+    var slipEmp = fund === 'pension' ? input.pensionSlip : input.studySlip;
+    var deposit = SalaryEngine.buildFundDeposit(fund, input.gross, slipEmp, toggles);
+    if (input.source === 'shifts') deposit.source = 'shifts';
+    else if (input.source === 'none') deposit.source = 'none';
+    else deposit.source = 'payslip';
+    var key = SalaryEngine.savingsMonthKey(year, monthIndex);
+    var prev = savings[fund] && savings[fund].contributions ? savings[fund].contributions[key] : null;
+    if (_depositsMatch(prev, deposit)) return;
+    savings[fund] = SalaryEngine.replaceMonthContribution(savings[fund], year, monthIndex, deposit);
+    changed = true;
+  });
+  if (changed) saveSavings(savings);
+  return savings;
+}
+
+function updateSavingsFromPayslip(year, month) {
+  return syncSavingsMonth(year, month);
 }
 
 function updateSavingsBalance(fund, balance) {
   var savings = loadSavings();
   var f = savings[fund];
-  if (f) { f.balance = Math.max(0, parseFloat(balance) || 0); saveSavings(savings); }
+  if (!f) return;
+  var n = parseFloat(balance);
+  f.openingBalance = isNaN(n) ? 0 : Math.round(n * 100) / 100;
+  delete f.balance;
+  saveSavings(savings);
+}
+
+function updateSavingsBirthYear(year) {
+  var savings = loadSavings();
+  savings.birthYear = _normalizeBirthYear(year);
+  saveSavings(savings);
+  return savings.birthYear;
 }
 
 function updateSavingsReturnRate(fund, rate) {
