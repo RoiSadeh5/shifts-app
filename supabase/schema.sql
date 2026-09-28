@@ -1,15 +1,9 @@
--- שכ״ש בלבד. הכל יושב בסכמה sachash, לא בטבלאות של הפרויקט השני.
--- מריצים פעם אחת ב-SQL Editor של אותו פרויקט.
--- הוצאה אחר כך: supabase/uninstall.sql מוחק רק את הסכמה הזאת ואת הטריגר שלה.
--- לא מכבים Confirm email מכאן: המתג הזה שייך לכל הפרויקט.
--- אחרי ההרצה: Settings → API → Exposed schemas, להוסיף sachash בלי למחוק את השמות שכבר שם.
--- המפתח הסודי (service_role) לא נכנס לאפליקציה. רק המפתח הציבורי anon.
+-- שכ״ש: חשבונות נפרדים, והמנהל רואה את כולם.
+-- מריצים פעם אחת בפרויקט Supabase ששייך רק לשכ״ש.
+-- לא מריצים את הקובץ הזה בתוך פרויקט של אפליקציה אחרת.
+-- המפתח הסודי (service_role) לא נכנס לאפליקציה. רק המפתח הציבורי.
 
-create schema if not exists sachash;
-
-grant usage on schema sachash to anon, authenticated, service_role;
-
-create table if not exists sachash.profiles (
+create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text not null default '',
   name text not null default '',
@@ -17,14 +11,14 @@ create table if not exists sachash.profiles (
   created_at timestamptz not null default now()
 );
 
-create table if not exists sachash.invite_codes (
+create table if not exists public.invite_codes (
   code text primary key,
   created_at timestamptz not null default now(),
   used_by uuid,
   used_at timestamptz
 );
 
-create table if not exists sachash.user_data (
+create table if not exists public.user_data (
   user_id uuid not null references auth.users (id) on delete cascade,
   kind text not null check (kind in ('shifts', 'history', 'settings', 'savings', 'leave', 'profile')),
   payload jsonb not null default '{}'::jsonb,
@@ -32,141 +26,127 @@ create table if not exists sachash.user_data (
   primary key (user_id, kind)
 );
 
-alter table sachash.profiles enable row level security;
-alter table sachash.invite_codes enable row level security;
-alter table sachash.user_data enable row level security;
+alter table public.profiles enable row level security;
+alter table public.invite_codes enable row level security;
+alter table public.user_data enable row level security;
 
-create or replace function sachash.is_admin()
+create or replace function public.is_admin()
 returns boolean
 language sql
 stable
 security definer
-set search_path = sachash
+set search_path = public
 as $$
   select exists (
-    select 1 from sachash.profiles
+    select 1 from public.profiles
     where id = auth.uid() and role = 'admin'
   );
 $$;
 
-revoke all on function sachash.is_admin() from public;
-grant execute on function sachash.is_admin() to authenticated;
+revoke all on function public.is_admin() from public;
+grant execute on function public.is_admin() to authenticated;
 
--- הרשמה של שכ״ש בלבד. בלי sachash_invite_code הטריגר לא נוגע במשתמש,
--- כדי שהרשמה של הפרויקט השני תמשיך כרגיל.
-create or replace function sachash.handle_new_user()
+-- הרשמה רק עם קוד שהמנהל יצר. אי אפשר לבחור לעצמך תפקיד מנהל.
+create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer
-set search_path = sachash
+set search_path = public
 as $$
 declare
   invite text;
   person_name text;
 begin
-  invite := btrim(coalesce(new.raw_user_meta_data->>'sachash_invite_code', ''));
-  if invite = '' then
-    return new;
-  end if;
-  person_name := btrim(coalesce(new.raw_user_meta_data->>'sachash_name', ''));
-  if not exists (
-    select 1 from sachash.invite_codes
+  invite := btrim(coalesce(new.raw_user_meta_data->>'invite_code', ''));
+  person_name := btrim(coalesce(new.raw_user_meta_data->>'name', ''));
+  if invite = '' or not exists (
+    select 1 from public.invite_codes
     where lower(code) = lower(invite) and used_by is null
   ) then
     raise exception 'invalid_invite';
   end if;
-  update sachash.invite_codes
+  update public.invite_codes
     set used_by = new.id, used_at = now()
     where lower(code) = lower(invite) and used_by is null;
-  insert into sachash.profiles (id, email, name, role)
+  insert into public.profiles (id, email, name, role)
   values (new.id, coalesce(new.email, ''), person_name, 'user');
   return new;
 end;
 $$;
 
-revoke all on function sachash.handle_new_user() from public;
-
-drop trigger if exists sachash_on_auth_user_created on auth.users;
-create trigger sachash_on_auth_user_created
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
   after insert on auth.users
-  for each row execute function sachash.handle_new_user();
+  for each row execute function public.handle_new_user();
 
-create or replace function sachash.protect_profile()
+create or replace function public.protect_profile()
 returns trigger
 language plpgsql
 security definer
-set search_path = sachash
+set search_path = public
 as $$
 begin
-  if tg_op = 'UPDATE' and auth.uid() is not null and not sachash.is_admin() then
+  if tg_op = 'UPDATE' and not public.is_admin() then
     new.role := old.role;
     new.email := old.email;
     new.id := old.id;
   end if;
-  if tg_op = 'INSERT' and auth.uid() is not null and new.role is distinct from 'user' then
+  if tg_op = 'INSERT' and new.role is distinct from 'user' then
     new.role := 'user';
   end if;
   return new;
 end;
 $$;
 
-revoke all on function sachash.protect_profile() from public;
+drop trigger if exists protect_profile_row on public.profiles;
+create trigger protect_profile_row
+  before insert or update on public.profiles
+  for each row execute function public.protect_profile();
 
-drop trigger if exists sachash_protect_profile_row on sachash.profiles;
-create trigger sachash_protect_profile_row
-  before insert or update on sachash.profiles
-  for each row execute function sachash.protect_profile();
+drop policy if exists profiles_select on public.profiles;
+drop policy if exists profiles_update on public.profiles;
+drop policy if exists invites_admin on public.invite_codes;
+drop policy if exists user_data_select on public.user_data;
+drop policy if exists user_data_insert on public.user_data;
+drop policy if exists user_data_update on public.user_data;
+drop policy if exists user_data_delete on public.user_data;
 
-drop policy if exists profiles_select on sachash.profiles;
-drop policy if exists profiles_update on sachash.profiles;
-drop policy if exists invites_admin on sachash.invite_codes;
-drop policy if exists user_data_select on sachash.user_data;
-drop policy if exists user_data_insert on sachash.user_data;
-drop policy if exists user_data_update on sachash.user_data;
-drop policy if exists user_data_delete on sachash.user_data;
-
-create policy profiles_select on sachash.profiles
+create policy profiles_select on public.profiles
   for select to authenticated
-  using (id = auth.uid() or sachash.is_admin());
+  using (id = auth.uid() or public.is_admin());
 
-create policy profiles_update on sachash.profiles
+create policy profiles_update on public.profiles
   for update to authenticated
-  using (id = auth.uid() or sachash.is_admin())
-  with check (id = auth.uid() or sachash.is_admin());
+  using (id = auth.uid() or public.is_admin())
+  with check (id = auth.uid() or public.is_admin());
 
-create policy invites_admin on sachash.invite_codes
+create policy invites_admin on public.invite_codes
   for all to authenticated
-  using (sachash.is_admin())
-  with check (sachash.is_admin());
+  using (public.is_admin())
+  with check (public.is_admin());
 
-create policy user_data_select on sachash.user_data
+create policy user_data_select on public.user_data
   for select to authenticated
-  using (user_id = auth.uid() or sachash.is_admin());
+  using (user_id = auth.uid() or public.is_admin());
 
-create policy user_data_insert on sachash.user_data
+create policy user_data_insert on public.user_data
   for insert to authenticated
-  with check (user_id = auth.uid() or sachash.is_admin());
+  with check (user_id = auth.uid() or public.is_admin());
 
-create policy user_data_update on sachash.user_data
+create policy user_data_update on public.user_data
   for update to authenticated
-  using (user_id = auth.uid() or sachash.is_admin())
-  with check (user_id = auth.uid() or sachash.is_admin());
+  using (user_id = auth.uid() or public.is_admin())
+  with check (user_id = auth.uid() or public.is_admin());
 
-create policy user_data_delete on sachash.user_data
+create policy user_data_delete on public.user_data
   for delete to authenticated
-  using (user_id = auth.uid() or sachash.is_admin());
-
-grant select, insert, update, delete on all tables in schema sachash to authenticated;
-grant all on all tables in schema sachash to service_role;
-alter default privileges in schema sachash
-  grant select, insert, update, delete on tables to authenticated;
-alter default privileges in schema sachash
-  grant all on tables to service_role;
+  using (user_id = auth.uid() or public.is_admin());
 
 -- אחרי שהרצת את הקובץ:
--- 1. Settings → API → Exposed schemas: להוסיף sachash. לא למחוק public.
--- 2. קוד ראשון אליך (השאר אותו אצלך, לא בקוד של האפליקציה):
---    insert into sachash.invite_codes (code) values ('הסוד-שלך');
+-- 1. Authentication → Providers → Email: לכבות Confirm email, כדי שחבר ייכנס מיד.
+-- 2. ליצור קוד ראשון לעצמך (החלף את הסוד, ואל תשתף אותו):
+--    insert into public.invite_codes (code) values ('הסוד-שלך');
 -- 3. באפליקציה: הצטרפות עם האימייל, סיסמה, השם, והקוד הזה.
--- 4. לקדם את עצמך למנהל:
---    update sachash.profiles set role = 'admin' where email = 'you@example.com';
+-- 4. לקדם את עצמך למנהל (החלף לאימייל שנרשמת איתו):
+--    update public.profiles set role = 'admin' where email = 'you@example.com';
+-- 5. מלוח המנהל באפליקציה יוצרים קוד נפרד לכל חבר.
