@@ -648,6 +648,149 @@
     return { projectedGross, projectedNet, precision, method };
   }
 
+  // ===== Savings ledger =====
+  // Opening balance is entered once. Each month's deposit is stored on its own
+  // and added on top. Replacing a month updates only that month.
+  const SAVINGS_RETIREMENT_AGE = 67;
+  const SAVINGS_DEFAULT_RETURN = 7;
+
+  function roundMoney(v) {
+    return Math.round((Number(v) || 0) * 100) / 100;
+  }
+
+  function savingsMonthKey(year, monthIndex) {
+    return String(year) + '-' + String(monthIndex);
+  }
+
+  function contributionAmount(entry) {
+    if (entry == null) return 0;
+    if (typeof entry === 'number') return Number(entry) || 0;
+    if (entry.total != null) return Number(entry.total) || 0;
+    return (Number(entry.employee) || 0) + (Number(entry.employer) || 0);
+  }
+
+  function sumContributionLedger(contributions) {
+    let sum = 0;
+    const src = contributions || {};
+    Object.keys(src).forEach(function (k) { sum += contributionAmount(src[k]); });
+    return roundMoney(sum);
+  }
+
+  function normalizeLedgerEntry(raw) {
+    if (raw == null) return null;
+    if (typeof raw === 'number') {
+      return { employee: null, employer: null, total: roundMoney(raw), source: 'legacy' };
+    }
+    const employee = raw.employee != null ? roundMoney(raw.employee) : null;
+    const employer = raw.employer != null ? roundMoney(raw.employer) : null;
+    const total = raw.total != null
+      ? roundMoney(raw.total)
+      : roundMoney((employee || 0) + (employer || 0));
+    return {
+      employee: employee,
+      employer: employer,
+      total: total,
+      source: raw.source || 'saved',
+      gross: raw.gross != null ? roundMoney(raw.gross) : null,
+      calculatedEmployee: raw.calculatedEmployee != null ? roundMoney(raw.calculatedEmployee) : null,
+      calculatedEmployer: raw.calculatedEmployer != null ? roundMoney(raw.calculatedEmployer) : null,
+      wageBase: raw.wageBase != null ? roundMoney(raw.wageBase) : null,
+      ceilingApplied: !!raw.ceilingApplied,
+      mismatch: !!raw.mismatch,
+    };
+  }
+
+  function migrateSavingsFund(raw) {
+    const f = raw || {};
+    const contributions = {};
+    const src = f.contributions || {};
+    Object.keys(src).forEach(function (k) {
+      const n = normalizeLedgerEntry(src[k]);
+      if (n) contributions[k] = n;
+    });
+    let opening;
+    if (f.openingBalance != null && f.openingBalance !== '') {
+      opening = roundMoney(f.openingBalance);
+    } else {
+      const legacy = f.balance != null ? Number(f.balance) : 0;
+      opening = roundMoney(legacy - sumContributionLedger(contributions));
+    }
+    const rate = f.returnRate != null ? Number(f.returnRate) : SAVINGS_DEFAULT_RETURN;
+    return {
+      openingBalance: opening,
+      returnRate: isNaN(rate) ? SAVINGS_DEFAULT_RETURN : rate,
+      contributions: contributions,
+    };
+  }
+
+  function fundDisplayBalance(fund) {
+    const f = migrateSavingsFund(fund);
+    return roundMoney(f.openingBalance + sumContributionLedger(f.contributions));
+  }
+
+  function replaceMonthContribution(fund, year, monthIndex, deposit) {
+    const base = migrateSavingsFund(fund);
+    const contributions = Object.assign({}, base.contributions);
+    const entry = normalizeLedgerEntry(deposit);
+    if (entry) contributions[savingsMonthKey(year, monthIndex)] = entry;
+    return {
+      openingBalance: base.openingBalance,
+      returnRate: base.returnRate,
+      contributions: contributions,
+    };
+  }
+
+  /**
+   * One month's deposit for pension or study.
+   * slipEmployee null → use the calculated employee share.
+   * A payslip amount, including 0, replaces only the employee share.
+   * Employer share stays calculated. Study fund stops at the wage ceiling.
+   */
+  function buildFundDeposit(fund, gross, slipEmployee, toggles) {
+    const t = Object.assign({ pension: true, study: true, ni: true }, toggles || {});
+    const enabled = fund === 'study' ? !!t.study : !!t.pension;
+    const ded = calcDeductions(gross || 0, t);
+    const C = t.taxYear2025 ? DEDUCTION_CONSTANTS_2025 : DEDUCTION_CONSTANTS;
+    const ceiling = C.STUDY_WAGE_CEILING;
+    const g = Number(gross) || 0;
+    const wageBase = fund === 'study' ? Math.min(g, ceiling) : g;
+    const calcEmp = fund === 'study' ? ded.employee.study : ded.employee.pension;
+    const calcEr = fund === 'study' ? ded.employer.study : ded.employer.pension;
+    const hasSlip = slipEmployee != null && slipEmployee !== '' && !isNaN(Number(slipEmployee));
+    const employee = !enabled || g <= 0 ? 0 : (hasSlip ? roundMoney(slipEmployee) : roundMoney(calcEmp));
+    const employer = !enabled || g <= 0 ? 0 : roundMoney(calcEr);
+    return {
+      employee: employee,
+      employer: employer,
+      total: roundMoney(employee + employer),
+      calculatedEmployee: roundMoney(calcEmp),
+      calculatedEmployer: roundMoney(calcEr),
+      gross: roundMoney(g),
+      wageBase: roundMoney(wageBase),
+      ceilingApplied: fund === 'study' && g > ceiling,
+      source: hasSlip ? 'payslip' : 'calculated',
+      mismatch: !!(enabled && hasSlip && g > 0 && Math.abs(employee - calcEmp) > 0.5),
+    };
+  }
+
+  function yearsUntilRetirement(birthYear, asOfYear, retirementAge) {
+    const age = retirementAge || SAVINGS_RETIREMENT_AGE;
+    const b = parseInt(birthYear, 10);
+    const y = parseInt(asOfYear, 10);
+    if (!b || !y || b < 1940 || b > y) return null;
+    return Math.max(0, age - (y - b));
+  }
+
+  function projectSavingsBalance(balance, monthlyContrib, annualRatePercent, months) {
+    const r = (Number(annualRatePercent) || 0) / 100 / 12;
+    let fv = Number(balance) || 0;
+    const n = Math.max(0, months || 0);
+    for (let i = 0; i < n; i++) {
+      fv = fv * (1 + r) + (Number(monthlyContrib) || 0);
+    }
+    return fv;
+  }
+
   // ===== Export =====
   exports.HOLIDAYS_2026 = HOLIDAYS_2026;
   exports.HOLIDAYS = HOLIDAYS;
@@ -669,5 +812,16 @@
   exports.calculateFixedMonthlyAdditions = calculateFixedMonthlyAdditions;
   exports.generateShareText = generateShareText;
   exports.getMonthlyProjection = getMonthlyProjection;
+  exports.SAVINGS_RETIREMENT_AGE = SAVINGS_RETIREMENT_AGE;
+  exports.SAVINGS_DEFAULT_RETURN = SAVINGS_DEFAULT_RETURN;
+  exports.savingsMonthKey = savingsMonthKey;
+  exports.contributionAmount = contributionAmount;
+  exports.sumContributionLedger = sumContributionLedger;
+  exports.migrateSavingsFund = migrateSavingsFund;
+  exports.fundDisplayBalance = fundDisplayBalance;
+  exports.replaceMonthContribution = replaceMonthContribution;
+  exports.buildFundDeposit = buildFundDeposit;
+  exports.yearsUntilRetirement = yearsUntilRetirement;
+  exports.projectSavingsBalance = projectSavingsBalance;
 
 })(typeof module !== 'undefined' && module.exports ? module.exports : (window.SalaryEngine = {}));

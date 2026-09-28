@@ -1,60 +1,76 @@
 /**
- * Savings Dashboard – Pension (פנסיה) & Keren Hishtalmut (קרן השתלמות)
- * Balance tracking, investment returns, projections.
+ * Savings tab – pension and study fund.
+ * Current balance = opening balance + each saved month's deposit.
+ * The month on screen is recalculated from the payslip, or from shifts when there is no payslip.
  */
-var SAVINGS_RETIREMENT_AGE = 67;
-var SAVINGS_YEARS_TO_RETIREMENT = 32;
 var savingsChartInstance = null;
 
 function projectSavingsBalance(balance, monthlyContrib, annualRatePercent, months) {
-  var r = (annualRatePercent || 7) / 100 / 12;
-  var fv = balance;
-  for (var i = 0; i < months; i++) {
-    fv = fv * (1 + r) + (monthlyContrib || 0);
+  if (typeof SalaryEngine !== 'undefined' && SalaryEngine.projectSavingsBalance) {
+    return SalaryEngine.projectSavingsBalance(balance, monthlyContrib, annualRatePercent, months);
   }
+  var r = (annualRatePercent || 0) / 100 / 12;
+  var fv = balance || 0;
+  for (var i = 0; i < (months || 0); i++) fv = fv * (1 + r) + (monthlyContrib || 0);
   return fv;
 }
 
-function getSavingsMonthlyContribution(fund) {
-  var slip = typeof loadPayslip === 'function' ? loadPayslip(currentYear, currentMonth) : null;
-  var gross = slip && slip.gross > 0 ? slip.gross : 0;
-  if (gross <= 0 && typeof getMonthShifts === 'function') {
-    var monthShifts = getMonthShifts();
-    var totalP = 0;
-    monthShifts.forEach(function(s) { totalP += (s.result && s.result.totalPay) || 0; });
-    if (monthShifts.length > 0 && typeof SalaryEngine !== 'undefined') {
-      var fixedAdd = SalaryEngine.calculateFixedMonthlyAdditions ? SalaryEngine.calculateFixedMonthlyAdditions() : { total: 0 };
-      gross = totalP + (fixedAdd.total || 0);
-    }
+function savingsDisplayBalance(fund) {
+  if (typeof SalaryEngine !== 'undefined' && SalaryEngine.fundDisplayBalance) {
+    return SalaryEngine.fundDisplayBalance(fund);
   }
-  var ded = gross > 0 && typeof calcDeductions === 'function' ? calcDeductions(gross) : { employee: { pension: 0, study: 0 }, employer: { pension: 0, study: 0 } };
-  if (fund === 'pension') {
-    var emp = slip && slip.pension != null ? slip.pension : ded.employee.pension;
-    return (emp || 0) + (ded.employer ? ded.employer.pension : 0);
-  }
-  var empStudy = slip && slip.study != null ? slip.study : ded.employee.study;
-  return (empStudy || 0) + (ded.employer ? ded.employer.study : 0);
+  return (fund && fund.openingBalance) || 0;
 }
 
-function getSavingsProjections(fund) {
-  var savings = typeof loadSavings === 'function' ? loadSavings() : { pension: {}, study: {} };
-  var f = savings[fund] || {};
-  var balance = f.balance || 0;
-  var rate = f.returnRate != null ? f.returnRate : 7;
-  var monthlyContrib = getSavingsMonthlyContribution(fund);
-  if (dedSettings && ((fund === 'pension' && !dedSettings.pension) || (fund === 'study' && !dedSettings.study))) {
-    monthlyContrib = 0;
+function savingsYearsToRetirement(birthYear) {
+  var year = typeof currentYear === 'number' ? currentYear : new Date().getFullYear();
+  if (typeof SalaryEngine !== 'undefined' && SalaryEngine.yearsUntilRetirement) {
+    return SalaryEngine.yearsUntilRetirement(birthYear, year, SalaryEngine.SAVINGS_RETIREMENT_AGE || 67);
   }
-  var yearsToRetirement = Math.max(1, SAVINGS_YEARS_TO_RETIREMENT);
+  return null;
+}
+
+function savingsOngoingMonth() {
+  var now = new Date();
+  return { year: now.getFullYear(), month: now.getMonth() };
+}
+
+function savingsMonthEntry(fund, year, month) {
+  var key = (typeof SalaryEngine !== 'undefined' && SalaryEngine.savingsMonthKey)
+    ? SalaryEngine.savingsMonthKey(year, month)
+    : (year + '-' + month);
+  var entry = fund && fund.contributions ? fund.contributions[key] : null;
+  if (!entry) return { employee: 0, employer: 0, total: 0, source: 'none', mismatch: false, ceilingApplied: false, wageBase: 0, gross: 0, calculatedEmployee: 0 };
+  if (typeof entry === 'number') return { employee: null, employer: null, total: entry, source: 'legacy', mismatch: false, ceilingApplied: false };
+  return entry;
+}
+
+function getSavingsProjections(fundName) {
+  var savings = typeof loadSavings === 'function' ? loadSavings() : { pension: {}, study: {} };
+  var f = savings[fundName] || {};
+  var balance = savingsDisplayBalance(f);
+  var rate = f.returnRate != null ? f.returnRate : 7;
+  var month = typeof currentMonth === 'number' ? currentMonth : new Date().getMonth();
+  var year = typeof currentYear === 'number' ? currentYear : new Date().getFullYear();
+  var deposit = savingsMonthEntry(f, year, month);
+  var ongoing = savingsOngoingMonth();
+  var ongoingDeposit = savingsMonthEntry(f, ongoing.year, ongoing.month);
+  var viewedContrib = deposit.total || 0;
+  var forecastContrib = ongoingDeposit.total || 0;
+  var years = savingsYearsToRetirement(savings.birthYear);
   return {
     balance: balance,
-    monthlyContrib: monthlyContrib,
+    openingBalance: f.openingBalance || 0,
+    monthlyContrib: viewedContrib,
+    deposit: deposit,
+    forecastContrib: forecastContrib,
+    forecastIsViewedMonth: ongoing.year === year && ongoing.month === month,
     returnRate: rate,
-    year1: projectSavingsBalance(balance, monthlyContrib, rate, 12),
-    year5: projectSavingsBalance(balance, monthlyContrib, rate, 60),
-    year10: projectSavingsBalance(balance, monthlyContrib, rate, 120),
-    retirement: projectSavingsBalance(balance, monthlyContrib, rate, yearsToRetirement * 12),
-    yearsToRetirement: yearsToRetirement
+    year1: projectSavingsBalance(balance, forecastContrib, rate, 12),
+    year5: projectSavingsBalance(balance, forecastContrib, rate, 60),
+    year10: projectSavingsBalance(balance, forecastContrib, rate, 120),
+    retirement: years == null ? null : projectSavingsBalance(balance, forecastContrib, rate, years * 12),
+    yearsToRetirement: years
   };
 }
 
@@ -64,20 +80,20 @@ function getSavingsChartData() {
   var study = savings.study || {};
   var pRate = pension.returnRate != null ? pension.returnRate : 7;
   var sRate = study.returnRate != null ? study.returnRate : 7;
-  var pBal = pension.balance || 0;
-  var sBal = study.balance || 0;
-  var pContrib = getSavingsMonthlyContribution('pension');
-  var sContrib = getSavingsMonthlyContribution('study');
-  if (dedSettings && !dedSettings.pension) pContrib = 0;
-  if (dedSettings && !dedSettings.study) sContrib = 0;
+  var pBal = savingsDisplayBalance(pension);
+  var sBal = savingsDisplayBalance(study);
+  var ongoing = savingsOngoingMonth();
+  var month = ongoing.month;
+  var year = ongoing.year;
+  var pContrib = (savingsMonthEntry(pension, year, month).total) || 0;
+  var sContrib = (savingsMonthEntry(study, year, month).total) || 0;
   var labels = [];
   var pensionData = [];
   var studyData = [];
-  var hebrewMonths = typeof hebrewMonths !== 'undefined' ? hebrewMonths : ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
-  var now = new Date();
+  var names = (typeof hebrewMonths !== 'undefined') ? hebrewMonths : ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
   for (var i = 0; i <= 120; i += 12) {
-    var d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-    labels.push(hebrewMonths[d.getMonth()] + ' \'' + String(d.getFullYear()).slice(-2));
+    var d = new Date(year, month + i, 1);
+    labels.push(names[d.getMonth()] + ' \'' + String(d.getFullYear()).slice(-2));
     pensionData.push(Math.round(projectSavingsBalance(pBal, pContrib, pRate, i)));
     studyData.push(Math.round(projectSavingsBalance(sBal, sContrib, sRate, i)));
   }
@@ -87,12 +103,26 @@ function getSavingsChartData() {
 function renderSavings() {
   var section = document.getElementById('savingsSection');
   if (!section) return;
+  if (typeof syncSavingsMonth === 'function' && typeof currentYear === 'number') {
+    syncSavingsMonth(currentYear, currentMonth);
+    var ongoingSync = savingsOngoingMonth();
+    if (ongoingSync.year !== currentYear || ongoingSync.month !== currentMonth) {
+      syncSavingsMonth(ongoingSync.year, ongoingSync.month);
+    }
+  }
+  if (typeof updateMonthLabels === 'function') updateMonthLabels();
   var savings = typeof loadSavings === 'function' ? loadSavings() : { pension: {}, study: {} };
+  renderSavingsBirth(savings);
   var generalCount = Array.isArray(savings.general) ? savings.general.length : 0;
-  var hasAny = (savings.pension && savings.pension.balance > 0) || (savings.study && savings.study.balance > 0) ||
-    generalCount > 0 ||
-    (dedSettings && (dedSettings.pension || dedSettings.study)) ||
-    (getSavingsMonthlyContribution('pension') > 0 || getSavingsMonthlyContribution('study') > 0);
+  var pensionBal = savingsDisplayBalance(savings.pension);
+  var studyBal = savingsDisplayBalance(savings.study);
+  var month = typeof currentMonth === 'number' ? currentMonth : 0;
+  var year = typeof currentYear === 'number' ? currentYear : new Date().getFullYear();
+  var hasDeposit = (savingsMonthEntry(savings.pension, year, month).total || 0) > 0
+    || (savingsMonthEntry(savings.study, year, month).total || 0) > 0;
+  var hasAny = pensionBal > 0 || studyBal > 0 || (savings.pension && savings.pension.openingBalance) || (savings.study && savings.study.openingBalance)
+    || generalCount > 0 || hasDeposit
+    || (typeof dedSettings !== 'undefined' && dedSettings && (dedSettings.pension || dedSettings.study));
   var emptyEl = document.getElementById('savingsEmptyState');
   var contentEl = document.getElementById('savingsContentArea');
   if (!hasAny) {
@@ -107,15 +137,69 @@ function renderSavings() {
 
   renderSavingsFund('pension', 'קרן פנסיה');
   renderSavingsFund('study', 'קרן השתלמות');
+  renderSavingsLedger(savings);
   renderGeneralSavings();
   renderSavingsTotal();
   renderSavingsChart();
+}
+
+function renderSavingsBirth(savings) {
+  var input = document.getElementById('savingsBirthYear');
+  var hint = document.getElementById('savingsRetirementHint');
+  if (input && document.activeElement !== input) input.value = savings.birthYear || '';
+  if (!hint) return;
+  var years = savingsYearsToRetirement(savings.birthYear);
+  if (years == null) {
+    hint.textContent = 'פרישה בגיל 67. הזן שנת לידה כדי לחשב כמה שנים נשארו.';
+    return;
+  }
+  var retireYear = (savings.birthYear || 0) + (typeof SalaryEngine !== 'undefined' && SalaryEngine.SAVINGS_RETIREMENT_AGE ? SalaryEngine.SAVINGS_RETIREMENT_AGE : 67);
+  if (years === 0) hint.textContent = 'גיל הפרישה 67 כבר הגיע (' + retireYear + ').';
+  else if (years === 1) hint.textContent = 'פרישה בגיל 67 בעוד שנה (' + retireYear + ').';
+  else hint.textContent = 'פרישה בגיל 67 בעוד ' + years + ' שנים (' + retireYear + ').';
+}
+
+function saveSavingsBirthYear() {
+  var input = document.getElementById('savingsBirthYear');
+  if (!input || typeof updateSavingsBirthYear !== 'function') return;
+  updateSavingsBirthYear(input.value);
+  renderSavings();
+}
+
+function savingsSourceLabel(deposit) {
+  if (!deposit || deposit.source === 'none') return 'אין שכר בחודש הזה';
+  if (deposit.source === 'payslip') return 'לפי התלוש';
+  if (deposit.source === 'shifts') return 'לפי המשמרות בחודש';
+  if (deposit.source === 'legacy') return 'הפקדה שנשמרה';
+  return '';
 }
 
 function renderSavingsFund(fund, label) {
   var container = document.getElementById('savingsFund' + fund.charAt(0).toUpperCase() + fund.slice(1));
   if (!container) return;
   var proj = getSavingsProjections(fund);
+  var dep = proj.deposit || {};
+  var note = '';
+  if (dep.ceilingApplied) {
+    var ceiling = (typeof SalaryEngine !== 'undefined' && SalaryEngine.DEDUCTION_CONSTANTS)
+      ? SalaryEngine.DEDUCTION_CONSTANTS.STUDY_WAGE_CEILING
+      : 15712;
+    note = '<div class="savings-note">תקרת השכר להשתלמות היא ' + fmtNIS(ceiling) + '. ההפקדה חושבה על ' + fmtNIS(dep.wageBase || ceiling) + ' מתוך ' + fmtNIS(dep.gross || 0) + '.</div>';
+  }
+  if (dep.mismatch) {
+    note += '<div class="savings-note">חלק העובד בתלוש הוא ' + fmtNIS(dep.employee || 0) + ', והחישוב לפי השכר הוא ' + fmtNIS(dep.calculatedEmployee || 0) + '. ליתרה נכנס הסכום מהתלוש, וחלק המעסיק לפי החישוב.</div>';
+  }
+  var source = savingsSourceLabel(dep);
+  if (source) note = '<div class="savings-note">' + source + '</div>' + note;
+  if (!proj.forecastIsViewedMonth) {
+    var ongoing = savingsOngoingMonth();
+    var names = (typeof hebrewMonths !== 'undefined') ? hebrewMonths : [];
+    note += '<div class="savings-note">התחזית ממשיכה לפי ההפקדה של ' + (names[ongoing.month] || '') + ' ' + ongoing.year + ', ' + fmtNIS(proj.forecastContrib) + ' בחודש.</div>';
+  }
+  var employeeText = dep.employee == null ? '—' : fmtNIS(dep.employee);
+  var employerText = dep.employer == null ? '—' : fmtNIS(dep.employer);
+  var retireText = proj.retirement == null ? '—' : fmtNIS(proj.retirement);
+  var retireLabel = proj.yearsToRetirement == null ? 'פרישה' : (proj.yearsToRetirement === 0 ? 'פרישה' : ('פרישה · ' + proj.yearsToRetirement));
   container.innerHTML = '<div class="savings-fund-card">' +
     '<div class="savings-fund-header">' +
       '<span class="savings-fund-label">' + label + '</span>' +
@@ -123,23 +207,68 @@ function renderSavingsFund(fund, label) {
     '</div>' +
     '<div class="savings-row">' +
       '<span class="savings-name">יתרה נוכחית</span>' +
-      '<span class="savings-val green" id="savings' + fund + 'Balance">' + fmtNIS(proj.balance) + '</span>' +
+      '<span class="savings-val green">' + fmtNIS(proj.balance) + '</span>' +
     '</div>' +
     '<div class="savings-row">' +
-      '<span class="savings-name">הפקדה חודשית</span>' +
-      '<span class="savings-val" id="savings' + fund + 'Contrib">' + fmtNIS(proj.monthlyContrib) + '</span>' +
+      '<span class="savings-name">יתרת פתיחה</span>' +
+      '<span class="savings-val">' + fmtNIS(proj.openingBalance) + '</span>' +
     '</div>' +
+    '<div class="savings-row">' +
+      '<span class="savings-name">הפקדה החודש</span>' +
+      '<span class="savings-val">' + fmtNIS(proj.monthlyContrib) + '</span>' +
+    '</div>' +
+    '<div class="savings-row">' +
+      '<span class="savings-name">עובד</span>' +
+      '<span class="savings-val">' + employeeText + '</span>' +
+    '</div>' +
+    '<div class="savings-row">' +
+      '<span class="savings-name">מעסיק</span>' +
+      '<span class="savings-val">' + employerText + '</span>' +
+    '</div>' +
+    note +
     '<div class="savings-row">' +
       '<span class="savings-name">תשואה שנתית</span>' +
-      '<span class="savings-val" id="savings' + fund + 'Rate">' + proj.returnRate + '%</span>' +
+      '<span class="savings-val">' + proj.returnRate + '%</span>' +
     '</div>' +
     '<div class="savings-proj-grid">' +
-      '<div class="savings-proj-item"><span class="savings-proj-label">שנה</span><span class="savings-proj-val" id="savings' + fund + 'P1">' + fmtNIS(proj.year1) + '</span></div>' +
-      '<div class="savings-proj-item"><span class="savings-proj-label">5 שנים</span><span class="savings-proj-val" id="savings' + fund + 'P5">' + fmtNIS(proj.year5) + '</span></div>' +
-      '<div class="savings-proj-item"><span class="savings-proj-label">10 שנים</span><span class="savings-proj-val" id="savings' + fund + 'P10">' + fmtNIS(proj.year10) + '</span></div>' +
-      '<div class="savings-proj-item"><span class="savings-proj-label">פרישה</span><span class="savings-proj-val accent" id="savings' + fund + 'PRet">' + fmtNIS(proj.retirement) + '</span></div>' +
+      '<div class="savings-proj-item"><span class="savings-proj-label">שנה</span><span class="savings-proj-val">' + fmtNIS(proj.year1) + '</span></div>' +
+      '<div class="savings-proj-item"><span class="savings-proj-label">5 שנים</span><span class="savings-proj-val">' + fmtNIS(proj.year5) + '</span></div>' +
+      '<div class="savings-proj-item"><span class="savings-proj-label">10 שנים</span><span class="savings-proj-val">' + fmtNIS(proj.year10) + '</span></div>' +
+      '<div class="savings-proj-item"><span class="savings-proj-label">' + retireLabel + '</span><span class="savings-proj-val accent">' + retireText + '</span></div>' +
     '</div>' +
   '</div>';
+}
+
+function renderSavingsLedger(savings) {
+  var el = document.getElementById('savingsLedger');
+  if (!el) return;
+  var names = (typeof hebrewMonths !== 'undefined') ? hebrewMonths : [];
+  var keys = {};
+  ['pension', 'study'].forEach(function(fund) {
+    var c = (savings[fund] && savings[fund].contributions) || {};
+    Object.keys(c).forEach(function(k) { keys[k] = true; });
+  });
+  var rows = Object.keys(keys).map(function(k) {
+    var parts = k.split('-');
+    var year = parseInt(parts[0], 10);
+    var month = parseInt(parts[1], 10);
+    var p = savingsMonthEntry(savings.pension, year, month);
+    var s = savingsMonthEntry(savings.study, year, month);
+    return { key: k, year: year, month: month, pension: p.total || 0, study: s.total || 0 };
+  }).filter(function(r) { return r.pension > 0 || r.study > 0; });
+  rows.sort(function(a, b) { return (b.year * 12 + b.month) - (a.year * 12 + a.month); });
+  if (!rows.length) {
+    el.innerHTML = '';
+    return;
+  }
+  el.innerHTML = '<div class="section-label savings-ledger-label">הפקדות שנשמרו</div>' +
+    rows.map(function(r) {
+      var name = names[r.month] || '';
+      return '<div class="savings-row">' +
+        '<span class="savings-name">' + name + ' ' + r.year + '</span>' +
+        '<span class="savings-val">פנסיה ' + fmtNIS(r.pension) + ' · השתלמות ' + fmtNIS(r.study) + '</span>' +
+      '</div>';
+    }).join('');
 }
 
 function renderGeneralSavings() {
@@ -148,7 +277,7 @@ function renderGeneralSavings() {
   var savings = loadSavings();
   var entries = Array.isArray(savings.general) ? savings.general : [];
   if (entries.length === 0) {
-    container.innerHTML = '<div class="savings-general-empty">אין עדיין חסכונות כלליים. לחץ להלן להוספה.</div>';
+    container.innerHTML = '<div class="savings-general-empty">אין עדיין חסכונות כלליים. הם לא נכנסים לסה״כ הפנסיוני.</div>';
     return;
   }
   container.innerHTML = entries.map(function(e) {
@@ -166,17 +295,10 @@ function renderGeneralSavings() {
 }
 
 function renderSavingsTotal() {
-  var card = document.getElementById('savingsTotalCard');
   var valEl = document.getElementById('savingsTotalVal');
-  if (!card || !valEl) return;
+  if (!valEl) return;
   var savings = loadSavings();
-  var pensionBal = (savings.pension && savings.pension.balance) || 0;
-  var studyBal = (savings.study && savings.study.balance) || 0;
-  var generalTotal = 0;
-  if (Array.isArray(savings.general)) {
-    savings.general.forEach(function(e) { generalTotal += parseFloat(e.amount) || 0; });
-  }
-  var total = pensionBal + studyBal + generalTotal;
+  var total = savingsDisplayBalance(savings.pension) + savingsDisplayBalance(savings.study);
   valEl.textContent = fmtNIS(total);
 }
 
@@ -230,19 +352,19 @@ function saveGeneralSavingsEntry() {
     if (typeof addGeneralSavingsEntry === 'function') addGeneralSavingsEntry(name, amount);
   }
   closeGeneralSavingsModal();
-  if (typeof render === 'function') render();
+  if (typeof renderSavings === 'function') renderSavings();
   if (typeof showToast === 'function') showToast('הנתונים נשמרו');
 }
 
 function deleteGeneralSavingsEntryUi(id) {
   if (typeof showConfirm !== 'function') {
     if (typeof deleteGeneralSavingsEntry === 'function') deleteGeneralSavingsEntry(id);
-    if (typeof render === 'function') render();
+    if (typeof renderSavings === 'function') renderSavings();
     return;
   }
   showConfirm('מחיקת חסכון', 'למחוק את פריט החסכון?', function() {
     if (typeof deleteGeneralSavingsEntry === 'function') deleteGeneralSavingsEntry(id);
-    if (typeof render === 'function') render();
+    if (typeof renderSavings === 'function') renderSavings();
     if (typeof showToast === 'function') showToast('נמחק');
   }, 'מחק');
 }
@@ -288,7 +410,7 @@ function openSavingsEditModal(fund) {
   var savings = loadSavings();
   var f = savings[fund] || {};
   document.getElementById('savingsEditFund').value = fund;
-  document.getElementById('savingsEditBalance').value = f.balance || '';
+  document.getElementById('savingsEditBalance').value = f.openingBalance != null ? f.openingBalance : '';
   document.getElementById('savingsEditRate').value = f.returnRate != null ? f.returnRate : 7;
   document.getElementById('savingsEditLabel').textContent = fund === 'pension' ? 'קרן פנסיה' : 'קרן השתלמות';
   var ov = document.getElementById('savingsEditOverlay');
@@ -313,6 +435,6 @@ function saveSavingsEdit() {
   if (typeof updateSavingsBalance === 'function') updateSavingsBalance(fund, balance);
   if (typeof updateSavingsReturnRate === 'function') updateSavingsReturnRate(fund, isNaN(rate) ? 7 : rate);
   closeSavingsEditModal();
-  if (typeof render === 'function') render();
+  if (typeof renderSavings === 'function') renderSavings();
   if (typeof showToast === 'function') showToast('הנתונים נשמרו');
 }

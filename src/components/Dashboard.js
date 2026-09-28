@@ -20,6 +20,7 @@ function getMonthShifts() {
 function render() {
   try {
     renderCore();
+    if (typeof syncSavingsMonth === 'function') syncSavingsMonth(currentYear, currentMonth);
   } catch (e) {
     console.error('Render error:', e);
     if (typeof showToast === 'function') showToast('שגיאה – נסה לרענן');

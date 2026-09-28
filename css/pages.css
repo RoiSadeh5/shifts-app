@@ -348,18 +348,19 @@
 .savings-val.accent { color: var(--accent-light); }
 .savings-proj-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--border);
 }
 .savings-proj-item {
-  text-align: center;
-  font-size: 11px;
+  text-align: right;
+  font-size: 12px;
+  min-width: 0;
 }
 .savings-proj-label { display: block; color: var(--text-dim); margin-bottom: 2px; }
-.savings-proj-val { font-weight: 700; font-size: 11px; direction: ltr; }
+.savings-proj-val { font-weight: 700; font-size: 14px; direction: ltr; text-align: right; }
 
 /* Savings empty state */
 .savings-empty-state {
@@ -468,6 +469,46 @@
   direction: ltr;
   letter-spacing: -0.5px;
 }
+.savings-note {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+  line-height: 1.45;
+  margin: 6px 0 8px;
+}
+.savings-birth {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 2px 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.savings-birth input {
+  width: 96px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: left;
+  direction: ltr;
+  padding: 4px 0;
+}
+.savings-birth-hint {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin: 0 0 14px;
+  line-height: 1.4;
+}
+.savings-ledger { margin: 4px 0 16px; }
+.savings-ledger .savings-row { flex-wrap: wrap; gap: 4px 12px; }
+.savings-ledger-label { margin-bottom: 8px; }
+.savings-ledger .savings-val { font-size: 11px; font-weight: 600; }
 
 /* ===== PAYSLIP COMPARISON ===== */
 .comparison-panel {
